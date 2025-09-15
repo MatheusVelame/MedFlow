@@ -1,0 +1,6 @@
+# <type>: <short summary>
+#
+# Body (optional):
+# - Why the change was made
+# - What it affects
+# - Any notes
