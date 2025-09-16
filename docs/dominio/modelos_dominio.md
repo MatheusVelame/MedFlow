@@ -4,12 +4,12 @@ Nesta seção, podem ser criados diagramas que ilustram as relações entre as e
 
 *PASSO A PASSO PARA COMPLETAR ESTE PONTO*
 
-- Listar todas as entidades do sistema (baseadas nas funcionalidades que você já detalhou).
-- Definir atributos essenciais para cada entidade (ex.: Paciente → nome, CPF, telefone).
-- Desenhar primeiro ERD básico com relacionamentos e cardinalidades.
-- Complementar com diagramas UML de classes para representar métodos-chave e responsabilidades.
-- Adicionar visão de agregados / contextos delimitados para evidenciar limites de consistência.
-- Revisar com stakeholders para validar se as relações refletem corretamente o negócio.
+- [X] Listar todas as entidades do sistema (baseadas nas funcionalidades que você já detalhou).
+- [X] Definir atributos essenciais para cada entidade (ex.: Paciente → nome, CPF, telefone).
+- [ ] Desenhar primeiro ERD básico com relacionamentos e cardinalidades.
+- [ ] Complementar com diagramas UML de classes para representar métodos-chave e responsabilidades.
+- [ ] Adicionar visão de agregados / contextos delimitados para evidenciar limites de consistência.
+- [ ] Revisar com stakeholders para validar se as relações refletem corretamente o negócio.
 
 ## 1. Lista de Entidades
 
