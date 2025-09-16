@@ -13,7 +13,7 @@ Nesta seção, podem ser criados diagramas que ilustram as relações entre as e
 
 ## 1. Lista de Entidades
 
-Descrição de todas as entidades do sistema com base nas [funcionalidades](https://docs.google.com/document/d/1auJg1NmKtMBiqDIhDSnEi9d4suQ18K6Cu7m3Uy2VmXY/edit?tab=t.0), regras de negócio e relacionamentos implícitos. As entidades estão separadas em grupos para facilitar a visualização.
+Descrição de todas as entidades do sistema com base nas [funcionalidades](https://github.com/MatheusVelame/MedFlow/blob/main/docs/requisitos/funcionalidades.md), regras de negócio e relacionamentos implícitos. As entidades estão separadas em grupos para facilitar a visualização.
 
 ### 1. Core Clínico
 
@@ -250,14 +250,8 @@ MetodoPagamento ||--o{ Faturamento : "utilizado em"
 
 ![Diagrama de Classes UML - MedFlow](../../docs/diagramas/plantuml.png)
 
-
 ### 5. Visão de agregados / contextos delimitados
 
-
-
 ### 6. Revisão com stakeholders
-
-
-
 
 ---
