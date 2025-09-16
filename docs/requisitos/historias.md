@@ -164,7 +164,7 @@ Como funcionário da clínica, quero cadastrar médicos com dados pessoais, CRM 
 
 #### \[Médicos] Atualizar dados cadastrais do médico
 
-> [Issue #81](#https://github.com/MatheusVelame/MedFlow/issues/81)
+> [Issue #81](https://github.com/MatheusVelame/MedFlow/issues/81)
 
 Como administrador da clínica, quero atualizar os dados cadastrais de médicos, para manter as informações corretas e atualizadas.
 
