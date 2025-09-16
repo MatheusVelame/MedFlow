@@ -25,19 +25,19 @@ Como \[tipo de usuário], quero \[ação], para \[benefício].
 
 Critérios de aceite:
 
-* \[Critério 1]
-* \[Critério 2]
-* \[Critério 3]
+- \[Critério 1]
+- \[Critério 2]
+- \[Critério 3]
 
 Dados necessários / Campos:
 
-* \[Campo 1]
-* \[Campo 2]
-* \[Campo 3]
+- \[Campo 1]
+- \[Campo 2]
+- \[Campo 3]
 
 Notas / Observações:
 
-* \[Se houver integrações, dependências ou regras de negócio]
+- \[Se houver integrações, dependências ou regras de negócio]
 
 
 ## 2. Epics (Áreas principais do projeto)
@@ -53,10 +53,8 @@ Cada issue deve ser vinculada a um **epic**, que representa a área ou jornada d
 | `epic:exames` | Solicitação, registro e acompanhamento de exames |
 | `epic:medicamentos` | Cadastro e consulta de medicamentos |
 | `epic:faturamento` | Registro de pagamentos e controle financeiro |
-| `epic:folha-pagamento` | Cálculo e registro da folha de pagamento |
+| `epic:funcionarios` | Gestão de funcionários - administrativo |
 | `epic:convenios` | Cadastro e vínculo de pacientes a convênios |
-| `epic:agenda` | Agenda do médico, eventos e bloqueios |
-| `epic:historico` | Histórico de alterações e auditoria |
 
 > Dica: prefixar com `epic:` permite filtrar facilmente todas as issues de uma área.
 
