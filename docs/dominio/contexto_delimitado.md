@@ -6,10 +6,13 @@
 
 ## 1. Gerenciamento de Pacientes
 
-- **Visão Geral:** Responsável pela gestão dos dados de pacientes, incluindo cadastro, atualização, consulta e remoção de registros.  
+- **Visão Geral:** Administra o ciclo de vida do Paciente: cadastro, atualização, consulta, unificação de duplicidades, (des)ativação, consentimentos e exportabilidade de dados (LGPD). Serve de fonte única de verdade para dados cadastrais e identificadores.  
 - **Termos Específicos:**
-  - Paciente
-  - Prontuário Eletrônico  
+  - Paciente: pessoa atendida pela clínica, identificada por documento oficial e/ou identificador interno.
+  - Prontuário Eletrônico: histórico clínico do paciente, referenciado por este contexto.
+  - Contato: meios de comunicação do paciente (telefone, e-mail, responsável).
+  - Endereço: localização residencial do paciente.
+  - Situação Cadastral: Ativo/Inativo (controle administrativo, não clínico).
 
 ## 2. Gerenciamento de Médicos e Funcionários
 
@@ -34,7 +37,7 @@
 
 ## 5. Gestão Financeira
 
-- **Visão Geral:** O contexto de Financeiro e Gestão é responsável pelo controle de faturamentos e pagamentos de funcionários, garantindo que todos os registros financeiros da clínica sejam precisos, atualizados e consistentes. Ele assegura tanto a sustentabilidade econômica da clínica quanto a transparência na relação com pacientes, convênios e colaboradores.
+- **Visão Geral:** O contexto de Financeiro e Gestão é responsável pelo controle de faturamentos, garantindo que todos os registros financeiros da clínica sejam precisos, atualizados e consistentes. Ele assegura tanto a sustentabilidade econômica da clínica quanto a transparência na relação com pacientes, convênios e colaboradores.
 - **Termos Específicos:**
   - Faturamento: Registro financeiro que consolida os valores de consultas, exames e serviços prestados pela clínica.
   - Método de Pagamento: Forma como o faturamento é quitado, podendo ser cartão de crédito, débito, dinheiro, convênio ou reembolso.
