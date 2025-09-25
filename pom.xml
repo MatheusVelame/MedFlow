@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   
   <groupId>br.com.medflow</groupId>
-  <artifactId>medflow-core</artifactId>
+  <artifactId>medflow-modulos</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   
   <packaging>pom</packaging>
@@ -16,6 +16,7 @@
   
   <modules>
   	<module>pai</module>
+  	<module>dominio-catalogo</module>
   </modules>
 
 </project>
