@@ -13,6 +13,13 @@
   - Contato: meios de comunicação do paciente (telefone, e-mail, responsável).
   - Endereço: localização residencial do paciente.
   - Situação Cadastral: Ativo/Inativo (controle administrativo, não clínico).
+- **Restrições / Regras de Negócio Essenciais**
+  - Nome, CPF, data de nascimento e telefone são obrigatórios.
+  - CPF e data de nascimento devem ser validados (11 dígitos numéricos e formato dd/mm/aaaa, respectivamente).
+  - O CPF é único e não pode ser alterado após o cadastro.
+  - O status inicial de todo paciente cadastrado é “Ativo”.
+  - Não é possível remover paciente sem CPF cadastrado ou com agendamento vinculado, apenas inativá-lo.
+  - Consultas devem sempre exibir os dados mínimos: nome, CPF, data de nascimento, telefone e status.
 
 ## 2. Gerenciamento de Médicos e Funcionários
 
@@ -84,14 +91,10 @@
     - Valor: preço-base do tipo de exame.
     - Status: Ativo/Inativo, indicando disponibilidade para novos agendamentos.
 - **Restrições / Regras de Negócio Essenciais**
-  - Código obrigatório e único para cada tipo de exame.
-  - Descrição obrigatória (até 255 caracteres).
-  - Especialidade vinculada deve estar Ativa no contexto de Gerenciamento de Especialidades.
-  - Valor deve ser positivo (≥ 0,01).
+  - O código é único e obrigatório para cada tipo de exame.
+  - A especialidade vinculada deve estar Ativa no contexto de Gerenciamento de Especialidades.
   - Status inicial “Ativo” ao cadastrar um novo tipo de exame.
   - Alteração permitida apenas quando não tiver agendamentos vinculados.
-  - Exclusão física somente quando não houver histórico (agendamentos, resultados, faturamentos) associado.
-  - Se houver histórico, o tipo de exame deve ser inativado, não podendo ser usado em novos agendamentos.
-  - Alteração de Especialidade exige validação de compatibilidade e não pode invalidar agendamentos existentes.
+  - Exclusão física somente quando não houver histórico (agendamentos, resultados, faturamentos) associado, permitida a inativação.
   - Consultas devem sempre exibir os dados mínimos: código, descrição, especialidade e valor.
 ---
