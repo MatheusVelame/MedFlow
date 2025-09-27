@@ -72,4 +72,26 @@
   - O histórico de alterações (data/hora, médico, tipo) deve ser registrado.
   - Consultas a exames devem sempre exibir os dados mínimos: paciente, médico, tipo, data/hora e status.
 
+## 8. Gerenciamento de Tipos de Exame
+
+- **Visão Geral**
+  - Responsável por manter o catálogo de tipos de exame da clínica, incluindo cadastro, alteração, inativação/exclusão e listagem. Este contexto é a fonte única de verdade para os metadados de cada tipo de exame (código, descrição, especialidade, valor e status), garantindo unicidade e consistência. 
+- **Termos Específicos**
+    - Tipo de Exame: entrada do catálogo que descreve um exame (ex.: Hemograma Completo), identificada por Código único.
+    - Código do Exame: identificador único, estável e não reutilizável.
+    - Descrição: nome/definição do exame; texto curto e claro.
+    - Especialidade: especialidade médica necessária para solicitar/realizar o exame.
+    - Valor: preço-base do tipo de exame.
+    - Status: Ativo/Inativo, indicando disponibilidade para novos agendamentos.
+- **Restrições / Regras de Negócio Essenciais**
+  - Código obrigatório e único para cada tipo de exame.
+  - Descrição obrigatória (até 255 caracteres).
+  - Especialidade vinculada deve estar Ativa no contexto de Gerenciamento de Especialidades.
+  - Valor deve ser positivo (≥ 0,01).
+  - Status inicial “Ativo” ao cadastrar um novo tipo de exame.
+  - Alteração permitida apenas quando não tiver agendamentos vinculados.
+  - Exclusão física somente quando não houver histórico (agendamentos, resultados, faturamentos) associado.
+  - Se houver histórico, o tipo de exame deve ser inativado, não podendo ser usado em novos agendamentos.
+  - Alteração de Especialidade exige validação de compatibilidade e não pode invalidar agendamentos existentes.
+  - Consultas devem sempre exibir os dados mínimos: código, descrição, especialidade e valor.
 ---
