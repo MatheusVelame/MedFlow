@@ -139,4 +139,62 @@
 3. O sistema exibe, no mínimo: paciente, médico responsável, tipo, data/hora e status.
 4. Exames cancelados/realizados aparecem apenas em consultas históricas, não na agenda padrão.
 
+## 7. Processo de Gerenciamento de Pacientes
+
+**Fluxo Principal (Cadastro de Paciente):**
+
+1. O atendente solicita o cadastro de um novo paciente.
+2. O sistema solicita o preenchimento dos campos obrigatórios: nome completo, CPF, telefone, e data de nascimento.
+3. Opcionalmente, é preenchido o endereço.
+4. O sistema valida os dados: formato correto, unicidade do CPF, data de nascimento válida.
+5. O sistema cria o paciente com status inicial “Ativo”.
+
+**Fluxo Alternativo (Alteração de Paciente):**
+
+1. O atendente solicita a alteração de dados de um paciente existente.
+2. O sistema valida os campos alterados (ex.: CPF não pode ser duplicado).
+3. O sistema salva as mudanças e registra histórico da alteração.
+
+**Fluxo Alternativo (Exclusão/Inativação de Paciente):**
+
+1. O administrador solicita a exclusão ou inativação de um paciente.
+2. O sistema verifica se há histórico associado (consultas, prontuário, exames, faturamentos):
+	- Se não houver histórico → exclusão física.
+	- Se houver histórico → marca como “Inativo”.
+3. Pacientes inativos não podem ser usados em novos agendamentos.
+
+**Fluxo de Consulta/Listagem:**
+
+1. O usuário acessa a listagem de pacientes.
+2. O sistema exibe os pacientes com nome, CPF, telefone e status.
+3. O usuário pode aplicar filtros (nome, CPF, status) ou ordenar alfabeticamente.
+
+## 8. Processo de Gerenciamento de Tipos de Exames
+
+**Fluxo Principal (Cadastro de Tipo de Exame):**
+
+1. O administrador solicita o cadastro de um novo tipo de exame.
+2. O sistema solicita o preenchimento dos campos obrigatórios: código, descrição, especialidade vinculada e valor.
+3. O sistema valida os dados: código único, valor positivo e especialidade ativa.
+4. O sistema cria o tipo de exame com status inicial “Ativo”.
+
+**Fluxo Alternativo (Alteração de Tipo de Exame):**
+
+1. O administrador solicita a alteração de descrição, especialidade ou valor de um tipo de exame.
+2. O sistema valida os novos dados (especialidade deve estar ativa, valor deve ser positivo).
+3. O sistema salva as mudanças e registra histórico da alteração.
+
+**Fluxo Alternativo (Exclusão/Inativação de Tipo de Exame):**
+
+1. O administrador solicita a exclusão de um tipo de exame.
+2. O sistema verifica se há histórico de agendamentos/faturamentos:
+	- Se não houver histórico → exclusão física.
+	- Se houver histórico → marca como “Inativo”.
+3. Tipos de exame inativos não podem ser usados em novos agendamentos.
+
+**Fluxo de Consulta/Listagem:**
+
+1. O usuário acessa a listagem de tipos de exame.
+2. O sistema exibe, por padrão, apenas exames “Ativos” com código, descrição, especialidade, valor e status.
+3. O usuário pode aplicar filtros por especialidade, status ou ordenar alfabeticamente.
 ---
