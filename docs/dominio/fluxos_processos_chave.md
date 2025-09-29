@@ -233,17 +233,18 @@
 
 1. O usuário acessa a funcionalidade de listagem de médicos.
 2. O sistema exibe, por padrão, apenas os médicos com status “Ativo”, mostrando nome completo, CRM e especialidade.
-3. O usuário pode aplicar filtros por especialidade e status.
+3. O sistema oferece um campo de busca principal onde o usuário pode digitar o Nome, CPF ou CRM para encontrar um médico específico rapidamente.
+4. O usuário pode aplicar filtros por especialidade e status.
 
 ## 10. Processo de Controle de Pagamentos de Funcionários
 
 **Fluxo Principal (Registro de Folha de Pagamento):**
 
 1. O usuário autorizado (setor financeiro ou administrador) inicia o registro do pagamento de um funcionário.
-2. O sistema solicita os dados obrigatórios: identificação do funcionário, salario, benefícios, período de referência e método de pagamento.
+2. O sistema solicita os dados obrigatórios: identificação do funcionário, tipo de registro, salario, benefícios, período de referência e método de pagamento.
 3. O sistema valida os dados:
 	- Verifica se o funcionário selecionado está com status “Ativo”.
-	- Verifica se já não existe uma folha de pagamento para o mesmo funcionário no mesmo período de referência.
+	- Verifica se já não existe uma folha de pagamento do tipo "Pagamento" para o mesmo funcionário no mesmo período de referência.
 4. O sistema registra o pagamento com status inicial “Pendente”.
 5. O sistema atualiza o log com a criação do registro (usuário, data, hora e dados registrados).
 
@@ -253,7 +254,7 @@
 O sistema valida o status do registro para determinar as ações permitidas:
 	- Se o status for “Pendente”:
 		- O sistema permite a alteração apenas dos campos de valores (salário base, benefícios).
-		- Os campos “Funcionário” e “Período de Referência” são bloqueados e não podem ser alterados. Se foram preenchidos incorretamente, o registro deve ser cancelado e um novo deve ser criado.
+		- Os campos “Funcionário”, "Tipo de Registro" e “Período de Referência” são bloqueados e não podem ser alterados. Se foram preenchidos incorretamente, o registro deve ser cancelado e um novo deve ser criado.
 		- O usuário pode alterar o status para “Pago” ou “Cancelado”.
 	- Se o status for “Pago” ou “Cancelado”:
 		- O sistema bloqueia a alteração de todos os campos. O registro é considerado finalizado e imutável para garantir a integridade do histórico financeiro.
