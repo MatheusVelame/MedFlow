@@ -203,7 +203,7 @@
 **Fluxo Principal (Cadastro de Médico):**
 
 1. O funcionário autorizado solicita o cadastro de um novo médico no sistema.
-2. O sistema solicita o preenchimento dos campos obrigatórios: nome completo, CPF, CRM, data de nascimento, e-mail e número de contato.
+2. O sistema solicita o preenchimento dos campos obrigatórios: nome completo, CPF, CRM, data de nascimento, e-mail, número de contato e especialidade.
 3. O sistema valida os dados inseridos:
 	- Unicidade do CPF.
 	- Unicidade do CRM.
