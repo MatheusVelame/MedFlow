@@ -197,4 +197,81 @@
 1. O usuário acessa a listagem de tipos de exame.
 2. O sistema exibe, por padrão, apenas exames “Ativos” com código, descrição, especialidade, valor e status.
 3. O usuário pode aplicar filtros por especialidade, status ou ordenar alfabeticamente.
+
+## 9. Processo de Gerenciamento de Médicos
+
+**Fluxo Principal (Cadastro de Médico):**
+
+1. O funcionário autorizado solicita o cadastro de um novo médico no sistema.
+2. O sistema solicita o preenchimento dos campos obrigatórios: nome completo, CPF, CRM, data de nascimento, e-mail e número de contato.
+3. O sistema valida os dados inseridos:
+	- Unicidade do CPF.
+	- Unicidade do CRM.
+	- Formato da data de nascimento (dd/mm/aaaa).
+	- Valida se a especialidade selecionada está previamente cadastrada e ativa.
+4. Opcionalmente, podem ser cadastrados endereço e observações adicionais.
+5. Opcionalmente, é preenchida a disponibilidade de horários.
+6. O sistema cria o médico com status inicial “Ativo” e salva as informações.
+
+**Fluxo Alternativo (Alteração de Médico):**
+
+1. O administrador seleciona um médico existente e solicita a alteração dos seus dados.
+2. O sistema exibe os campos editáveis (nome, contato, endereço, especialidade, disponibilidade), mantendo o campo CRM bloqueado para alteração.
+3. O sistema valida se a alteração na disponibilidade de horários não conflita com consultas futuras já agendadas. Caso haja conflito, uma mensagem de alerta é exibida.
+4. O sistema salva as mudanças e registra um histórico da alteração (usuário, data, hora e dados modificados).
+
+**Fluxo Alternativo (Alteração de Médico):**
+
+1. O administrador solicita a exclusão ou inativação de um médico.
+2. O sistema verifica se o médico possui histórico associado (consultas, prontuários, exames).
+3. Se não houver histórico: O sistema permite a exclusão física do registro, após confirmação.
+4. Se houver histórico: O sistema impede a exclusão e oferece a opção de alterar o status para “Inativo”.
+5. Médicos com status “Inativo” não podem ser selecionados para novos agendamentos, mas seu histórico é preservado.
+
+**Fluxo de Consulta/Listagem:**
+
+1. O usuário acessa a funcionalidade de listagem de médicos.
+2. O sistema exibe, por padrão, apenas os médicos com status “Ativo”, mostrando nome completo, CRM e especialidade.
+3. O usuário pode aplicar filtros por especialidade, status ou ordenar alfabeticamente.
+
+## 10. Processo de Controle de Pagamentos de Funcionários
+
+**Fluxo Principal (Registro de Folha de Pagamento):**
+
+1. O usuário autorizado (setor financeiro ou administrador) inicia o registro do pagamento de um funcionário.
+2. O sistema solicita os dados obrigatórios: identificação do funcionário, valor do pagamento, período de referência e método de pagamento.
+3. O sistema valida os dados:
+	- Verifica se o funcionário selecionado está com status “Ativo”.
+	- Verifica se já não existe uma folha de pagamento para o mesmo funcionário no mesmo período de referência.
+4. O sistema registra o pagamento com status inicial “Pendente”.
+5. O sistema atualiza o log com a criação do registro (usuário, data, hora e dados registrados).
+
+**Fluxo Alternativo (Atualização de Pagamento):**
+
+1. Um usuário com permissão acessa uma folha de pagamento registrada.
+O sistema valida o status do registro para determinar as ações permitidas:
+	- Se o status for “Pendente”:
+		- O sistema permite a alteração apenas dos campos de valores (salário base, benefícios, descontos).
+		- Os campos “Funcionário” e “Período de Referência” são bloqueados e não podem ser alterados. Se foram preenchidos incorretamente, o registro deve ser cancelado e um novo deve ser criado.
+		- O usuário pode alterar o status para “Pago” ou “Cancelado”.
+	- Se o status for “Pago” ou “Cancelado”:
+		- O sistema bloqueia a alteração de todos os campos. O registro é considerado finalizado e imutável para garantir a integridade do histórico financeiro.
+		- O sistema registra qualquer atualização permitida, mantendo o histórico da alteração no log (usuário, data, hora e qual alteração foi realizada).
+4. O sistema registra a atualização, mantendo o histórico da alteração no log (usuário, data, hora e qual alteração foi realizada).
+
+**Fluxo Alternativo (Exclusão de Pagamento Inválido):**
+
+1. Um administrador acessa a folha de pagamento que deseja remover.
+2. O sistema valida o status do registro. A remoção só é permitida se o status for “Pendente”.
+3. Registros com status “Pago” ou “Cancelado” não podem ser removidos, pois são considerados parte permanente do histórico financeiro.
+4. Caso a remoção seja válida, o registro é excluído do sistema após a confirmação do motivo (ex: duplicidade, erro de lançamento).
+5. O sistema gera um log de exclusão com data, hora, usuário responsável e o motivo da remoção.
+
+**Fluxo de Consulta/Listagem de Pagamentos:**
+
+1. O usuário autorizado solicita a consulta ao histórico de pagamentos.
+2. O sistema disponibiliza filtros por funcionário, período de referência (mês/ano) ou status do pagamento (“Pago”, “Pendente” ou “Cancelado”).
+3. 3. A lista de pagamentos é exibida com as seguintes informações: funcionário, período, valor total, status e data de registro.
+4. O sistema permite ordenar os resultados por data ou por funcionário.
+5. A consulta realizada é registrada na trilha de auditoria.
 ---
