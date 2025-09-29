@@ -194,9 +194,10 @@
 
 **Fluxo de Consulta/Listagem:**
 
-1. O usuário acessa a listagem de tipos de exame.
-2. O sistema exibe, por padrão, apenas exames “Ativos” com código, descrição, especialidade, valor e status.
-3. O usuário pode aplicar filtros por especialidade, status ou ordenar alfabeticamente.
+1. O usuário acessa a listagem de médicos.
+2. O sistema exibe, por padrão, apenas os médicos com status “Ativo”, mostrando colunas como: Nome Completo, CRM, Especialidade Principal e Status.
+3. O sistema oferece um campo de busca principal onde o usuário pode digitar o Nome, CPF ou CRM para encontrar um médico específico rapidamente.
+4. Além da busca, o usuário pode refinar a lista aplicando filtros por Especialidade (ex: "Cardiologia", "Clínico Geral") e por Status ("Ativos" ou "Inativos").
 
 ## 9. Processo de Gerenciamento de Médicos
 
@@ -220,7 +221,7 @@
 3. O sistema valida se a alteração na disponibilidade de horários não conflita com consultas futuras já agendadas. Caso haja conflito, uma mensagem de alerta é exibida.
 4. O sistema salva as mudanças e registra um histórico da alteração (usuário, data, hora e dados modificados).
 
-**Fluxo Alternativo (Alteração de Médico):**
+**Fluxo Alternativo (Exclusão/Inativação de Médico):**
 
 1. O administrador solicita a exclusão ou inativação de um médico.
 2. O sistema verifica se o médico possui histórico associado (consultas, prontuários, exames).
@@ -232,14 +233,14 @@
 
 1. O usuário acessa a funcionalidade de listagem de médicos.
 2. O sistema exibe, por padrão, apenas os médicos com status “Ativo”, mostrando nome completo, CRM e especialidade.
-3. O usuário pode aplicar filtros por especialidade, status ou ordenar alfabeticamente.
+3. O usuário pode aplicar filtros por especialidade e status.
 
 ## 10. Processo de Controle de Pagamentos de Funcionários
 
 **Fluxo Principal (Registro de Folha de Pagamento):**
 
 1. O usuário autorizado (setor financeiro ou administrador) inicia o registro do pagamento de um funcionário.
-2. O sistema solicita os dados obrigatórios: identificação do funcionário, valor do pagamento, período de referência e método de pagamento.
+2. O sistema solicita os dados obrigatórios: identificação do funcionário, salario, benefícios, período de referência e método de pagamento.
 3. O sistema valida os dados:
 	- Verifica se o funcionário selecionado está com status “Ativo”.
 	- Verifica se já não existe uma folha de pagamento para o mesmo funcionário no mesmo período de referência.
@@ -251,7 +252,7 @@
 1. Um usuário com permissão acessa uma folha de pagamento registrada.
 O sistema valida o status do registro para determinar as ações permitidas:
 	- Se o status for “Pendente”:
-		- O sistema permite a alteração apenas dos campos de valores (salário base, benefícios, descontos).
+		- O sistema permite a alteração apenas dos campos de valores (salário base, benefícios).
 		- Os campos “Funcionário” e “Período de Referência” são bloqueados e não podem ser alterados. Se foram preenchidos incorretamente, o registro deve ser cancelado e um novo deve ser criado.
 		- O usuário pode alterar o status para “Pago” ou “Cancelado”.
 	- Se o status for “Pago” ou “Cancelado”:
@@ -270,8 +271,9 @@ O sistema valida o status do registro para determinar as ações permitidas:
 **Fluxo de Consulta/Listagem de Pagamentos:**
 
 1. O usuário autorizado solicita a consulta ao histórico de pagamentos.
-2. O sistema disponibiliza filtros por funcionário, período de referência (mês/ano) ou status do pagamento (“Pago”, “Pendente” ou “Cancelado”).
-3. 3. A lista de pagamentos é exibida com as seguintes informações: funcionário, período, valor total, status e data de registro.
-4. O sistema permite ordenar os resultados por data ou por funcionário.
-5. A consulta realizada é registrada na trilha de auditoria.
+2. O sistema disponibiliza filtros status do pagamento (“Pago”, “Pendente” ou “Cancelado”) e e período de referência (mês/ano).
+3. O sistema disponibiliza busca por nome de funcionário e cpf de funcionário.
+4. A lista de pagamentos é exibida com as seguintes informações: funcionário, período, valores, status e data de registro.
+5. O sistema ordena os resultados por data.
+6. A consulta realizada é registrada na trilha de auditoria.
 ---
