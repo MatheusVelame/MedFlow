@@ -273,7 +273,7 @@ O sistema valida o status do registro para determinar as ações permitidas:
 1. O usuário autorizado solicita a consulta ao histórico de pagamentos.
 2. O sistema disponibiliza filtros status do pagamento (“Pago”, “Pendente” ou “Cancelado”) e e período de referência (mês/ano).
 3. O sistema disponibiliza busca por nome de funcionário e cpf de funcionário.
-4. A lista de pagamentos é exibida com as seguintes informações: funcionário, período, valores, status e data de registro.
+4. A lista de pagamentos é exibida com as seguintes informações: funcionário, tipo de registro, período, valores, status e data de registro.
 5. O sistema ordena os resultados por data.
 6. A consulta realizada é registrada na trilha de auditoria.
 ---
