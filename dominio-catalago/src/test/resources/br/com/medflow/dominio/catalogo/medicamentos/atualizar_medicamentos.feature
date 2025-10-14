@@ -7,6 +7,7 @@ feature: Gerenciamento de Medicamentos
 Scenario: Atualização de Uso Principal com Sucesso
 
 	Given que o usuário "Dr. Carlos", médico da clínica, tem permissão de administrador
+	And o perfil "Administrador" tem permissão para atualizar medicamentos
 	And o medicamento "Paracetamol" está cadastrado com o uso principal "Analgésico"
 	When o "Dr. Carlos" atualizar o uso principal do medicamento "Paracetamol" para "Analgésico e antitérmico"
 	Then o sistema deve registrar a alteração com sucesso
@@ -26,6 +27,7 @@ Scenario: Falha na Atualização por Falta de Permissão
 Scenario: Atualização de Status de Ativo para Inativo e registrando alteração no histórico
 	
 	Given que o usuário "Dr. Carlos" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para atualizar medicamentos
 	And o medicamento "Dipirona" está cadastrado com o status "Ativo"
 	When o "Dr. Carlos" mudar o status do medicamento "Dipirona" para "Inativo"
 	Then o sistema deve registrar a alteração com sucesso
@@ -35,6 +37,7 @@ Scenario: Atualização de Status de Ativo para Inativo e registrando alteraçã
 Scenario: Tentativa de atualização em branco de Uso principal, sem registro de alteração no histórico
 
 	Given que o usuário "Dr. Carlos" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para atualizar medicamentos
 	And o medicamento "Paracetamol" está cadastrado com o uso principal "Analgésico"
 	When o "Dr. Carlos" atualizar o uso principal do medicamento "Paracetamol" para ""
 	Then o sistema deve informar que não é permitido alterar campos obrigatórios para valor em branco
@@ -46,6 +49,7 @@ Scenario: Tentativa de atualização em branco de Uso principal, sem registro de
 Scenario: Scenario: Alteração crítica entra em status de revisão
 
 	Given que o usuário "Dr. Carlos" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para atualizar medicamentos
 	And o medicamento "Aspirina" está cadastrado com as contraindicações "Hipersensibilidade"
 	When o "Dr. Carlos" tentar adicionar a contraindicação "Gravidez" no medicamento "Aspirina"
 	Then o sistema deve informar sobre alteração crítica no sistema
@@ -81,6 +85,7 @@ Scenario: Falha na aprovação de alteração crítica por falta de permissão
 Scenario: Tentativa de cadastrar um medicamento com nome ainda não registrado
 
 	Given que o usuário "Dr. Carlos" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Paracetamol" ainda não está registrado no sistema
     When o usuário "Dr. Carlos" tentar cadastrar um novo medicamento de nome "Paracetamol"
     And o uso principal é "Analgésico e antitérmico"
@@ -90,6 +95,7 @@ Scenario: Tentativa de cadastrar um medicamento com nome ainda não registrado
 Scenario: Tentativa de cadastrar um medicamento com nome já em uso
 	
 	Given que o usuário "Dra. Juliana" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Amoxicilina" já está registrado no sistema
     When o usuário "Dra. Juliana" tentar cadastrar um novo medicamento com o nome "Amoxicilina"
     Then o sistema deve impedir o cadastro do medicamento
@@ -101,6 +107,7 @@ Scenario: Tentativa de cadastrar um medicamento com nome já em uso
 Scenario: Verificação do status padrão em um novo cadastro
 
 	Given que o usuário "Dra. Juliana" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Ibuprofeno" ainda não está registrado no sistema
 	When o usuário "Dra. Juliana" tentar cadastrar um novo medicamento de nome "Ibuprofeno"
 	And o uso principal é "Anti-inflamatório"
@@ -111,6 +118,7 @@ Scenario: Verificação do status padrão em um novo cadastro
 Scenario: Sistema ignora a tentativa de definir um status inicial diferente de "Ativo" ( AVERIGUAR )
 
 	Given que o usuário "Dra. Juliana" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Paracetamol" ainda não está registrado no sistema
     When o usuário "Dra. Juliana" castrar um novo medicamento de nome "Paracetamol"
     And o uso principal é "Analgésico e antitérmico"
@@ -123,6 +131,7 @@ Scenario: Sistema ignora a tentativa de definir um status inicial diferente de "
 Scenario: Cadastro de medicamento com todos os campos obrigatórios preenchidos
 
 	Given que o usuário "Dr. Alberto" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Dipirona" ainda não está registrado no sistema
     When o usuário "Dr. Alberto" tentar cadastrar um novo medicamento de nome "Dipirona"
     And o uso principal é "Analgésico e antitérmico"
@@ -131,6 +140,7 @@ Scenario: Cadastro de medicamento com todos os campos obrigatórios preenchidos
 Scenario: Tentativa de cadastro sem preencher o nome do medicamento
 
 	Given que o usuário "Dr. Alberto" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And um novo medicamento está sendo cadastrado
 	When o usuário "Dr. Alberto" tentar cadastrar o nome do medicamento como ""
 	And o uso principal é "Analgésico"
@@ -142,6 +152,7 @@ Scenario: Tentativa de cadastro sem preencher o nome do medicamento
 Scenario: Cadastro de medicamento com Contraindicações válidas
 
 	Given que o usuário "Dr. Alberto" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Amoxicilina" ainda não está registrado no sistema
 	When o usuário "Dr. Alberto" tentar cadastrar um novo medicamento de nome "Amoxicilina"
 	And o uso principal é "Antibiótico"
@@ -151,6 +162,7 @@ Scenario: Cadastro de medicamento com Contraindicações válidas
 Scenario: Tentativa de incluir caracteres especiais inválidos no campo Contraindicações
 
 	Given que o usuário "Dra. Letícia" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Loratadina" ainda não está registrado no sistema
 	When o usuário "Dra. letícia" tentar cadastrar um novo medicamento de nome "Loratadina"
 	And o uso principal é "Antialérgico"
@@ -210,7 +222,8 @@ Scenario: Tentativa de remover um medicamento
 Scenario: Arquivamento de Medicamento com Sucesso
 
 	Given que o usuário "Dr. Helena" tem permissão de administrador
-	And o medicamento "Amoxicilina" está cadastradp com o status "Ativo"
+	And o perfil "Administrador" tem permissão para arquivar ou remover medicamentos
+	And o medicamento "Amoxicilina" está cadastrado com o status "Ativo"
 	And o medicamento "Amoxicilina" não está vinculado a nenhuma prescrição ativa
 	When o usuário "Dr. Helena" arquivar o medicamento "Amoxicilina"
 	Then o sistema deve registrar a alteração com sucesso
@@ -221,6 +234,7 @@ Scenario: Arquivamento de Medicamento com Sucesso
 Scenario: Falha na Remoção/Arquivamento Devido a Vínculo Ativo
 
 	Given que o usuário "Dr. Carlos" tem permissão de administrador
+	And o perfil "Administrador" tem permissão para arquivar ou remover medicamentos
 	And o medicamento "Dipirona" está cadastrado com o status "Ativo"
 	And o medicamento "Dipirona" está vinculado a uma prescrição ativa
 	When o "Dr. Carlos" tentar arquivar ou remover o medicamento "Dipirona"
