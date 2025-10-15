@@ -17,6 +17,8 @@
   <modules>
   	<module>pai</module>
   	<module>dominio-catalogo</module>
+    <module>medflow-bdd-especialidades</module>
+    <module>medflow-bdd-exames</module>
   </modules>
 
 </project>
