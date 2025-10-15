@@ -1,0 +1,116 @@
+Domain MEDFLOW {
+  Subdomain AtendimentoClinico
+  Subdomain Suporte
+}
+
+BoundedContext Pacientes implements AtendimentoClinico {
+  Aggregate PacienteAggregate {
+    Entity Paciente {
+      aggregateRoot
+      -PacienteId id
+      String nome
+      -CPF cpf
+      -DataNascimento dataNascimento
+      -Telefone telefone
+      -Endereco endereco
+      String status
+      
+      def void atualizarContato(@Telefone novoTelefone, @Endereco novoEndereco);
+      def void ativar();
+      def void inativar();
+      
+      Repository PacienteRepository {
+        @Paciente obterPorCpf(@CPF cpf);
+        List<@Paciente> pesquisarPorNome(String nome);
+      }
+    }
+    
+    ValueObject PacienteId {
+      int id
+    }
+    
+    ValueObject CPF {
+      String numero
+      def boolean validar();
+    }
+    
+    ValueObject DataNascimento {
+      String data
+      def boolean validar();
+    }
+    
+    ValueObject Telefone {
+      String numero
+    }
+    
+    ValueObject Endereco {
+      String logradouro
+      String numero
+      String cidade
+      String uf
+    }
+  }
+}
+
+BoundedContext TiposDeExame implements Suporte {
+  Aggregate TipoExameAggregate {
+    Entity TipoExame {
+      aggregateRoot
+      -TipoExameId id
+      String descricao
+      -TipoExameEspecialidadeId id
+      String valor
+      String status
+      
+      def void atualizarDescricao(String novaDescricao);
+      def void atualizarValor(String novoValor);
+      def void inativar();
+      
+      Repository TipoExameRepository {
+        @TipoExame obterPorCodigo(@TipoExameId id);
+        List<@TipoExame> listarPorDescricao(String trechoDescricao);
+      }
+    }
+    
+    ValueObject TipoExameId {
+      String id
+    }
+    
+    ValueObject TipoExameEspecialidadeId {
+  		long id
+	}
+  }
+}
+
+BoundedContext Especialidades implements Suporte {
+  Aggregate EspecialidadeAggregate {
+    Entity Especialidade {
+      aggregateRoot
+      -EspecialidadeId id
+      String nome
+      String descricao
+      boolean ativa
+      
+      def void ativar();
+      def void inativar();
+      
+      Repository EspecialidadeRepository {
+        @Especialidade obterPorId(@EspecialidadeId id);
+        List<@Especialidade> listarTodas();
+        List<@Especialidade> listarAtivas();
+      }
+    }
+    
+    ValueObject EspecialidadeId {
+      long id
+    }
+  }
+}
+
+ContextMap MedFlowMap {
+  contains Pacientes
+  contains TiposDeExame
+  contains Especialidades
+  
+  TiposDeExame -> Especialidades
+}
