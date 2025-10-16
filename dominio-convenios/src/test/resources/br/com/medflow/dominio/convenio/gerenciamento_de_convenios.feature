@@ -16,6 +16,7 @@ Scenario: Tentativa de cadastrar um convênio com nome ainda não registrado
 	And o sistema deve exibir a mensagem "Convênio cadastrado com sucesso!"  
 
 Scenario: Tentativa de cadastro sem preencher o nome do convênio
+
 	Given que o usuário "Dr. Marcos" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para cadastrar convênios  
 	And um novo convênio está sendo cadastrado  
@@ -27,6 +28,7 @@ Scenario: Tentativa de cadastro sem preencher o nome do convênio
 # Regra de Negócio: Não é permitido cadastrar identificações de convênios duplicados (código já existente)
 
 Scenario: Cadastro de convênio com código único
+
 	Given que o usuário "Dra. Paula" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para cadastrar convênios  
 	And já existe um convênio cadastrado com o código "AMSA0001"  
@@ -37,6 +39,7 @@ Scenario: Cadastro de convênio com código único
 	And o sistema deve exibir a mensagem "Convênio cadastrado com sucesso!"  
 	
 Scenario: Tentativa de cadastro com código de identificação duplicado
+
 	Given que o usuário "Dr. Henrique" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para cadastrar convênios  
 	And já existe um convênio cadastrado com o código "VIDA001"  
@@ -49,6 +52,7 @@ Scenario: Tentativa de cadastro com código de identificação duplicado
 # Regra de Negócio: O convênio recém-cadastrado deve iniciar com status “Ativo” por padrão
 
 Scenario: Verificação do status padrão em um novo cadastro
+
 	Given que o usuário "Dra. Júlia" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para cadastrar convênios  
 	And o convênio "Bem Cuidar" ainda não está registrado no sistema  
@@ -59,6 +63,7 @@ Scenario: Verificação do status padrão em um novo cadastro
 	And o sistema deve exibir a mensagem "Convênio cadastrado com sucesso!"  
 
 Scenario: Sistema ignora a tentativa de definir um status inicial diferente de “Ativo”
+
 	Given que o usuário "Dr. André" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para cadastrar convênios  
 	And o convênio "Plano Saúde Premium" ainda não está registrado no sistema  
@@ -74,6 +79,7 @@ Scenario: Sistema ignora a tentativa de definir um status inicial diferente de �
 # Regra de Negócio: A exclusão definitiva de um convênio só pode ocorrer se este estiver marcado como “Inativo”
 
 Scenario: Exclusão de convênio com status Inativo
+
 	Given que o usuário "Dr. Rafael" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para excluir convênios  
 	And existe um convênio cadastrado com o nome "Saúde Vida"  
@@ -86,6 +92,7 @@ Scenario: Exclusão de convênio com status Inativo
 	And o sistema deve registrar a ação no histórico com data, hora e usuário responsável 
 
 Scenario: Tentativa de exclusão de convênio com status Ativo
+
 	Given que o usuário "Dra. Juliana" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para excluir convênios  
 	And existe um convênio cadastrado com o nome "Plano Total"  
@@ -99,6 +106,7 @@ Scenario: Tentativa de exclusão de convênio com status Ativo
 # Regra de Negócio: O sistema deve manter histórico de remoções, registrando data, hora e responsável pela ação
 
 Scenario: Registro de histórico após exclusão bem-sucedida
+
 	Given que o usuário "Carlos Andrade" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para excluir convênios  
 	And existe um convênio cadastrado com o nome "Bem Estar"  
@@ -111,6 +119,7 @@ Scenario: Registro de histórico após exclusão bem-sucedida
 	And o registro deve estar disponível para consulta em auditorias futuras  
 
 Scenario: Falha ao registrar histórico após exclusão
+
 	Given que o usuário "Fernanda Lima" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para excluir convênios  
 	And existe um convênio cadastrado com o nome "Viva Saúde"  
@@ -127,6 +136,7 @@ Scenario: Falha ao registrar histórico após exclusão
 # Regra de Negócio: Apenas usuários com permissão administrativa podem alterar dados de convênio
 
 Scenario: Alteração realizada por usuário com permissão administrativa
+
 	Given que o usuário "Dr. Marcelo" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Saúde Total"  
@@ -139,6 +149,7 @@ Scenario: Alteração realizada por usuário com permissão administrativa
 	And o sistema deve registrar a ação no histórico com data, hora e o usuário responsável  
 
 Scenario: Tentativa de alteração por usuário sem permissão administrativa
+
 	Given que o usuário "Carla Nogueira" tem perfil de recepcionista  
 	And o perfil "Recepcionista" não possui permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Vida Plena"  
@@ -152,6 +163,7 @@ Scenario: Tentativa de alteração por usuário sem permissão administrativa
 # Regra de Negócio: A alteração de convênio só pode ocorrer se este estiver marcado como “Ativo”
 
 Scenario: Alteração de convênio com status Ativo
+
 	Given que o usuário "Dr. Henrique" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Bem Estar"  
@@ -164,6 +176,7 @@ Scenario: Alteração de convênio com status Ativo
 	And o histórico deve registrar a alteração  
 
 Scenario: Tentativa de alteração de convênio com status Inativo
+
 	Given que o usuário "Dra. Marina" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Plano Vida"  
@@ -175,7 +188,9 @@ Scenario: Tentativa de alteração de convênio com status Inativo
 	And o histórico de alterações não deve ser atualizado  
 
 # Regra de Negócio: O sistema deve manter histórico de alterações, registrando data, hora e responsável pela ação
+
 Scenario: Registro de histórico após alteração bem-sucedida
+
 	Given que o usuário "Luiza Oliveira" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Viva Saúde"  
@@ -189,6 +204,7 @@ Scenario: Registro de histórico após alteração bem-sucedida
 	And o registro deve estar disponível para auditorias futuras  
 
 Scenario: Falha ao registrar histórico após alteração
+
 	Given que o usuário "Fernanda Lima" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Clin Saúde"  
@@ -200,6 +216,5 @@ Scenario: Falha ao registrar histórico após alteração
 	Then deve ser exibida uma falha no processo de auditoria  
 	And o sistema deve exibir a mensagem "Não foi possível registrar o histórico da alteração. Ação cancelada."  
 	And o convênio não deve ser atualizado no sistema  
-
 
 
