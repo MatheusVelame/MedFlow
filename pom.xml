@@ -16,7 +16,6 @@
   
   <modules>
   	<module>pai</module>
-  	<module>dominio-catalogo</module>
   </modules>
 
 </project>
