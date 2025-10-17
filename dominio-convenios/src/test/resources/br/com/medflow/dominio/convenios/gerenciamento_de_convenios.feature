@@ -217,4 +217,3 @@ Scenario: Falha ao registrar histórico após alteração
 	And o sistema deve exibir a mensagem "Não foi possível registrar o histórico da alteração. Ação cancelada."  
 	And o convênio não deve ser atualizado no sistema  
 
-
