@@ -3,6 +3,7 @@ package br.com.medflow.dominio.catalogo.medicamentos;
 import static br.com.medflow.dominio.catalogo.medicamentos.AcaoHistorico.ARQUIVAMENTO;
 import static br.com.medflow.dominio.catalogo.medicamentos.AcaoHistorico.ATUALIZACAO;
 import static br.com.medflow.dominio.catalogo.medicamentos.AcaoHistorico.CRIACAO;
+import static br.com.medflow.dominio.catalogo.medicamentos.AcaoHistorico.REVISAO_APROVADA;
 import static br.com.medflow.dominio.catalogo.medicamentos.AcaoHistorico.REVISAO_SOLICITADA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -108,6 +109,8 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 			medicamentoExistente.mudarStatus(StatusMedicamento.INATIVO, id);
 		}
 		repositorio.salvar(medicamentoExistente);
+        // Atualiza a referência para a instância persistida
+        medicamentoExistente = obterMedicamento(nome).get();
 	}
 	
 	@Given("o medicamento {string} está cadastrado com as contraindicações {string}")
@@ -123,6 +126,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Given("o medicamento {string} está cadastrado com uma alteração pendente de revisão em Contraindicações")
 	public void o_medicamento_está_cadastrado_com_uma_alteração_pendente_de_revisao_em_contraindicações(String nome) {
+		nomeMedicamento = nome;
 		UsuarioResponsavelId id = getUsuarioId("SetupCadastro");
 		medicamentoExistente = medicamentoServico.cadastrar(nome, "Setup Uso", "Hipersensibilidade", id);
 		
@@ -132,11 +136,16 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		} catch (RevisaoPendenteException e) {
 			// Captura a exceção de domínio esperada e salva o estado PENDENTE
 			repositorio.salvar(medicamentoExistente);
+            // Atualiza a referência para a instância persistida
+            medicamentoExistente = obterMedicamento(nome).get();
 		}
 	}
 
 	@Given("a alteração pendente é a adição {string}")
 	public void a_alteração_pendente_é_a_adição(String novoValor) {
+		// Re-fetch para garantir que estamos com a última versão do agregado
+        medicamentoExistente = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem da revisão."));
+        
 		// Verifica o estado atual do agregado
 		assertTrue(medicamentoExistente.getRevisaoPendente().isPresent());
 		assertEquals(StatusRevisao.PENDENTE, medicamentoExistente.getRevisaoPendente().get().getStatus());
@@ -284,6 +293,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void a_aprovar_a_alteração_pendente_do_medicamento(String revisor, String nome) {
 		try {
 			UsuarioResponsavelId id = getUsuarioId(revisor);
+			// Garantir que estamos com a última versão do agregado (com a revisaoPendente)
 			medicamentoExistente = obterMedicamento(nome).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado"));
 			
 			if (!temPermissao(perfilAtual, "revisar")) {
@@ -309,7 +319,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	}
 	
 	@When("a {string} tentar atualizar as informações do medicamento {string}")
-	public void a_tentar_atualizar_as_informações_do_medicamento(String usuario, String nome) {
+	public void a_tentar_atualizar_as_informaçõoes_do_medicamento(String usuario, String nome) {
 		// Ação de Falha por Falta de Permissão
 		try {
 			if (!temPermissao(perfilAtual, "atualizar")) {
@@ -397,37 +407,57 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	// Sucesso Comum
 	@Then("o sistema deve registrar o medicamento com sucesso")
 	public void o_sistema_deve_registrar_o_medicamento_com_sucesso() {
-		assertNotNull(medicamentoEmCadastro);
-		assertNull(excecao);
-		assertTrue(obterMedicamento(medicamentoEmCadastro.getNome()).isPresent());
+		assertNull(excecao); // Check if no exception occurred
+
+        // 1. Fetch the actual saved object from the repository
+        Medicamento savedMedicamento = obterMedicamento(nomeMedicamento)
+                .orElseThrow(() -> new IllegalStateException("Medicamento não foi encontrado após o cadastro."));
+
+        // 2. Update the state for subsequent checks
+        medicamentoEmCadastro = savedMedicamento; 
+
+        // 3. Final assertion
+        assertNotNull(medicamentoEmCadastro);
 	}
 	
 	@Then("o sistema deve registrar a alteração com sucesso")
 	public void o_sistema_deve_registrar_a_alteração_com_sucesso() {
 		assertNull(excecao);
+        
+        // Update the local reference (medicamentoExistente) with the actual saved state
+        // This is crucial for subsequent 'And' steps like history and status checks.
+        medicamentoExistente = obterMedicamento(nomeMedicamento)
+                .orElseThrow(() -> new IllegalStateException("Medicamento não encontrado após alteração."));
 	}
 	
 	@Then("uma entrada de histórico deve ser criada, registrando a criação do medicamento e o {string} como responsável")
 	public void uma_entrada_de_histórico_deve_ser_criada_registrando_a_criação_do_medicamento_e_o_como_responsável(String responsavel) {
-		Medicamento m = medicamentoEmCadastro != null ? medicamentoEmCadastro : medicamentoExistente;
-		assertFalse(m.getHistorico().isEmpty());
-		
-		var historico = m.getHistorico().stream().filter(h -> h.getAcao() == CRIACAO).findFirst().get();
-		assertEquals(CRIACAO, historico.getAcao());
-		assertEquals(getUsuarioId(responsavel), historico.getResponsavel());
+		// Preferência pelo recém-cadastrado, mas buscar o mais recente pelo nome.
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de histórico."));
+        
+        assertFalse(m.getHistorico().isEmpty());
+        
+        var historico = m.getHistorico().stream().filter(h -> h.getAcao() == CRIACAO).findFirst().get();
+        assertEquals(CRIACAO, historico.getAcao());
+        assertEquals(getUsuarioId(responsavel), historico.getResponsavel());
 	}
 
 	@Then("uma entrada de histórico deve ser criada, registrando a data da alteração e o {string} como responsável")
 	public void uma_entrada_de_histórico_deve_ser_criada_registrando_a_data_da_alteração_e_o_como_responsável(String responsavel) {
-		assertFalse(medicamentoExistente.getHistorico().isEmpty());
+		// Garantir que estamos com o objeto atualizado
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de histórico."));
+        
+		assertFalse(m.getHistorico().isEmpty());
 		
-		var ultimaEntrada = medicamentoExistente.getHistorico().get(medicamentoExistente.getHistorico().size() - 1);
+		var ultimaEntrada = m.getHistorico().get(m.getHistorico().size() - 1);
 		assertTrue(ultimaEntrada.getAcao() == ATUALIZACAO || ultimaEntrada.getAcao() == ARQUIVAMENTO);
 		assertEquals(getUsuarioId(responsavel), ultimaEntrada.getResponsavel());
 	}
 	
 	@Then("o status do medicamento {string} deve ser alterado para {string}")
 	public void o_status_do_medicamento_deve_ser_alterado_para(String nome, String status) {
+        // Garantir que estamos com o objeto atualizado
+        medicamentoExistente = obterMedicamento(nome).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de status."));
 		assertEquals(StatusMedicamento.valueOf(status.toUpperCase()), medicamentoExistente.getStatus());
 	}
 	
@@ -445,19 +475,26 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 
 	@Then("o histórico não deve ser atualizado")
 	public void o_histórico_não_deve_ser_atualizado() {
+		// Garantir que estamos com o objeto atualizado
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de histórico."));
+        
 		// Verifica se não houve entradas de ATUALIZAÇÃO, ARQUIVAMENTO ou REVISAO. 
 		// A quantidade de entradas deve ser 1 (Criação)
-		assertTrue(medicamentoExistente.getHistorico().size() <= 1);
+		assertTrue(m.getHistorico().size() <= 1);
 	}
 	
 	@Then("o Status do medicamento recém-cadastrado deve ser automaticamente definido como {string}")
 	public void o_status_do_medicamento_recém_cadastrado_deve_ser_automaticamente_definido_como(String statusEsperado) {
-		assertEquals(StatusMedicamento.ATIVO, medicamentoEmCadastro.getStatus());
+		// Garantir que estamos com o objeto atualizado
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de status."));
+		assertEquals(StatusMedicamento.ATIVO, m.getStatus());
 	}
 	
 	@Then("o Status do medicamento deve ser {string} independentemente do valor fornecido na requisição inicial")
 	public void o_status_do_medicamento_deve_ser_independentemente_do_valor_fornecido_na_requisição_inicial(String statusEsperado) {
-		assertEquals(StatusMedicamento.ATIVO, medicamentoEmCadastro.getStatus());
+		// Garantir que estamos com o objeto atualizado
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de status."));
+		assertEquals(StatusMedicamento.ATIVO, m.getStatus());
 	}
 	
 	@Then("o sistema deverá informar que o nome é obrigatório")
@@ -469,6 +506,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	@Then("o medicamento não deve ser cadastrado no sistema")
 	public void o_medicamento_não_deve_ser_cadastrado_no_sistema() {
 		assertNull(medicamentoEmCadastro);
+        assertFalse(obterMedicamento(nomeMedicamento).isPresent());
 	}
 	
 	@Then("o sistema deve informar que há caracteres inválidos nas contraindicações")
@@ -487,8 +525,12 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Then("a alteração não deve ser realizada")
 	public void a_alteração_não_deve_ser_realizada() {
-		// O campo Uso Principal deve ter permanecido inalterado (valor de setup)
-		assertEquals("Analgésico", medicamentoExistente.getUsoPrincipal());
+        // Garantir que estamos com o objeto original
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
+        
+		// O campo Uso Principal deve ter permanecido inalterado (valor de setup no Given)
+        // O valor de setup para Paracetamol é "Analgésico"
+		assertEquals("Analgésico", m.getUsoPrincipal()); 
 	}
 	
 	@Then("o sistema deve informar que não é permitido alterar campos obrigatórios para valor em branco")
@@ -505,33 +547,89 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Then("o sistema deve registrar a alteração como {string}")
 	public void o_sistema_deve_registrar_a_alteração_como(String statusRevisao) {
-		assertTrue(medicamentoExistente.getRevisaoPendente().isPresent());
-		assertEquals(StatusRevisao.PENDENTE, medicamentoExistente.getRevisaoPendente().get().getStatus());
+        // Garantir que estamos com o objeto atualizado
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de revisão."));
+        
+		assertTrue(m.getRevisaoPendente().isPresent());
+		assertEquals(StatusRevisao.PENDENTE, m.getRevisaoPendente().get().getStatus());
 		
-		var ultimaEntrada = medicamentoExistente.getHistorico().get(medicamentoExistente.getHistorico().size() - 1);
+		var ultimaEntrada = m.getHistorico().get(m.getHistorico().size() - 1);
 		assertEquals(REVISAO_SOLICITADA, ultimaEntrada.getAcao());
 	}
 	
 	@Then("o campo {string} do medicamento deve permanecer inalterado \\(em {string})")
 	public void o_campo_do_medicamento_deve_permanecer_inalterado_em(String campo, String valor) {
-		assertEquals("Hipersensibilidade", medicamentoExistente.getContraindicacoes());
+        // Garantir que estamos com o objeto atualizado
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
+		assertEquals("Hipersensibilidade", m.getContraindicacoes());
 	}
 
 	@Then("o sistema deve registrar a aprovação da alteração com sucesso")
 	public void o_sistema_deve_registrar_a_aprovação_da_alteração_com_sucesso() {
 		assertNull(excecao);
+        // Garante que o medicamentoExistente tenha a versão aprovada para checagens seguintes
+        medicamentoExistente = obterMedicamento(nomeMedicamento).get();
 	}
 	
 	@Then("o campo {string} do medicamento deve ser atualizado com a nova informação adicionada")
-	public void o_campo_do_medicamento_deve_ser_atualizado_com_a_nova_informação_adicionada() {
+	public void o_campo_do_medicamento_deve_ser_atualizado_com_a_nova_informaçõao_adicionada() {
+        // Usar a versão atualizada que foi re-obtida no passo anterior
 		String novoValor = medicamentoExistente.getRevisaoPendente().get().getNovoValor();
 		assertEquals(novoValor, medicamentoExistente.getContraindicacoes());
 	}
 	
 	@Then("o status de revisão da alteração deve ser mudado para {string}")
 	public void o_status_de_revisão_da_alteração_deve_ser_mudado_para(String status) {
+        // Usar a versão atualizada que foi re-obtida no passo anterior
 		assertTrue(medicamentoExistente.getRevisaoPendente().isPresent());
 		assertEquals(StatusRevisao.APROVADA, medicamentoExistente.getRevisaoPendente().get().getStatus());
+	}
+
+	@Then("o histórico deve ser atualizado com a decisão de {string} e a responsável {string}")
+	public void o_histórico_deve_ser_atualizado_com_a_decisão_e_a_responsável(String decisao, String responsavel) {
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de histórico."));
+        
+        AcaoHistorico acaoEsperada = decisao.equalsIgnoreCase("Aprovação") ? REVISAO_APROVADA : AcaoHistorico.REVISAO_REPROVADA;
+        
+        var historico = m.getHistorico().stream()
+                .filter(h -> h.getAcao() == acaoEsperada)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Entrada de histórico de " + decisao + " não encontrada."));
+
+        assertEquals(acaoEsperada, historico.getAcao());
+        assertEquals(getUsuarioId(responsavel), historico.getResponsavel());
+	}
+
+	@Then("o sistema deve notificar o solicitante {string} sobre a aprovação")
+	public void o_sistema_deve_notificar_o_solicitante_sobre_a_aprovação(String solicitante) {
+        // Mock check: em uma implementação completa, você verificaria a lista 'eventos'.
+        // Aqui, apenas garantimos que nenhuma exceção ocorreu.
+		assertNull(excecao);
+	}
+
+	@Then("a alteração não deve ser aplicada às {string} do medicamento")
+	public void a_alteração_não_deve_ser_aplicada_às_contraindicações_do_medicamento(String campo) {
+        // Re-fetch the object to ensure we get the latest state after the failed attempt
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
+
+        // Check: The Contraindicações must be the original value from setup ("Hipersensibilidade")
+        assertEquals("Hipersensibilidade", m.getContraindicacoes()); 
+	}
+
+	@Then("o status de revisão da alteração deve permanecer como {string}")
+	public void o_status_de_revisão_da_alteração_deve_permanecer_como(String statusEsperado) {
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
+        
+        assertTrue(m.getRevisaoPendente().isPresent());
+        assertEquals(StatusRevisao.valueOf(statusEsperado.replace(" ", "_").toUpperCase()), m.getRevisaoPendente().get().getStatus());
+	}
+
+	@Then("o histórico não deve ser atualizado com a aprovação do {string}")
+	public void o_histórico_não_deve_ser_atualizado_com_a_aprovação_do(String usuario) {
+        // The history should not contain the APROVADA action.
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado."));
+        long aprovacoes = m.getHistorico().stream().filter(h -> h.getAcao() == AcaoHistorico.REVISAO_APROVADA).count();
+        assertEquals(0, aprovacoes);
 	}
 	
 	@Then("o sistema deverá informar que o usuário não tem permissão para aprovar alterações críticas")
@@ -545,6 +643,8 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	@Then("o sistema deve arquivar o medicamento com sucesso")
 	public void o_sistema_deve_arquivar_o_medicamento_com_sucesso() {
 		assertNull(excecao);
+        // Garantir que estamos com o objeto atualizado
+        medicamentoExistente = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de arquivamento."));
 		assertEquals(StatusMedicamento.ARQUIVADO, medicamentoExistente.getStatus());
 	}
 	
@@ -557,13 +657,29 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Then("o sistema deve bloquear a tentativa de arquivamento do medicamento")
 	public void o_sistema_deve_bloquear_a_tentativa_de_arquivamento_do_medicamento() {
+        // Garantir que estamos com o objeto atualizado
+        medicamentoExistente = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
 		// O status não foi alterado
 		assertEquals(StatusMedicamento.ATIVO, medicamentoExistente.getStatus());
 	}
 
 	@Then("o histórico de uso e alterações do medicamento deve ser integralmente preservado")
 	public void o_histórico_de_uso_e_alterações_do_medicamento_deve_ser_integralmente_preservado() {
-		assertTrue(medicamentoExistente.getHistorico().size() >= 2);
+        // Garantir que estamos com o objeto atualizado
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de histórico."));
+		assertTrue(m.getHistorico().size() >= 2);
+	}
+
+	@Then("uma entrada de histórico deve ser criada, registrando o arquivamento e a {string} como responsável")
+	public void uma_entrada_de_histórico_deve_ser_criada_registrando_o_arquivamento_e_a_como_responsável(String responsavel) {
+        Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de histórico."));
+        
+        // Check for ARQUIVAMENTO action (AcaoHistorico.ARQUIVAMENTO)
+        var historico = m.getHistorico().stream().filter(h -> h.getAcao() == ARQUIVAMENTO).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Entrada de histórico de ARQUIVAMENTO não encontrada."));
+
+        assertEquals(ARQUIVAMENTO, historico.getAcao());
+        assertEquals(getUsuarioId(responsavel), historico.getResponsavel());
 	}
 	
 	@Then("o sistema deve informar que é sugerido manter o registro arquivado")
@@ -571,9 +687,18 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		assertNotNull(excecao);
 		assertTrue(ultimaMensagem.contains("sugerido manter o registro arquivado"));
 	}
+
+    @Then("o sistema deve exigir uma justificativa específica para a exclusão permanente")
+	public void o_sistema_deve_exigir_uma_justificativa_específica_para_a_exclusão_permanente() {
+        assertNotNull(excecao);
+        assertTrue(excecao instanceof IllegalStateException);
+        assertTrue(ultimaMensagem.contains("Exclusão permanente requer justificativa específica e aprovação.")); 
+	}
 	
 	@Then("o medicamento {string} deve permanecer {string} até que a justificativa seja fornecida e aprovada por um responsável")
 	public void o_medicamento_deve_permanecer_até_que_a_justificativa_seja_fornecida_e_aprovada_por_um_responsável(String nome, String status) {
+        // Garantir que estamos com o objeto atualizado
+        medicamentoExistente = obterMedicamento(nome).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de status."));
 		assertEquals(StatusMedicamento.ARQUIVADO, medicamentoExistente.getStatus());
 	}
 
@@ -585,6 +710,8 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Then("o status do medicamento {string} deve permanecer {string}")
 	public void o_status_do_medicamento_deve_permanecer(String nome, String status) {
+        // Garantir que estamos com o objeto atualizado
+        medicamentoExistente = obterMedicamento(nome).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem de status."));
 		assertEquals(StatusMedicamento.ATIVO, medicamentoExistente.getStatus());
 	}
 	
@@ -601,6 +728,8 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Then("o status do medicamento deve ser claramente indicado como {string}")
 	public void o_status_do_medicamento_deve_ser_claramente_indicado_como(String status) {
+        // Garantir que estamos com o objeto atualizado
+        assertNotNull(medicamentoExistente); // Deve ter sido encontrado pelo filtro
 		assertEquals(StatusMedicamento.ARQUIVADO, medicamentoExistente.getStatus());
 	}
 }

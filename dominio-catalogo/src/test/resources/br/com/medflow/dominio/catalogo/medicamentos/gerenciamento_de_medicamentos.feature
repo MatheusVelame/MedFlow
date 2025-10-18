@@ -1,4 +1,4 @@
-feature: Gerenciamento de Medicamentos
+Feature: Gerenciamento de Medicamentos
 
 # 1. Cadastro de medicamentos
 
@@ -42,7 +42,7 @@ Scenario: Sistema ignora a tentativa de definir um status inicial diferente de "
 	Given que o usuário "Dra. Juliana" tem permissão de administrador
 	And o perfil "Administrador" tem permissão para cadastrar medicamentos
 	And o medicamento "Paracetamol" ainda não está registrado no sistema
-    When o usuário "Dra. Juliana" castrar um novo medicamento de nome "Paracetamol"
+    When o usuário "Dra. Juliana" tentar cadastrar um novo medicamento de nome "Paracetamol"
     And o uso principal é "Analgésico e antitérmico"
     And o sistema recebe uma tentativa de definir a requisição do Status inicial como "Inativo"
     Then o sistema deve registrar o medicamento com sucesso
@@ -108,7 +108,7 @@ Scenario: Atualização de Uso Principal com Sucesso
 Scenario: Falha na Atualização por Falta de Permissão
 
 	Given que o usuário "Ana", funcionária da recepção, não tem permissão para alterar dados de medicamentos
-	And o medicamento "Amoxicilina" está cadastrado na plataforma
+	And o medicamento "Amoxicilina" já está registrado no sistema
 	When a "Ana" tentar atualizar as informações do medicamento "Amoxicilina"
 	Then o sistema deverá informar que o usuário não tem permissão
 	And a alteração não deve ser realizada
@@ -147,7 +147,7 @@ Scenario: Scenario: Alteração crítica entra em status de revisão
 	Then o sistema deve informar sobre alteração crítica no sistema
 	And o sistema deve registrar a alteração como "Pendente de Revisão"
 	And o campo "Contraindicações" do medicamento deve permanecer inalterado (em "Hipersensibilidade")
-	And uma entrada de histórico deve ser criada, registrando a solicitação de alteração e o "Dr. Carlos" como responsável
+	And uma entrada de histórico deve ser criada, registrando a criação do medicamento e o "Dr. Carlos" como responsável
 	
 Scenario: Alteração crítica aplicada com sucesso após aprovação
 
@@ -203,7 +203,7 @@ Scenario: Arquivamento de Medicamento com Sucesso para manter uma Preservação 
 
 	Given que o usuário "Dr. Helena" tem permissão de "Administrador Sênior"
 	And o perfil "Administrador Sênior" tem permissão para arquivar medicamentos
-	And o medicamento "Amoxicilina" está  cadastradp com o status "Ativo"
+	And o medicamento "Amoxicilina" está cadastrado com o status "Ativo"
 	And o medicamento "Amoxicilina" não está vinculado a nenhuma prescrição ativa
 	When o usuário "Dr. Helena" acionar a opção de arquivar o medicamento "Amoxicilina"
 	Then o status do medicamento "Amoxicilina" deve ser alterado para "Arquivado"

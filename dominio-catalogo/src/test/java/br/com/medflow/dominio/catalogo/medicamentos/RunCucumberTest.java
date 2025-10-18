@@ -10,7 +10,7 @@ import org.junit.platform.suite.api.Suite;
 @Suite
 @IncludeEngines("cucumber")
 // Esta linha indica ao Cucumber onde procurar as classes de testes (.feature e Step Definitions)
-@SelectPackages("br.com.medflow.dominio.medicamento") 
+@SelectPackages("br.com.medflow.dominio.catalogo.medicamentos") 
 @ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty")
 public class RunCucumberTest {
 }
