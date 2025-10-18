@@ -13,29 +13,23 @@ public class Medicamento {
 
 	private String nome;
 	private String usoPrincipal;
-	private String contraindicacoes; // Campo opcional
+	private String contraindicacoes;
 	private StatusMedicamento status;
 
 	private List<HistoricoEntrada> historico = new ArrayList<>();
-	private RevisaoPendente revisaoPendente; // Aggregate interno para alterações críticas
+	private RevisaoPendente revisaoPendente;
 
-	// Construtor para NOVO cadastro
 	public Medicamento(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) {
-		this.id = null; // O repositório irá gerar/atribuir o ID
+		this.id = null;
 		setNome(nome);
 		setUsoPrincipal(usoPrincipal);
 		setContraindicacoes(contraindicacoes);
 
-		// Regra de Negócio: Todo medicamento cadastrado deve ter o status inicial definido automaticamente como “Ativo”
 		this.status = StatusMedicamento.ATIVO;
 
-		// Regra de Negócio: O sistema deve ignorar a tentativa de definir um status inicial diferente de "Ativo"
-		// A requisição inicial não possui campo status, mas se tivesse, seria ignorado.
-		
 		adicionarEntradaHistorico(AcaoHistorico.CRIACAO, "Medicamento criado com status Ativo", responsavelId);
 	}
 
-	// Construtor para RECONSTRUÇÃO (do Repositório)
 	public Medicamento(MedicamentoId id, String nome, String usoPrincipal, String contraindicacoes, StatusMedicamento status, List<HistoricoEntrada> historico, RevisaoPendente revisaoPendente) {
 		notNull(id, "O ID do medicamento não pode ser nulo na reconstrução.");
 		this.id = id;
@@ -47,13 +41,11 @@ public class Medicamento {
 		this.revisaoPendente = revisaoPendente;
 	}
 
-	// Métodos de negócio (Comandos)
-	
 	public void atualizarUsoPrincipal(String novoUsoPrincipal, UsuarioResponsavelId responsavelId) {
-		notBlank(novoUsoPrincipal, "O uso principal não pode estar em branco."); // Regra de Negócio: Uso Principal é obrigatório
+		notBlank(novoUsoPrincipal, "O uso principal não pode estar em branco.");
 
 		if (this.usoPrincipal.equals(novoUsoPrincipal)) {
-			return; // Nenhuma alteração, histórico não deve ser atualizado.
+			return;
 		}
 
 		this.usoPrincipal = novoUsoPrincipal;
@@ -88,7 +80,7 @@ public class Medicamento {
 		
 		this.revisaoPendente = new RevisaoPendente(novaContraindicacao, responsavelId);
 		adicionarEntradaHistorico(AcaoHistorico.REVISAO_SOLICITADA, "Alteração crítica de Contraindicações solicitada: " + novaContraindicacao, responsavelId);
-		throw new RevisaoPendenteException("Alteração crítica exige revisão."); // Notificação/Exception para o front-end
+		throw new RevisaoPendenteException("Alteração crítica exige revisão.");
 	}
 
 	public void aprovarRevisao(UsuarioResponsavelId revisorId) {
@@ -111,7 +103,6 @@ public class Medicamento {
 		adicionarEntradaHistorico(AcaoHistorico.REVISAO_REPROVADA, "Revisão de Contraindicações REPROVADA.", revisorId);
 	}
 	
-	// Métodos Auxiliares
 	private void setNome(String nome) {
 		notBlank(nome, "O nome do medicamento é obrigatório.");
 		this.nome = nome;
@@ -130,7 +121,8 @@ public class Medicamento {
 	}
 
 	private void validarContraindicacoes(String contraindicacoes) {
-		if (contraindicacoes != null && !contraindicacoes.matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚãõñÃÕÑçÇ.,\\s()\\-]+$")) {
+		String regex = "^[a-zA-Z0-9áéíóúÁÉÍÓÚãõñÃÕÑçÇàÀ.,\\s()\\-]+$";
+		if (contraindicacoes != null && !contraindicacoes.matches(regex)) {
 			throw new IllegalArgumentException("Contraindicações contém caracteres especiais inválidos.");
 		}
 	}
@@ -144,7 +136,6 @@ public class Medicamento {
 		return Optional.ofNullable(revisaoPendente);
 	}
 
-	// Getters (para verificação de estado nos testes)
 	public String getNome() { return nome; }
 	public String getUsoPrincipal() { return usoPrincipal; }
 	public String getContraindicacoes() { return contraindicacoes; }
@@ -152,14 +143,12 @@ public class Medicamento {
 	public List<HistoricoEntrada> getHistorico() { return List.copyOf(historico); }
 	public MedicamentoId getId() { return id; }
 
-	// Exceção de Negócio (Para cenários de alteração crítica)
 	public static class RevisaoPendenteException extends IllegalStateException {
 		private static final long serialVersionUID = 1L;
 		public RevisaoPendenteException(String s) { super(s); }
 	}
 }
 
-// Classe de suporte para o agregado
 class RevisaoPendente {
     private final String novoValor;
     private final UsuarioResponsavelId solicitante;
@@ -188,7 +177,6 @@ class RevisaoPendente {
 	public UsuarioResponsavelId getRevisor() { return revisor; }
 }
 
-// Value Object para a entrada no histórico
 class HistoricoEntrada {
 	private final AcaoHistorico acao;
 	private final String descricao;
