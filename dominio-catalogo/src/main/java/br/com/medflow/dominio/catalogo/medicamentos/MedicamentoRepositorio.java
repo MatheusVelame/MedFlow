@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MedicamentoRepositorio {
-    String salvar(Medicamento medicamento);
-    Optional<Medicamento> obterPorNome(String nome);
-    Optional<Medicamento> obterPorId(String id);
-    List<Medicamento> listarTodos();
-    HistoricoRepositorio getHistoricoRepositorio();
+	void salvar(Medicamento medicamento);
+	Medicamento obter(MedicamentoId id);
+	Optional<Medicamento> obterPorNome(String nome);
+	List<Medicamento> pesquisar();
+	List<Medicamento> pesquisarComFiltroArquivado();
 }
