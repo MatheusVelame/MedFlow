@@ -19,6 +19,7 @@
   	<module>dominio-catalogo</module>
     <module>dominio-referencia</module>
     <module>dominio-atendimento</module>
+    <module>medflow-bdd-tipos-exames</module>
   </modules>
 
 </project>
