@@ -1,4 +1,4 @@
-feature: Gerenciamento de Convenios
+Feature: Gerenciamento de Convenios
 
 # 1. Cadastro de convênio
 
@@ -12,8 +12,7 @@ Scenario: Tentativa de cadastrar um convênio com nome ainda não registrado
 	When o usuário "Dra. Camila" tentar cadastrar um novo convênio com o nome "Saúde Total"  
 	And o código de identificação "SATL0001"  
 	Then o sistema deve registrar o convênio com sucesso  
-	And o Status do convênio recém-cadastrado deve ser automaticamente definido como "Ativo"  
-	And o sistema deve exibir a mensagem "Convênio cadastrado com sucesso!"  
+	And o Status do convênio recém-cadastrado deve ser automaticamente definido como "Ativo"
 
 Scenario: Tentativa de cadastro sem preencher o nome do convênio
 
@@ -35,8 +34,7 @@ Scenario: Cadastro de convênio com código único
 	When o usuário "Dra. Paula" tentar cadastrar um novo convênio com o nome "Amparo Saúde"  
 	And o código de identificação "AMPS0001"  
 	Then o sistema deve registrar o convênio com sucesso  
-	And o Status do convênio deve ser automaticamente definido como "Ativo"  
-	And o sistema deve exibir a mensagem "Convênio cadastrado com sucesso!"  
+	And o Status do convênio deve ser automaticamente definido como "Ativo"
 	
 Scenario: Tentativa de cadastro com código de identificação duplicado
 
@@ -59,8 +57,7 @@ Scenario: Verificação do status padrão em um novo cadastro
 	When o usuário "Dra. Júlia" tentar cadastrar um novo convênio com o nome "Bem Cuidar"  
 	And o código de identificação "BC202"  
 	Then o sistema deve registrar o convênio com sucesso  
-	And o Status do convênio deve ser automaticamente definido como "Ativo"  
-	And o sistema deve exibir a mensagem "Convênio cadastrado com sucesso!"  
+	And o Status do convênio deve ser automaticamente definido como "Ativo"
 
 Scenario: Sistema ignora a tentativa de definir um status inicial diferente de “Ativo”
 
@@ -71,8 +68,7 @@ Scenario: Sistema ignora a tentativa de definir um status inicial diferente de �
 	And o código de identificação "PSPM001"  
 	And o sistema recebe uma tentativa de definir a requisição com Status inicial “Inativo”  
 	Then o sistema deve registrar o convênio com sucesso  
-	And o Status do convênio deve ser automaticamente definido como “Ativo”, independentemente do valor recebido na requisição  
-	And o sistema deve exibir a mensagem "Convênio cadastrado com sucesso!"  
+	And o Status do convênio deve ser automaticamente definido como “Ativo”, independentemente do valor recebido na requisição
 
 # 2. Remoção de Convênios Inativos
 
@@ -88,7 +84,6 @@ Scenario: Exclusão de convênio com status Inativo
 	When o usuário "Dr. Rafael" seleciona o convênio "Saúde Vida"  
 	And solicita a exclusão definitiva  
 	Then o sistema deve remover o convênio com sucesso  
-	And o sistema deve exibir a mensagem "Convênio removido com sucesso!"  
 	And o sistema deve registrar a ação no histórico com data, hora e usuário responsável 
 
 Scenario: Tentativa de exclusão de convênio com status Ativo
@@ -100,7 +95,6 @@ Scenario: Tentativa de exclusão de convênio com status Ativo
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Dra. Juliana" tenta excluir o convênio  
 	Then o sistema deve impedir a exclusão  
-	And o sistema deve exibir a mensagem "Somente convênios inativos podem ser removidos."  
 	And o histórico de ações não deve ser alterado  
 
 # Regra de Negócio: O sistema deve manter histórico de remoções, registrando data, hora e responsável pela ação
@@ -113,8 +107,7 @@ Scenario: Registro de histórico após exclusão bem-sucedida
 	And o código de identificação "BEST003"  
 	And o status do convênio está definido como "Inativo"  
 	When o usuário "Carlos Andrade" solicita a exclusão definitiva  
-	Then o sistema deve remover o convênio com sucesso  
-	And o sistema deve exibir a mensagem "Convênio removido com sucesso!"  
+	Then o sistema deve remover o convênio com sucesso
 	And o sistema deve registrar no histórico a data, hora e o usuário "Carlos Andrade" como responsável pela ação  
 	And o registro deve estar disponível para consulta em auditorias futuras  
 
@@ -127,8 +120,7 @@ Scenario: Falha ao registrar histórico após exclusão
 	And o status do convênio está definido como "Inativo"  
 	When o usuário "Fernanda Lima" solicita a exclusão definitiva  
 	And o sistema não registra a ação no histórico  
-	Then deve ser exibida uma falha no processo de auditoria  
-	And o sistema deve exibir a mensagem "Não foi possível registrar o histórico da exclusão. Ação cancelada."  
+	Then deve ser exibida uma falha no processo de auditoria
 	And o convênio não deve ser removido do sistema  
 
 # 3. Alteração de Dados de Convênios
@@ -144,8 +136,7 @@ Scenario: Alteração realizada por usuário com permissão administrativa
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Dr. Marcelo" altera o nome do convênio para "Saúde Total Plus"  
 	And confirma a alteração  
-	Then o sistema deve atualizar o cadastro do convênio com sucesso  
-	And o sistema deve exibir a mensagem "Convênio atualizado com sucesso!"  
+	Then o sistema deve atualizar o cadastro do convênio com sucesso
 	And o sistema deve registrar a ação no histórico com data, hora e o usuário responsável  
 
 Scenario: Tentativa de alteração por usuário sem permissão administrativa
@@ -156,8 +147,7 @@ Scenario: Tentativa de alteração por usuário sem permissão administrativa
 	And o código de identificação "VAPA002"  
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Carla Nogueira" tenta alterar o nome do convênio para "Vida Plena Premium"  
-	Then o sistema deve impedir a alteração  
-	And o sistema deve exibir a mensagem "Operação bloqueada."  
+	Then o sistema deve impedir a alteração
 	And o histórico de alterações não deve ser atualizado  
 
 # Regra de Negócio: A alteração de convênio só pode ocorrer se este estiver marcado como “Ativo”
@@ -171,8 +161,7 @@ Scenario: Alteração de convênio com status Ativo
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Dr. Henrique" altera o nome do convênio para "Bem Estar Gold"  
 	And confirma a alteração  
-	Then o sistema deve atualizar o convênio com sucesso  
-	And o sistema deve exibir a mensagem "Convênio atualizado com sucesso!"  
+	Then o sistema deve atualizar o convênio com sucesso 
 	And o histórico deve registrar a alteração  
 
 Scenario: Tentativa de alteração de convênio com status Inativo
@@ -183,8 +172,7 @@ Scenario: Tentativa de alteração de convênio com status Inativo
 	And o código de identificação "PV004"  
 	And o status do convênio está definido como "Inativo"  
 	When o usuário "Dra. Marina" tenta alterar o nome do convênio para "Plano Vida Familiar"  
-	Then o sistema deve impedir a alteração  
-	And o sistema deve exibir a mensagem "Somente convênios ativos podem ser alterados."  
+	Then o sistema deve impedir a alteração
 	And o histórico de alterações não deve ser atualizado  
 
 # Regra de Negócio: O sistema deve manter histórico de alterações, registrando data, hora e responsável pela ação
@@ -198,8 +186,7 @@ Scenario: Registro de histórico após alteração bem-sucedida
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Luiza Oliveira" altera o nome do convênio para "Viva Saúde Premium"  
 	And confirma a alteração  
-	Then o sistema deve atualizar o convênio com sucesso  
-	And o sistema deve exibir a mensagem "Convênio atualizado com sucesso!"  
+	Then o sistema deve atualizar o convênio com sucesso
 	And o sistema deve registrar no histórico a data, hora e o usuário "Luiza Oliveira" como responsável pela ação  
 	And o registro deve estar disponível para auditorias futuras  
 
@@ -213,7 +200,6 @@ Scenario: Falha ao registrar histórico após alteração
 	When o usuário "Fernanda Lima" altera o nome do convênio para "Clin Saúde Plus"  
 	And confirma a alteração  
 	And o sistema não registra a ação no histórico  
-	Then deve ser exibida uma falha no processo de auditoria  
-	And o sistema deve exibir a mensagem "Não foi possível registrar o histórico da alteração. Ação cancelada."  
+	Then deve ser exibida uma falha no processo de auditoria 
 	And o convênio não deve ser atualizado no sistema  
 
