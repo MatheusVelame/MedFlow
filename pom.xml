@@ -17,6 +17,7 @@
   <modules>
   	<module>pai</module>
   	<module>dominio-catalogo</module>
+  	<module>dominio-financeiro</module>
     <module>dominio-referencia</module>
     <module>dominio-atendimento</module>
 	<module>medflow-bdd-tipos-exames</module>
