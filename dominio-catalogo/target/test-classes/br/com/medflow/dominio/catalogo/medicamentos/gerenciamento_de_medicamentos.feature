@@ -151,7 +151,7 @@ Scenario: Scenario: Alteração crítica entra em status de revisão
 	
 Scenario: Alteração crítica aplicada com sucesso após aprovação
 
-	Given que o medicamento "Aspirina" está cadastrado com uma alteração pendente de revisão em Contraindicações
+	Given o medicamento "Aspirina" está cadastrado com uma alteração pendente de revisão em Contraindicações
 	And a alteração pendente é a adição "Risco em pacientes com Dengue"
 	And o usuário "Dra. Helena" tem permissão de revisor
 	When a "Dra. Helena" aprovar a alteração pendente do medicamento "Aspirina"
@@ -163,7 +163,7 @@ Scenario: Alteração crítica aplicada com sucesso após aprovação
 
 Scenario: Falha na aprovação de alteração crítica por falta de permissão
 
-	Given que o medicamento "Sertralina" está cadastrado com uma alteração pendente de revisão em Contraindicações
+	Given o medicamento "Sertralina" está cadastrado com uma alteração pendente de revisão em Contraindicações
 	And a alteração pendente é a adição "Risco de Síndrome Serotoninérgica"
 	And o usuário "Técnico João", funcionário do TI, não tem permissão de revisor
 	When o "Técnico João" tentar aprovar a alteração pendente do medicamento "Sertralina"

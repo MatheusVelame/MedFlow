@@ -148,6 +148,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		} else if (status.equalsIgnoreCase("Inativo")) {
 			medicamentoExistente.mudarStatus(StatusMedicamento.INATIVO, id);
 		}
+		// CORREÇÃO: Salvar a alteração de status para que a lista de pesquisa funcione
 		repositorio.salvar(medicamentoExistente);
         medicamentoExistente = obterMedicamento(nome).get();
 	}
@@ -169,11 +170,6 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void um_novo_medicamento_está_sendo_cadastrado() {
 		nomeMedicamento = "Medicamento Genérico";
 	}
-
-	@Given("que o medicamento {string} está cadastrado com uma alteração pendente de revisão em Contraindicações")
-	public void que_o_medicamento_está_cadastrado_com_uma_alteração_pendente_de_revisao_em_contraindicações(String nome) {
-		o_medicamento_está_cadastrado_com_uma_alteração_pendente_de_revisao_em_contraindicações(nome);
-	}
 	
 	@Given("o medicamento {string} está cadastrado com uma alteração pendente de revisão em Contraindicações")
 	public void o_medicamento_está_cadastrado_com_uma_alteração_pendente_de_revisao_em_contraindicações(String nome) {
@@ -182,6 +178,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		medicamentoExistente = medicamentoServico.cadastrar(nome, "Setup Uso", "Hipersensibilidade", id);
 		
 		try {
+			// A chamada ao solicitarRevisaoContraindicacoes lança a exceção que é capturada e a mensagem é suprimida
 			medicamentoExistente.solicitarRevisaoContraindicacoes("Valor Pendente", getUsuarioId("Dr. Carlos"));
 		} catch (RevisaoPendenteException e) {
 			repositorio.salvar(medicamentoExistente);
@@ -307,10 +304,14 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 				throw new SecurityException("Usuário não tem permissão para atualizar.");
 			}
 			
-			medicamentoServico.solicitarRevisaoContraindicacoes(medicamentoExistente.getId(), novaContraindicacao, id);
+			// CORREÇÃO: Capturar a exceção esperada para permitir que o THEN a verifique.
+			try {
+				medicamentoServico.solicitarRevisaoContraindicacoes(medicamentoExistente.getId(), novaContraindicacao, id);
+			} catch (RevisaoPendenteException e) {
+				this.excecao = e; // Armazena a exceção para que o THEN possa verificar
+				ultimaMensagem = "Alteração crítica no sistema"; 
+			}
 			
-		} catch (RevisaoPendenteException e) {
-			ultimaMensagem = "Alteração crítica no sistema"; 
 		} catch (IllegalArgumentException | SecurityException e) {
 			this.excecao = e;
 			ultimaMensagem = e.getMessage();
@@ -337,10 +338,6 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	@When("o {string} tentar aprovar a alteração pendente do medicamento {string}")
 	public void o_tentar_aprovar_a_alteração_pendente_do_medicamento(String revisor, String nome) {
 		a_aprovar_a_alteração_pendente_do_medicamento(revisor, nome); 
-		if (this.excecao == null) {
-			this.excecao = new SecurityException("Usuário não tem permissão de revisor.");
-			this.ultimaMensagem = "Usuário não tem permissão de revisor.";
-		}
 	}
 	
 	@When("a {string} tentar atualizar as informações do medicamento {string}")
@@ -537,7 +534,14 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void a_alteração_não_deve_ser_realizada() {
         Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
         
-		assertEquals("Setup Uso", m.getUsoPrincipal()); 
+        // CORREÇÃO: Lógica para verificar o rollback correto baseado no setup do medicamento.
+        if (m.getNome().equals("Amoxicilina")) {
+            // Setup de Amoxicilina (Line 173) usa "Setup Uso"
+            assertEquals("Setup Uso", m.getUsoPrincipal()); 
+        } else {
+             // Setup de Paracetamol (Line 131) usa "Analgésico"
+            assertEquals("Analgésico", m.getUsoPrincipal());
+        }
 	}
 	
 	@Then("o sistema deve informar que não é permitido alterar campos obrigatórios para valor em branco")
@@ -548,6 +552,8 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Then("o sistema deve informar sobre alteração crítica no sistema")
 	public void o_sistema_deve_informar_sobre_alteração_crítica_no_sistema() {
+		// CORREÇÃO: A exceção deve ser verificada, pois o When armazena a exceção.
+		assertNotNull(excecao);
 		assertEquals("Alteração crítica no sistema", ultimaMensagem);
 	}
 	
@@ -569,7 +575,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	}
 
 	@Then("o campo {string} do medicamento deve ser atualizado com a nova informação adicionada")
-	public void o_campo_do_medicamento_deve_ser_atualizado_com_a_nova_informação_adicionada(String campo) {
+	public void o_campo_do_medicamento_deve_ser_atualizado_com_a_nova_informaçao_adicionada(String campo) {
 		String novoValor = medicamentoExistente.getRevisaoPendente().get().getNovoValor();
 		assertEquals(novoValor, medicamentoExistente.getContraindicacoes());
 	}
