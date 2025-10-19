@@ -17,6 +17,7 @@
   <modules>
   	<module>pai</module>
   	<module>dominio-catalogo</module>
+  	<module>dominio-atendimento</module>
   </modules>
 
 </project>
