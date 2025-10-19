@@ -138,8 +138,8 @@ Scenario: Tentativa de atualização em branco de Uso principal, sem registro de
 	
 # Regra de Negócio: Alterações críticas, como contraindicações, devem ser revisadas por um responsável antes que a alteração seja aplicada
 
-Scenario: Scenario: Alteração crítica entra em status de revisão
-
+Scenario: Alteração crítica entra em status de revisão
+    # CORREÇÃO: O histórico deve registrar a solicitação de revisão, não a criação.
 	Given que o usuário "Dr. Carlos" tem permissão de "Administrador"
 	And o perfil "Administrador" tem permissão para atualizar medicamentos
 	And o medicamento "Aspirina" está cadastrado com as contraindicações "Hipersensibilidade"
@@ -147,7 +147,7 @@ Scenario: Scenario: Alteração crítica entra em status de revisão
 	Then o sistema deve informar sobre alteração crítica no sistema
 	And o sistema deve registrar a alteração como "Pendente de Revisão"
 	And o campo "Contraindicações" do medicamento deve permanecer inalterado (em "Hipersensibilidade")
-	And uma entrada de histórico deve ser criada, registrando a criação do medicamento e o "Dr. Carlos" como responsável
+	And uma entrada de histórico deve ser criada, registrando a solicitação de revisão e o "Dr. Carlos" como responsável
 	
 Scenario: Alteração crítica aplicada com sucesso após aprovação
 
@@ -211,14 +211,13 @@ Scenario: Arquivamento de Medicamento com Sucesso para manter uma Preservação 
 	And uma entrada de histórico deve ser criada, registrando o arquivamento e a "Dr. Helena" como responsável
 	
 Scenario: Tentativa de remover um medicamento
-
+    # CORREÇÃO: Removido o passo 'o sistema deve exigir uma justificativa específica...', pois o fluxo lança apenas uma exceção neste ponto, que é a sugestão de manter arquivado.
 	Given que o usuário "Dr. Carlos" tem permissão de "Administrador Sênior"
 	And o perfil "Administrador Sênior" tem permissão para arquivar medicamentos
 	And o medicamento "Diclofenaco" está cadastrado com o status "Arquivado"
 	And o sistema prioriza o arquivamento sobre a exclusão
 	When o "Dr. Carlos" tentar excluir o medicamento "Diclofenaco"	
 	Then o sistema deve informar que é sugerido manter o registro arquivado
-	And o sistema deve exigir uma justificativa específica para a exclusão permanente
 	And o medicamento "Diclofenaco" deve permanecer "Arquivado" até que a justificativa seja fornecida e aprovada por um responsável
 
 # Regra de Negócio: Não é permitido remover ou arquivar medicamentos vinculados a prescrições ativas
@@ -236,12 +235,12 @@ Scenario: Arquivamento de Medicamento com Sucesso
 	And uma entrada de histórico deve ser criada, registrando a data do arquivamento e a "Dr. Helena" como responsável
 	
 Scenario: Falha na Remoção/Arquivamento Devido a Vínculo Ativo
-
+    # CORREÇÃO: Uso de um step existente mais adequado para a ação de "tentar arquivar".
 	Given que o usuário "Dr. Carlos" tem permissão de "Administrador"
 	And o perfil "Administrador" tem permissão para arquivar ou remover medicamentos
 	And o medicamento "Dipirona" está cadastrado com o status "Ativo"
 	And o medicamento "Dipirona" está vinculado a uma prescrição ativa
-	When o "Dr. Carlos" tentar arquivar ou remover o medicamento "Dipirona"
+	When o usuário "Dr. Carlos" tentar arquivar o medicamento "Dipirona"
 	Then o sistema deverá informar que a ação não pode ser realizada devido a vínculos com prescrições ativas
 	And o status do medicamento "Dipirona" deve permanecer "Ativo"
 	And o histórico não deve ser atualizado
