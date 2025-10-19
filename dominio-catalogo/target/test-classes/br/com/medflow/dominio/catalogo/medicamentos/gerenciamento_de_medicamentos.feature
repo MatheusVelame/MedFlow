@@ -109,7 +109,7 @@ Scenario: Falha na Atualização por Falta de Permissão
 
 	Given que o usuário "Ana", funcionária da recepção, não tem permissão para alterar dados de medicamentos
 	And o medicamento "Amoxicilina" já está registrado no sistema
-	When a "Ana" tentar atualizar as informações do medicamento "Amoxicilina"
+	When o "Ana" atualizar o uso principal do medicamento "Amoxicilina" para "Uso Bloqueado"
 	Then o sistema deverá informar que o usuário não tem permissão
 	And a alteração não deve ser realizada
 	And o histórico não deve ser atualizado
@@ -123,7 +123,7 @@ Scenario: Atualização de Status de Ativo para Inativo e registrando alteraçã
 	And o medicamento "Dipirona" está cadastrado com o status "Ativo"
 	When o "Dr. Carlos" mudar o status do medicamento "Dipirona" para "Inativo"
 	Then o sistema deve registrar a alteração com sucesso
-	And o status do medicamento deve ser "Inativo"
+	And o status do medicamento "Dipirona" deve ser alterado para "Inativo"
 	And uma entrada de histórico deve ser criada, registrando a data da alteração e o "Dr. Carlos" como responsável
 	
 Scenario: Tentativa de atualização em branco de Uso principal, sem registro de alteração no histórico

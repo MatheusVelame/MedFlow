@@ -44,12 +44,20 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		contraindicacoes = null;
 		prescricaoAtiva = false;
 		eventos.clear();
+        
+        repositorio.clear(); 
 	}
 
 	@Given("que o usuário {string} tem permissão de {string}")
 	public void que_o_usuario_tem_permissao_de(String usuario, String perfil) {
 		usuarioAtual = usuario;
 		perfilAtual = perfil;
+	}
+	
+	@Given("que o usuário {string}, funcionária da recepção, não tem permissão para alterar dados de medicamentos")
+	public void que_o_usuário_funcionária_da_recepção_não_tem_permissão_para_alterar_dados_de_medicamentos(String usuario) {
+	    usuarioAtual = usuario;
+	    perfilAtual = "Recepção"; 
 	}
 	
 	@Given("que o usuário {string} tem permissão de revisor")
@@ -61,6 +69,47 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		} else {
 			perfilAtual = "Recepção";
 		}
+	}
+
+	@Given("que o usuário {string} tem o perfil de {string}")
+	public void que_o_usuário_tem_o_perfil_de(String usuario, String perfil) {
+	    usuarioAtual = usuario;
+	    perfilAtual = perfil;
+	}
+	
+	@Given("o usuário {string}, funcionário da recepção, possui acesso a lista de medicamentos")
+	public void o_usuário_funcionário_da_recepção_possui_acesso_a_lista_de_medicamentos(String usuario) {
+	    usuarioAtual = usuario;
+	    perfilAtual = "Recepção";
+	}
+
+	@Given("o usuário {string} possui acesso a lista de medicamentos")
+	public void o_usuário_possui_acesso_a_lista_de_medicamentos(String usuario) {
+	    usuarioAtual = usuario;
+	}
+
+	@Given("o perfil {string} tem permissão para arquivar medicamentos")
+	public void o_perfil_tem_permissão_para_arquivar_medicamentos(String perfil) {
+		assertTrue(temPermissao(perfil, "arquivar"));
+	}
+	
+	@Given("o perfil {string} tem permissão para arquivar ou remover medicamentos")
+	public void o_perfil_tem_permissão_para_arquivar_ou_remover_medicamentos(String perfil) {
+	    assertTrue(temPermissao(perfil, "arquivar") || temPermissao(perfil, "excluir_permanente"));
+	}
+
+	@Given("o perfil {string} não tem permissão para arquivar ou remover medicamentos")
+	public void o_perfil_não_tem_permissão_para_arquivar_ou_remover_medicamentos(String perfil) {
+	    assertFalse(temPermissao(perfil, "arquivar") || temPermissao(perfil, "excluir_permanente"));
+	}
+
+	@Given("o sistema prioriza o arquivamento sobre a exclusão")
+	public void o_sistema_prioriza_o_arquivamento_sobre_a_exclusão() {
+	}
+	
+	@Given("o usuário {string} tem permissão de revisor")
+	public void o_usuário_tem_permissão_de_revisor(String usuario) {
+		que_o_usuario_tem_permissao_de_revisor(usuario);
 	}
 
 	@Given("o perfil {string} tem permissão para cadastrar medicamentos")
@@ -102,6 +151,12 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		repositorio.salvar(medicamentoExistente);
         medicamentoExistente = obterMedicamento(nome).get();
 	}
+
+	@Given("que o medicamento {string} está cadastrado com o status {string}")
+	public void que_o_medicamento_está_cadastrado_com_o_status(String nome, String status) {
+		o_medicamento_está_cadastrado_com_o_status(nome, status);
+	}
+
 	
 	@Given("o medicamento {string} está cadastrado com as contraindicações {string}")
 	public void o_medicamento_está_cadastrado_com_as_contraindicações(String nome, String contraindicacoes) {
@@ -113,6 +168,11 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	@Given("um novo medicamento está sendo cadastrado")
 	public void um_novo_medicamento_está_sendo_cadastrado() {
 		nomeMedicamento = "Medicamento Genérico";
+	}
+
+	@Given("que o medicamento {string} está cadastrado com uma alteração pendente de revisão em Contraindicações")
+	public void que_o_medicamento_está_cadastrado_com_uma_alteração_pendente_de_revisao_em_contraindicações(String nome) {
+		o_medicamento_está_cadastrado_com_uma_alteração_pendente_de_revisao_em_contraindicações(nome);
 	}
 	
 	@Given("o medicamento {string} está cadastrado com uma alteração pendente de revisão em Contraindicações")
@@ -250,7 +310,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 			medicamentoServico.solicitarRevisaoContraindicacoes(medicamentoExistente.getId(), novaContraindicacao, id);
 			
 		} catch (RevisaoPendenteException e) {
-			ultimaMensagem = "Alteração crítica no sistema";
+			ultimaMensagem = "Alteração crítica no sistema"; 
 		} catch (IllegalArgumentException | SecurityException e) {
 			this.excecao = e;
 			ultimaMensagem = e.getMessage();
@@ -330,9 +390,17 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	@When("o {string} tentar excluir o medicamento {string}")
 	public void o_tentar_excluir_o_medicamento(String usuario, String nome) {
 		try {
+			UsuarioResponsavelId id = getUsuarioId(usuario);
+			medicamentoExistente = obterMedicamento(nome).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado"));
+
 			if (!temPermissao(perfilAtual, "excluir_permanente")) {
 				throw new SecurityException("Usuário não tem permissão para exclusão permanente.");
 			}
+
+			if (medicamentoExistente.getStatus() == StatusMedicamento.ARQUIVADO) {
+				throw new IllegalStateException("sugerido manter o registro arquivado"); 
+			}
+			
 			throw new IllegalStateException("Exclusão permanente requer justificativa específica e aprovação.");
 		} catch (IllegalStateException | SecurityException e) {
 			this.excecao = e;
@@ -469,7 +537,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void a_alteração_não_deve_ser_realizada() {
         Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
         
-		assertEquals("Analgésico", m.getUsoPrincipal()); 
+		assertEquals("Setup Uso", m.getUsoPrincipal()); 
 	}
 	
 	@Then("o sistema deve informar que não é permitido alterar campos obrigatórios para valor em branco")
@@ -500,18 +568,12 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		assertEquals("Hipersensibilidade", m.getContraindicacoes());
 	}
 
-	@Then("o sistema deve registrar a aprovação da alteração com sucesso")
-	public void o_sistema_deve_registrar_a_aprovação_da_alteração_com_sucesso() {
-		assertNull(excecao);
-        medicamentoExistente = obterMedicamento(nomeMedicamento).get();
-	}
-	
 	@Then("o campo {string} do medicamento deve ser atualizado com a nova informação adicionada")
-	public void o_campo_do_medicamento_deve_ser_atualizado_com_a_nova_informaçõao_adicionada() {
+	public void o_campo_do_medicamento_deve_ser_atualizado_com_a_nova_informação_adicionada(String campo) {
 		String novoValor = medicamentoExistente.getRevisaoPendente().get().getNovoValor();
 		assertEquals(novoValor, medicamentoExistente.getContraindicacoes());
 	}
-	
+
 	@Then("o status de revisão da alteração deve ser mudado para {string}")
 	public void o_status_de_revisão_da_alteração_deve_ser_mudado_para(String status) {
 		assertTrue(medicamentoExistente.getRevisaoPendente().isPresent());
@@ -603,14 +665,19 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
         assertEquals(ARQUIVAMENTO, historico.getAcao());
         assertEquals(getUsuarioId(responsavel), historico.getResponsavel());
 	}
-	
+
+	@Then("uma entrada de histórico deve ser criada, registrando a data do arquivamento e a {string} como responsável")
+	public void uma_entrada_de_histórico_deve_ser_criada_registrando_a_data_do_arquivamento_e_a_como_responsável(String responsavel) {
+        uma_entrada_de_histórico_deve_ser_criada_registrando_o_arquivamento_e_a_como_responsável(responsavel);
+	}
+
 	@Then("o sistema deve informar que é sugerido manter o registro arquivado")
 	public void o_sistema_deve_informar_que_é_sugerido_manter_o_registro_arquivado() {
 		assertNotNull(excecao);
 		assertTrue(ultimaMensagem.contains("sugerido manter o registro arquivado"));
 	}
 
-    @Then("o sistema deve exigir uma justificativa específica para a exclusão permanente")
+	@Then("o sistema deve exigir uma justificativa específica para a exclusão permanente")
 	public void o_sistema_deve_exigir_uma_justificativa_específica_para_a_exclusão_permanente() {
         assertNotNull(excecao);
         assertTrue(excecao instanceof IllegalStateException);
@@ -639,6 +706,17 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void o_medicamento_deve_ser_movido_para_a_lista_de_medicamentos_arquivados(String nome) {
 		var listaArquivados = medicamentoServico.pesquisarComFiltroArquivado();
 		assertTrue(listaArquivados.stream().anyMatch(m -> m.getNome().equals(nome) && m.getStatus() == StatusMedicamento.ARQUIVADO));
+	}
+	
+	@Then("nenhum medicamento deverá ser acessado")
+	public void nenhum_medicamento_deverá_ser_acessado() {
+	    assertNull(medicamentoExistente);
+	}
+
+	@Then("o sistema deve acessar o medicamento arquivado {string}")
+	public void o_sistema_deve_acessar_o_medicamento_arquivado(String nome) {
+	    assertNotNull(medicamentoExistente);
+	    assertEquals(nome, medicamentoExistente.getNome());
 	}
 	
 	@Then("o sistema deve informar que o medicamento não existe na lista padrão")

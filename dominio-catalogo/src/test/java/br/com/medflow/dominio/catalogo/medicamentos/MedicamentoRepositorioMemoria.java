@@ -67,4 +67,12 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 		// Retorna todos, incluindo os ARQUIVADOS
 		return new ArrayList<>(medicamentos.values());
 	}
+    
+    /**
+     * Limpa o repositório em memória. Essencial para isolamento de testes BDD.
+     */
+    public void clear() {
+        medicamentos.clear();
+        sequenciaId = 0;
+    }
 }
