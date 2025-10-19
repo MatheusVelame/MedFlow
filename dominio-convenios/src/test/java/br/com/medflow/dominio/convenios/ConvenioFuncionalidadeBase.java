@@ -29,9 +29,9 @@ public class ConvenioFuncionalidadeBase implements EventoBarramento {
 			this.eventos = new ArrayList<>();
 			
 			// Simulação do sistema de permissões
-			permissoes.put("Administrador", List.of("cadastrar", "atualizar", "arquivar", "revisar"));
-			permissoes.put("Administrador Sênior", List.of("cadastrar", "atualizar", "arquivar", "revisar", "excluir_permanente"));
-			permissoes.put("Médico", List.of("atualizar")); 
+			permissoes.put("Administrador", List.of("cadastrar", "alterar", "excluir"));
+			permissoes.put("Administrador Sênior", List.of("cadastrar", "alterar", "excluir"));
+			permissoes.put("Médico", List.of("alterar")); 
 			permissoes.put("Enfermeiro", List.of());
 			permissoes.put("Recepção", List.of("consultar"));
 		}
@@ -45,22 +45,18 @@ public class ConvenioFuncionalidadeBase implements EventoBarramento {
 		}
 
 		protected UsuarioResponsavelId getUsuarioId(String nome) {
-			// Simula a obtenção de um ID único para cada nome de usuário
 			return usuariosId.computeIfAbsent(nome, k -> new UsuarioResponsavelId(usuariosId.size() + 1));
 		}
 		
 		protected boolean temPermissao(String perfil, String acao) {
-			// Verifica se o perfil configurado tem a permissão para a ação
 			return permissoes.getOrDefault(perfil, List.of()).contains(acao);
 		}
 		
-		// Implementação mock do EventoBarramento (apenas para teste)
 		@Override
-		// ASSINATURA CORRIGIDA: Inclui o tipo de interface 'EventoObservador'
 		public <E> void adicionar(EventoObservador<E> observador) { 
-			// Não necessário para este conjunto de cenários, mas mantém a arquitetura
 			throw new UnsupportedOperationException();
 		}
+		
 
 		@Override
 		public <E> void postar(E evento) {

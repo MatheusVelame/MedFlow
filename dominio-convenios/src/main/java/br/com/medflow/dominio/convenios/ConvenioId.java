@@ -15,14 +15,21 @@ public class ConvenioId {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj != null && obj instanceof ConvenioId) {
-			return id == ((ConvenioId) obj).id;
-		}
-		return false;
+		if (this == obj) return true;
+        
+		if (obj == null || getClass() != obj.getClass()) return false;
+        
+		ConvenioId other = (ConvenioId) obj;
+		return id == other.id;
 	}
 
 	@Override
-	public int hashCode() { return Objects.hash(id); }
+	public int hashCode() { 
+        return Objects.hash(id); 
+    }
+    
 	@Override
-	public String toString() { return Integer.toString(id); }
+	public String toString() { 
+        return Integer.toString(id); 
+    }
 }

@@ -1,4 +1,4 @@
-package br.com.medflow.dominio.convenios;
+	package br.com.medflow.dominio.convenios;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
@@ -66,11 +66,17 @@ public class ConvenioRepositorioMemoria implements ConvenioRepositorio{
 				.filter(m -> m.getStatus() != StatusConvenio.ARQUIVADO)
 				.toList();
 	}
-
+	
 	@Override
-	public List<Convenio> pesquisarComFiltroArquivado() {
-		// Retorna todos, incluindo os ARQUIVADOS
-		return new ArrayList<>(convenios.values());
+	public void remover(ConvenioId id) { 
+	    notNull(id, "O ID para remoção não pode ser nulo.");
+	    
+	    // CORREÇÃO: Remover a entrada diretamente.
+	    // O ID é a chave do Map. Se equals/hashCode estiverem certos, deve funcionar.
+	    if (!convenios.containsKey(id)) {
+	        throw new IllegalArgumentException("Convênio com ID " + id.toString() + " não está no repositório.");
+	    }
+	    convenios.remove(id); 
 	}
 	
 	 /**

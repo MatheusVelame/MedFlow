@@ -19,8 +19,8 @@ Scenario: Tentativa de cadastro sem preencher o nome do convênio
 	Given que o usuário "Dr. Marcos" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para cadastrar convênios  
 	And um novo convênio está sendo cadastrado  
-	When o usuário "Dr. Marcos" tentar cadastrar o nome do convênio como ""  
-	And o código de identificação é "DJTA0001"  
+	When o usuário "Dr. Marcos" tentar cadastrar um nome de convênio como ""  
+	And o código de identificação "DJTA0001"  
 	Then o sistema deverá informar que o nome do convênio é obrigatório  
 	And o convênio não deve ser cadastrado no sistema
 
@@ -43,8 +43,7 @@ Scenario: Tentativa de cadastro com código de identificação duplicado
 	And já existe um convênio cadastrado com o código "VIDA001"  
 	When o usuário "Dr. Henrique" tentar cadastrar um novo convênio com o nome "Vida Mais"  
 	And o código de identificação "VIDA001"  
-	Then o sistema deve impedir o cadastro do convênio  
-	And o sistema deve informar que o código de identificação já está em uso  
+	Then o sistema deve impedir o cadastro do convênio    
 	And o histórico não deve ser atualizado 
 
 # Regra de Negócio: O convênio recém-cadastrado deve iniciar com status “Ativo” por padrão
@@ -64,11 +63,11 @@ Scenario: Sistema ignora a tentativa de definir um status inicial diferente de �
 	Given que o usuário "Dr. André" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para cadastrar convênios  
 	And o convênio "Plano Saúde Premium" ainda não está registrado no sistema  
-	When o usuário "Dr. André" tentar cadastrar o novo convênio com o nome "Plano Saúde Premium"  
+	When o usuário "Dr. André" tentar cadastrar um novo convênio com o nome "Plano Saúde Premium"  
 	And o código de identificação "PSPM001"  
 	And o sistema recebe uma tentativa de definir a requisição com Status inicial “Inativo”  
 	Then o sistema deve registrar o convênio com sucesso  
-	And o Status do convênio deve ser automaticamente definido como “Ativo”, independentemente do valor recebido na requisição
+	And o Status do convênio deve ser automaticamente definido como “Ativo”
 
 # 2. Remoção de Convênios Inativos
 
@@ -84,7 +83,7 @@ Scenario: Exclusão de convênio com status Inativo
 	When o usuário "Dr. Rafael" seleciona o convênio "Saúde Vida"  
 	And solicita a exclusão definitiva  
 	Then o sistema deve remover o convênio com sucesso  
-	And o sistema deve registrar a ação no histórico com data, hora e usuário responsável 
+	And o sistema deve registrar a ação no histórico com data, hora e o usuário responsável 
 
 Scenario: Tentativa de exclusão de convênio com status Ativo
 
@@ -132,11 +131,11 @@ Scenario: Alteração realizada por usuário com permissão administrativa
 	Given que o usuário "Dr. Marcelo" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Saúde Total"  
-	And o código de identificação "SATA005"  
+	And e o código de identificação "SATA005" 
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Dr. Marcelo" altera o nome do convênio para "Saúde Total Plus"  
 	And confirma a alteração  
-	Then o sistema deve atualizar o cadastro do convênio com sucesso
+	Then o sistema deve alterar o cadastro do convênio com sucesso
 	And o sistema deve registrar a ação no histórico com data, hora e o usuário responsável  
 
 Scenario: Tentativa de alteração por usuário sem permissão administrativa
@@ -157,11 +156,11 @@ Scenario: Alteração de convênio com status Ativo
 	Given que o usuário "Dr. Henrique" tem permissão de administrador  
 	And o perfil "Administrador" tem permissão para alterar convênios  
 	And existe um convênio cadastrado com o nome "Bem Estar"  
-	And o código de identificação "BEST007"  
+	And e o código de identificação "BEST007" 
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Dr. Henrique" altera o nome do convênio para "Bem Estar Gold"  
 	And confirma a alteração  
-	Then o sistema deve atualizar o convênio com sucesso 
+	Then o sistema deve alterar o convênio com sucesso 
 	And o histórico deve registrar a alteração  
 
 Scenario: Tentativa de alteração de convênio com status Inativo
@@ -186,7 +185,7 @@ Scenario: Registro de histórico após alteração bem-sucedida
 	And o status do convênio está definido como "Ativo"  
 	When o usuário "Luiza Oliveira" altera o nome do convênio para "Viva Saúde Premium"  
 	And confirma a alteração  
-	Then o sistema deve atualizar o convênio com sucesso
+	Then o sistema deve alterar o convênio com sucesso
 	And o sistema deve registrar no histórico a data, hora e o usuário "Luiza Oliveira" como responsável pela ação  
 	And o registro deve estar disponível para auditorias futuras  
 

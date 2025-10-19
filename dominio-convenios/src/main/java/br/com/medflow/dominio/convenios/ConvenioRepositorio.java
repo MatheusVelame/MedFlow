@@ -9,5 +9,5 @@ public interface ConvenioRepositorio {
 	Optional<Convenio> obterPorNome(String nome);
 	Optional<Convenio> obterPorCodigoIdentificacao(String codigoIdentificacao);
 	List<Convenio> pesquisar();
-	List<Convenio> pesquisarComFiltroArquivado();
+	void remover(ConvenioId id);
 }

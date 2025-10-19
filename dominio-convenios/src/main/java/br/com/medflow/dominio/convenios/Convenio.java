@@ -36,35 +36,45 @@ public class Convenio {
 
     // ===== MÉTODOS DE STATUS =====
     public void mudarStatus(StatusConvenio novoStatus, UsuarioResponsavelId responsavelId) {
-
-        if (this.status == StatusConvenio.ATIVO && novoStatus == StatusConvenio.ARQUIVADO) {
-            throw new IllegalStateException("Convênio ativo não pode ser arquivado diretamente.");
-        }
-
+        // CORREÇÃO: Removida a validação contra ARQUIVADO.
+        
         if (this.status != novoStatus) {
             this.status = novoStatus;
             adicionarEntradaHistorico(AcaoHistorico.ATUALIZACAO, "Status alterado para: " + novoStatus.name(), responsavelId);
         }
     }
 
-    public void arquivar(boolean temProcedimentoAtivo, UsuarioResponsavelId responsavelId) {
-        notNull(responsavelId, "O responsável pelo arquivamento não pode ser nulo.");
+    
+    public void validarExclusao(boolean temProcedimentoAtivo, UsuarioResponsavelId responsavelId) {
+        notNull(responsavelId, "O responsável pela exclusão não pode ser nulo.");
 
+        // Regra de Negócio: Convênio ATIVO com procedimento ATIVO não pode ser excluído.
         if (this.status == StatusConvenio.ATIVO && temProcedimentoAtivo) {
-            throw new IllegalStateException("Convênio ativo com procedimento não pode ser arquivado.");
+            throw new IllegalStateException("Convênio ATIVO com procedimento ATIVO não pode ser excluído.");
         }
-        if (this.status != StatusConvenio.ARQUIVADO) {
-            this.status = StatusConvenio.ARQUIVADO;
-            adicionarEntradaHistorico(AcaoHistorico.ARQUIVAMENTO, "Convênio arquivado.", responsavelId);
+        
+        // Regra de Negócio: Não pode excluir convênio ATIVO (sem procedimentos)
+        if (this.status == StatusConvenio.ATIVO && !temProcedimentoAtivo) {
+             throw new IllegalStateException("O Convênio deve estar INATIVO para ser excluído.");
         }
+        
+        // A exclusão é permitida se o status for INATIVO.
     }
 
     // ===== MÉTODOS DE ALTERAÇÃO =====
     public void alterarNome(String novoNome, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela alteração não pode ser nulo.");
         notBlank(novoNome, "O nome do convênio é obrigatório");
-        this.nome = novoNome.trim();
-        adicionarEntradaHistorico(AcaoHistorico.ATUALIZACAO, "Nome alterado para: " + novoNome, responsavelId);
+        
+        // Regra de Negócio: Alteração só pode ocorrer se estiver ATIVO
+        if (this.status != StatusConvenio.ATIVO) {
+            throw new IllegalStateException("Não é possível alterar dados de um convênio INATIVO.");
+        }
+        
+        if (!this.nome.trim().equalsIgnoreCase(novoNome.trim())) {
+            this.nome = novoNome.trim();
+            adicionarEntradaHistorico(AcaoHistorico.ATUALIZACAO, "Nome alterado para: " + novoNome, responsavelId);
+        }
     }
 
     // ===== MÉTODOS DE CADASTRO =====
@@ -86,19 +96,19 @@ public class Convenio {
         }
     }
 
-    private void adicionarEntradaHistorico(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavelId) {
+    public void adicionarEntradaHistorico(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela ação não pode ser nulo.");
         historico.add(new HistoricoEntrada(acao, descricao, responsavelId, LocalDateTime.now()));
     }
 
-    // ===== GETTERS =====
+    // ===== GETTERS e CLASSE INTERNA HISTÓRICO (mantidos) =====
+    // ... (Getters e HistoricoEntrada)
     public ConvenioId getId() { return id; }
     public String getNome() { return nome; }
     public String getCodigoIdentificacao() { return codigoIdentificacao; }
     public StatusConvenio getStatus() { return status; }
     public List<HistoricoEntrada> getHistorico() { return List.copyOf(historico); }
 
-    // ===== CLASSE INTERNA HISTÓRICO =====
     public static class HistoricoEntrada {
         private final AcaoHistorico acao;
         private final String descricao;

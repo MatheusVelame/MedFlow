@@ -14,7 +14,6 @@ public class ConvenioServico {
 	}
 	
 	public Convenio cadastrar(String nome, String codigoIdentificacao, UsuarioResponsavelId responsavelId) {
-		// Regra de Negócio: O nome do Convenio deve ser único no sistema
 		
 		var existenteNome = repositorio.obterPorNome(nome);
 		if (existenteNome.isPresent()) {
@@ -33,25 +32,40 @@ public class ConvenioServico {
 	}
 	
 	public Convenio obter(ConvenioId id) {
-		return repositorio.obter(id);
+		// Assumindo que este método lança exceção se não encontrar.
+		return repositorio.obter(id); 
 	}
 	
 	public void mudarStatus(ConvenioId id, StatusConvenio novoStatus, UsuarioResponsavelId responsavelId, boolean temProcedimentoAtivo) {
 		var convenio = obter(id);
 		
-		if (temProcedimentoAtivo) {
-			throw new IllegalStateException("Não é permitido alterar o status devido a prescrições ativas.");
+		// Regra: Não é permitido mudar o status se houver procedimento ativo (para INATIVO)
+		// NOTA: Esta validação deveria estar no método mudarStatus da entidade se fosse complexa. 
+		if (novoStatus == StatusConvenio.INATIVO && temProcedimentoAtivo) {
+			throw new IllegalStateException("Não é permitido alterar o status para INATIVO devido a prescrições ativas.");
 		}
 		
 		convenio.mudarStatus(novoStatus, responsavelId);
 		repositorio.salvar(convenio);
 	}
 	
-	public void arquivar(ConvenioId id, UsuarioResponsavelId responsavelId, boolean temProcedimentoAtivo) {
-		var convenio = obter(id);
-		
-		convenio.arquivar(temProcedimentoAtivo, responsavelId);
-		repositorio.salvar(convenio);
+	// Em ConvenioServico.java
+
+	public void excluir(String codigoIdentificacao, UsuarioResponsavelId responsavelId, boolean temProcedimentoAtivo) {
+	    // 1. Obtém o convênio, lança exceção se não encontrar.
+	    var convenio = repositorio.obterPorCodigoIdentificacao(codigoIdentificacao)
+	        .orElseThrow(() -> new IllegalArgumentException("Convênio não encontrado."));
+	    
+	    // 2. Valida (usando a Entidade)
+	    convenio.validarExclusao(temProcedimentoAtivo, responsavelId);
+	    
+	    // 3. Registra o Histórico (Antes da remoção)
+	    convenio.adicionarEntradaHistorico(AcaoHistorico.EXCLUSAO, "Convênio excluído permanentemente.", responsavelId);
+	    
+	    // 4. REMOÇÃO FÍSICA NO REPOSITÓRIO:
+	    // Deve remover usando o ID do objeto encontrado
+	    repositorio.remover(convenio.getId()); // <--- ESTE MÉTODO DEVE USAR O ID
+	    
 	}
 	
 	public Optional<Convenio> pesquisarNome(String nome) {
@@ -62,10 +76,7 @@ public class ConvenioServico {
 		return repositorio.obterPorCodigoIdentificacao(codigoIdentificacao);
 	}
 	
-	public List<Convenio> pesquisarComFiltroArquivado() {
-		return repositorio.pesquisarComFiltroArquivado();
-	}
-
+	// CORREÇÃO: Removido o filtro de arquivado
 	public List<Convenio> pesquisarPadrao() {
 		return repositorio.pesquisar();
 	}
