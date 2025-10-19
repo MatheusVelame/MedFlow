@@ -18,6 +18,11 @@
   	<module>pai</module>
   	<module>dominio-catalogo</module>
   	<module>dominio-atendimento</module>
+  	<module>dominio-financeiro</module>
+    <module>dominio-referencia</module>
+	<module>medflow-bdd-tipos-exames</module>
+	<!--<module>medflow-core</module>-->
+	<module>medflow-bdd-pacientes</module>
   </modules>
 
 </project>
