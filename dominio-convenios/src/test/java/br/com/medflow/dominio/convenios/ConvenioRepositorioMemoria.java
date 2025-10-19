@@ -33,7 +33,7 @@ public class ConvenioRepositorioMemoria implements ConvenioRepositorio{
 	}
 	
 	@Override
-	public Convenio obter(Convenio id) {
+	public Convenio obter(ConvenioId id) {
 		notNull(id, "O id do convênio não pode ser nulo");
 		var convenio = convenios.get(id);
 		return Optional.ofNullable(convenio).get();
@@ -49,7 +49,7 @@ public class ConvenioRepositorioMemoria implements ConvenioRepositorio{
 	@Override
 	public Optional<Convenio> obterPorCodigoIdentificacao(String codigoIdentificacao) {
 		return convenios.values().stream()
-				.filter(m -> m.getCodigoIdentificacao().equalsIgnoreCase(nome))
+				.filter(m -> m.getCodigoIdentificacao().equalsIgnoreCase(getCodigoIdentificacao))
 				.findFirst();
 	}
 	

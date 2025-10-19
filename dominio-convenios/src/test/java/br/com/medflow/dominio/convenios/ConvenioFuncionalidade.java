@@ -71,7 +71,7 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
     @Given("o convênio {string} ainda não está registrado no sistema")
     public void o_convenio_ainda_nao_esta_registrado_no_sistema(String nome) {
     	nomeConvenio = nome;
-    	assertFalse(obterConvenio(nome).isPresent());
+    	assertFalse(obterConvenioNome(nomeConvenio).isPresent());
     }
     
     @Given("já existe um convênio cadastrado com o código {string}")
@@ -88,7 +88,7 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
     	nomeConvenio = nome;
     	UsuarioResponsavelId id = getUsuarioId("SetupCadastro");
     	convenioServico.cadastrar(nome, "COD" + nome.substring(0,3).toUpperCase(), id);
-    	convenioExistente = obterConvenio(nome).get();
+    	convenioExistente = obterConvenioNome(nome).get();
     }
     
     @Given("o status do convênio está definido como {string}")
@@ -142,7 +142,7 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
     public void o_usuario_seleciona_o_convenio(String usuario, String nome) {
     	usuarioAtual = usuario;
     	nomeConvenio = nome;
-    	convenioExistente = obterConvenio(nome).orElseThrow(() -> new IllegalStateException("Convênio não encontrado"));
+    	convenioExistente = obterConvenioNome(nome).orElseThrow(() -> new IllegalStateException("Convênio não encontrado"));
     }
 
     @When("solicita a exclusão definitiva")
@@ -202,7 +202,7 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
     
     @Then("o convênio não deve ser cadastrado no sistema")
     public void o_convenio_nao_deve_ser_cadastrado_no_sistema() {
-    	assertFalse(obterConvenio(nomeConvenio).isPresent());
+    	assertFalse(obterConvenioNome(nomeConvenio).isPresent());
     }
 
     @Then("o sistema deve impedir o cadastro do convênio")
