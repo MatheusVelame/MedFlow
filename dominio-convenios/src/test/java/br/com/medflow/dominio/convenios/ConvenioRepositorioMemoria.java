@@ -2,6 +2,12 @@ package br.com.medflow.dominio.convenios;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 /**
  * Implementação em memória do repositório para uso exclusivo em testes BDD.
  */
@@ -49,7 +55,7 @@ public class ConvenioRepositorioMemoria implements ConvenioRepositorio{
 	@Override
 	public Optional<Convenio> obterPorCodigoIdentificacao(String codigoIdentificacao) {
 		return convenios.values().stream()
-				.filter(m -> m.getCodigoIdentificacao().equalsIgnoreCase(getCodigoIdentificacao))
+				.filter(m -> m.getCodigoIdentificacao().equalsIgnoreCase(codigoIdentificacao))
 				.findFirst();
 	}
 	
