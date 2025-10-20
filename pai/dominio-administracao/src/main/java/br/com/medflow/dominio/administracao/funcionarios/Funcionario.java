@@ -33,7 +33,7 @@ public class Funcionario {
         setFuncao(funcao);
         setContato(contato);
         
-        this.status = StatusFuncionario.ATIVO; // RN 7
+        this.status = StatusFuncionario.ATIVO;
         adicionarEntradaHistorico(AcaoHistorico.CRIACAO, "Funcionário cadastrado com status ATIVO", responsavelId);
     }
     

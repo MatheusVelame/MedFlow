@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
 
-    // --- VARIÁVEIS DE DADOS CONCRETOS (Para injeção em Steps curtos) ---
     private static final String NOME_PADRAO = "Funcionario Teste";
     private static final String FUNCAO_PADRAO = "Enfermeira";
     private static final String CONTATO_EMAIL_PADRAO = "teste.padrao@medfow.com";
@@ -57,7 +56,6 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     @Given("que o administrador tem permissão de administrador")
     public void que_o_administrador_tem_permissao() {}
     
-    // --- SETUP PARA ATUALIZAÇÃO ---
     @Given("que o funcionário está ativo")
     @Given("que o administrador acessa o cadastro")
     public void que_o_funcionario_esta_ativo() {
