@@ -6,93 +6,10 @@ Domain MEDFLOW {
   Subdomain Compartilhado
 }
 
+// 1) Administração: Pessoas da clínica (Paciente, Médico, Funcionário)
 BoundedContext Administracao implements Administracao {
-  type DYNAMIC
-  
-  Aggregate MedicoAggregate {
-    Entity Medico { aggregateRoot -MedicoId id, String nome, String crm, ... }
-    ValueObject MedicoId { ... }
-  }
-  
-  Aggregate FuncionarioAggregate {
-    Entity Funcionario { aggregateRoot -FuncionarioId id, String nome, String funcao, ... }
-    ValueObject FuncionarioId { ... }
-  }
-}
+  type GENERIC
 
-BoundedContext Catalogo implements Referencia {
-  type SUPPORTIVE 
-  
-  Aggregate TipoExameAggregate {
-    Entity TipoExame { 
-      aggregateRoot
-      -TipoExameId id, -TipoExameEspecialidadeId especialidadeId
-      String descricao, String valor, String status
-      def void atualizarDescricao(String novaDescricao), def void inativar()
-    }
-    ValueObject TipoExameId { String id }
-    ValueObject TipoExameEspecialidadeId { long id }
-  }
-  
-  Aggregate EspecialidadeAggregate {
-    Entity Especialidade { 
-      aggregateRoot
-      -EspecialidadeId id, String nome, String descricao, boolean ativa
-      def void inativar()
-    }
-    ValueObject EspecialidadeId { long id }
-  }
-  
-  Aggregate MedicamentoAggregate {
-    Entity Medicamento { aggregateRoot -MedicamentoId id, String nome, String usoPrincipal, ... }
-    ValueObject MedicamentoId { ... }
-  }
-}
-
-BoundedContext Atendimento implements Atendimento {
-  type CORE
-  
-  Aggregate ConsultaAggregate {
-    Entity Consulta { aggregateRoot -ConsultaId id, ... }
-  }
-  
-  Aggregate ExameAggregate {
-    Entity Exame { aggregateRoot -ExameId id, ... }
-  }
-  
-  Aggregate ProntuarioAggregate {
-    Entity Prontuario { aggregateRoot -ProntuarioId id, ... }
-  }
-  
-  Entity AgendaDoMedico { 
-    -MedicoId id
-    String data, String horario, String tipoEvento
-  }
-}
-
-BoundedContext Financeiro implements Financeiro {
-  type CORE
-  
-  Aggregate FaturamentoAggregate {
-    Entity Faturamento { 
-      aggregateRoot 
-      -FaturamentoId id, -PacienteId pacienteId
-      String valor, -MetodoPagamentoId metodoId
-      String statusCobranca, date dataRegistro
-    }
-    ValueObject FaturamentoId { String id }
-    ValueObject MetodoPagamentoId { String id }
-  }
-}
-
-BoundedContext Compartilhado implements Compartilhado {
-  type GENERIC_SUBDOMAIN
-  
-  ValueObject CPF { String numero }
-  ValueObject Telefone { String numero }
-  ValueObject Endereco { String logradouro, String cidade, ... }
-  ValueObject DataNascimento { date data }
-  
   Aggregate PacienteAggregate {
     Entity Paciente {
       aggregateRoot
@@ -101,33 +18,230 @@ BoundedContext Compartilhado implements Compartilhado {
       -CPF cpf
       -DataNascimento dataNascimento
       -Telefone telefone
-      -Endereco endereco
-      String status
-      
+      -Endereco endereco?
+      StatusCadastro status  // ATIVO | INATIVO
       def void atualizarContato(@Telefone novoTelefone, @Endereco novoEndereco);
-      def void ativar();
+      def void ativar(); 
       def void inativar();
-      
-      Repository PacienteRepository {
-        @Paciente obterPorCpf(@CPF cpf);
-        List<@Paciente> pesquisarPorNome(String nome);
-      }
     }
-    ValueObject PacienteId { int id }
+    Repository PacienteRepository {
+      @Paciente obterPorCpf(@CPF cpf);
+      List<@Paciente> pesquisarPorNome(String nome);
+    }
   }
-  
-  Service EventoService {
-    def void postarEvento(String evento, String payload);
+
+  Aggregate MedicoAggregate {
+    Entity Medico { 
+      aggregateRoot 
+      -MedicoId id 
+      String nome 
+      String crm 
+      boolean ativo
+    }
+  }
+
+  Aggregate FuncionarioAggregate {
+    Entity Funcionario { 
+      aggregateRoot 
+      -FuncionarioId id 
+      String nome 
+      String funcao 
+      boolean ativo
+    }
   }
 }
 
-ContextMap MedFlowMap {
-  contains Administracao, Catalogo, Atendimento, Financeiro, Compartilhado
-  
-  Atendimento [D] -> Compartilhado [U]
-  Atendimento [D] -> Catalogo [U]
-  Financeiro [D] -> Compartilhado [U]
-  Financeiro [D] -> Atendimento [U]
-  Catalogo [D] -> Compartilhado [U]
-  Administracao [D] -> Compartilhado [U]
+// 2) Referência: Catálogos (Especialidade, Tipo de Exame, Medicamento)
+BoundedContext Catalogo implements Referencia {
+  type SUPPORTIVE
+
+  Aggregate EspecialidadeAggregate {
+    Entity Especialidade {
+      aggregateRoot
+      -EspecialidadeId id
+      String nome
+      String descricao
+      boolean ativa
+      def void inativar();
+    }
+  }
+
+  Aggregate TipoExameAggregate {
+    Entity TipoExame {
+      aggregateRoot
+      -TipoExameId id
+      -EspecialidadeId especialidadeId
+      String descricao
+      Money valor
+      StatusCadastro status // ATIVO | INATIVO
+      def void atualizarDescricao(String novaDescricao);
+      def void inativar();
+    }
+  }
+
+  Aggregate MedicamentoAggregate {
+    Entity Medicamento {
+      aggregateRoot
+      -MedicamentoId id
+      String nome
+      String usoPrincipal
+      String contraindicacoes?
+    }
+  }
 }
+
+// 3) Atendimento: Núcleo operacional (Agenda, Consulta, Exame, Prontuário)
+BoundedContext AtendimentoClinico implements Atendimento {
+  type CORE
+
+  Aggregate AgendaMedicoAggregate {
+    Entity AgendaDoMedico {
+      aggregateRoot
+      -MedicoId medicoId
+      LocalDate data
+      LocalTime hora
+      TipoEventoAgenda tipo // BLOCO | CONSULTA | EXAME
+    }
+  }
+
+  Aggregate ConsultaAggregate {
+    Entity Consulta {
+      aggregateRoot
+      -ConsultaId id
+      -PacienteId pacienteId
+      -MedicoId medicoId
+      LocalDateTime horario
+      String motivo?
+      StatusAtendimento status // AGENDADA | REALIZADA | CANCELADA
+    }
+  }
+
+  Aggregate ExameAggregate {
+    Entity Exame {
+      aggregateRoot
+      -ExameId id
+      -PacienteId pacienteId
+      -MedicoId solicitanteId
+      -TipoExameId tipoExameId
+      LocalDateTime horario?
+      String resultado?
+      StatusAtendimento status
+    }
+  }
+
+  Aggregate ProntuarioAggregate {
+    Entity Prontuario {
+      aggregateRoot
+      -ProntuarioId id
+      -PacienteId pacienteId
+      List<String> entradas // anotações, diagnósticos, prescrições
+    }
+  }
+}
+
+// 4) Financeiro: Transações monetárias (Faturamento, Convênio/Plano, Folha, Método)
+BoundedContext Financeiro implements Financeiro {
+  type SUPPORTIVE
+
+  Aggregate ConvenioAggregate {
+    Entity ConvenioPlano {
+      aggregateRoot
+      -ConvenioId id
+      String nome
+      boolean ativo
+      List<String> planos?  // quando aplicável
+    }
+  }
+
+  Aggregate MetodoPagamentoAggregate {
+    Entity MetodoPagamento {
+      aggregateRoot
+      -MetodoPagamentoId id
+      String descricao
+      boolean ativo
+    }
+  }
+
+  Aggregate FaturamentoAggregate {
+    Entity Faturamento {
+      aggregateRoot
+      -FaturamentoId id
+      -PacienteId pacienteId
+      Money valor
+      -MetodoPagamentoId metodoId?
+      -ConvenioId convenioId?
+      String origem // CONSULTA | EXAME | OUTRO
+      String referenciaOrigemId // id da Consulta/Exame
+      StatusCobranca status // PENDENTE | PAGO | CANCELADO
+      LocalDateTime dataRegistro
+    }
+  }
+
+  Aggregate FolhaPagamentoAggregate {
+    Entity FolhaPagamento {
+      aggregateRoot
+      -FolhaPagamentoId id
+      -FuncionarioId funcionarioId
+      Money salario
+      Money beneficios?
+      MesCompetencia competencia
+      StatusCobranca status
+    }
+  }
+}
+
+// 5) Compartilhado: IDs, Value Objects e Eventos (Shared Kernel)
+BoundedContext Compartilhado implements Compartilhado {
+  type GENERIC_SUBDOMAIN
+
+  // Value Objects e IDs (sem serviços aqui)
+  ValueObject CPF { String numero }
+  ValueObject Telefone { String numero }
+  ValueObject Endereco { String logradouro String numero? String cidade String uf String cep? }
+  ValueObject DataNascimento { LocalDate data }
+  ValueObject Money { BigDecimal quantia String moeda = "BRL" }
+
+  ValueObject PacienteId { String id }
+  ValueObject MedicoId { String id }
+  ValueObject FuncionarioId { String id }
+  ValueObject EspecialidadeId { String id }
+  ValueObject TipoExameId { String id }
+  ValueObject ConsultaId { String id }
+  ValueObject ExameId { String id }
+  ValueObject ProntuarioId { String id }
+  ValueObject FaturamentoId { String id }
+  ValueObject MetodoPagamentoId { String id }
+  ValueObject ConvenioId { String id }
+  ValueObject FolhaPagamentoId { String id }
+
+  Enum StatusCadastro { ATIVO, INATIVO }
+  Enum StatusAtendimento { AGENDADA, REALIZADA, CANCELADA }
+  Enum StatusCobranca { PENDENTE, PAGO, CANCELADO }
+  Enum TipoEventoAgenda { BLOCO, CONSULTA, EXAME }
+
+  // Contratos de eventos (sem infraestrutura)
+  DomainEvent ConsultaAgendada { ConsultaId consultaId PacienteId pacienteId MedicoId medicoId LocalDateTime horario }
+  DomainEvent ExameSolicitado { ExameId exameId PacienteId pacienteId TipoExameId tipoExameId }
+  DomainEvent FaturamentoGerado { FaturamentoId faturamentoId String origem String referenciaOrigemId Money valor }
+}
+
+ContextMap MedFlowMap {
+  contains Administracao, Catalogo, AtendimentoClinico, Financeiro, Compartilhado
+
+  # Shared Kernel entre todos e o "Compartilhado"
+  Administracao [SK] <-> [SK] Compartilhado
+  Catalogo      [SK] <-> [SK] Compartilhado
+  Referencia    [SK] <-> [SK] Compartilhado
+  AtendimentoClinico [SK] <-> [SK] Compartilhado
+  Financeiro    [SK] <-> [SK] Compartilhado
+
+  # Dependências (consulta catálogos, usa pessoas, e gera faturamento)
+  AtendimentoClinico -> Administracao { reltype = Partnership }
+  AtendimentoClinico -> Catalogo      { reltype = Partnership }
+  Financeiro        -> AtendimentoClinico { reltype = Partnership }
+  Financeiro        -> Administracao  { reltype = Partnership }
+  Financeiro        -> Catalogo       { reltype = Partnership }
+
+
+}
+
