@@ -1,0 +1,10 @@
+br/com/medflow/dominio/atendimento/consultas/ConsultaFuncionalidadeBase.class
+com/medflow/dominio/prontuario/ProntuarioFuncionalidadeBase.class
+br/com/medflow/dominio/atendimento/consultas/NotificacaoServicoMock.class
+br/com/medflow/dominio/atendimento/consultas/RunCucumberTest.class
+br/com/medflow/dominio/atendimento/consultas/Consulta.class
+com/medflow/dominio/prontuario/ProntuarioFuncionalidade.class
+br/com/medflow/dominio/atendimento/consultas/ConsultaFuncionalidade.class
+br/com/medflow/dominio/atendimento/consultas/HistoricoRemarcacao.class
+com/medflow/dominio/prontuario/RunCucumberTest.class
+br/com/medflow/dominio/atendimento/consultas/ConsultaRepositorioMemoria.class
