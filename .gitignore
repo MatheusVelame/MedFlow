@@ -1,0 +1,14 @@
+# Maven / Eclipse
+target/
+.classpath
+.project
+.settings/
+*.iml
+
+# IDE metadata
+.idea/
+.vscode/
+
+# Logs / temporários
+*.log
+*.tmp
