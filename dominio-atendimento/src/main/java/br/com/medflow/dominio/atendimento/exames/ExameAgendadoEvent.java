@@ -18,17 +18,20 @@ public class ExameAgendadoEvent {
 
     public ExameAgendadoEvent(Exame exame) {
         notNull(exame.getId(), "O ID do exame não pode ser nulo ao criar o evento.");
+        
         this.exameId = exame.getId();
         this.pacienteId = exame.getPacienteId();
-        // Os IDs de médico e paciente são públicos na Entidade
         this.medicoId = exame.getMedicoId();
-        // Assumindo que tipoExame e dataHora existem em Exame (getters não mostrados, mas necessários)
-        this.tipoExame = exame.getTipoExame(); 
+        
+        // Assumindo que os getters getTipoExame() e getDataHora() existem na Entidade Exame
+        this.tipoExame = exame.getTipoExame();
         this.dataHora = exame.getDataHora();
+        
         this.dataCriacao = LocalDateTime.now();
     }
     
-    // Getters
+    // --- Getters ---
+
     public ExameId getExameId() {
         return exameId;
     }
@@ -37,6 +40,19 @@ public class ExameAgendadoEvent {
         return pacienteId;
     }
     
-    // ... outros getters
+    public Long getMedicoId() {
+        return medicoId;
+    }
 
+    public LocalDateTime getDataHora() {
+        return dataHora;
+    }
+
+    public String getTipoExame() {
+        return tipoExame;
+    }
+
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
+    }
 }

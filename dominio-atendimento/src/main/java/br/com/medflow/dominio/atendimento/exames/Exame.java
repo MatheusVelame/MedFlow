@@ -121,6 +121,14 @@ public class Exame {
     public Long getPacienteId() {
         return pacienteId;
     }
+    
+    public Long getMedicoId() {
+        return medicoId; 
+    }
+    
+    public String getTipoExame() {
+        return tipoExame; 
+    }
 
     public StatusExame getStatus() {
         return status;
