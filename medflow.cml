@@ -1,9 +1,98 @@
 Domain MEDFLOW {
-  Subdomain AtendimentoClinico
-  Subdomain Suporte
+  Subdomain Administracao
+  Subdomain Referencia
+  Subdomain Atendimento
+  Subdomain Financeiro
+  Subdomain Compartilhado
 }
 
-BoundedContext Pacientes implements AtendimentoClinico {
+BoundedContext Administracao implements Administracao {
+  type DYNAMIC
+  
+  Aggregate MedicoAggregate {
+    Entity Medico { aggregateRoot -MedicoId id, String nome, String crm, ... }
+    ValueObject MedicoId { ... }
+  }
+  
+  Aggregate FuncionarioAggregate {
+    Entity Funcionario { aggregateRoot -FuncionarioId id, String nome, String funcao, ... }
+    ValueObject FuncionarioId { ... }
+  }
+}
+
+BoundedContext Catalogo implements Referencia {
+  type SUPPORTIVE 
+  
+  Aggregate TipoExameAggregate {
+    Entity TipoExame { 
+      aggregateRoot
+      -TipoExameId id, -TipoExameEspecialidadeId especialidadeId
+      String descricao, String valor, String status
+      def void atualizarDescricao(String novaDescricao), def void inativar()
+    }
+    ValueObject TipoExameId { String id }
+    ValueObject TipoExameEspecialidadeId { long id }
+  }
+  
+  Aggregate EspecialidadeAggregate {
+    Entity Especialidade { 
+      aggregateRoot
+      -EspecialidadeId id, String nome, String descricao, boolean ativa
+      def void inativar()
+    }
+    ValueObject EspecialidadeId { long id }
+  }
+  
+  Aggregate MedicamentoAggregate {
+    Entity Medicamento { aggregateRoot -MedicamentoId id, String nome, String usoPrincipal, ... }
+    ValueObject MedicamentoId { ... }
+  }
+}
+
+BoundedContext Atendimento implements Atendimento {
+  type CORE
+  
+  Aggregate ConsultaAggregate {
+    Entity Consulta { aggregateRoot -ConsultaId id, ... }
+  }
+  
+  Aggregate ExameAggregate {
+    Entity Exame { aggregateRoot -ExameId id, ... }
+  }
+  
+  Aggregate ProntuarioAggregate {
+    Entity Prontuario { aggregateRoot -ProntuarioId id, ... }
+  }
+  
+  Entity AgendaDoMedico { 
+    -MedicoId id
+    String data, String horario, String tipoEvento
+  }
+}
+
+BoundedContext Financeiro implements Financeiro {
+  type CORE
+  
+  Aggregate FaturamentoAggregate {
+    Entity Faturamento { 
+      aggregateRoot 
+      -FaturamentoId id, -PacienteId pacienteId
+      String valor, -MetodoPagamentoId metodoId
+      String statusCobranca, date dataRegistro
+    }
+    ValueObject FaturamentoId { String id }
+    ValueObject MetodoPagamentoId { String id }
+  }
+}
+
+BoundedContext Compartilhado implements Compartilhado {
+  type GENERIC_SUBDOMAIN
+  
+  ValueObject CPF { String numero }
+  ValueObject Telefone { String numero }
+  ValueObject Endereco { String logradouro, String cidade, ... }
+  ValueObject DataNascimento { date data }
+  
   Aggregate PacienteAggregate {
     Entity Paciente {
       aggregateRoot
@@ -24,93 +113,21 @@ BoundedContext Pacientes implements AtendimentoClinico {
         List<@Paciente> pesquisarPorNome(String nome);
       }
     }
-    
-    ValueObject PacienteId {
-      int id
-    }
-    
-    ValueObject CPF {
-      String numero
-      def boolean validar();
-    }
-    
-    ValueObject DataNascimento {
-      String data
-      def boolean validar();
-    }
-    
-    ValueObject Telefone {
-      String numero
-    }
-    
-    ValueObject Endereco {
-      String logradouro
-      String numero
-      String cidade
-      String uf
-    }
+    ValueObject PacienteId { int id }
   }
-}
-
-BoundedContext TiposDeExame implements Suporte {
-  Aggregate TipoExameAggregate {
-    Entity TipoExame {
-      aggregateRoot
-      -TipoExameId id
-      String descricao
-      -TipoExameEspecialidadeId id
-      String valor
-      String status
-      
-      def void atualizarDescricao(String novaDescricao);
-      def void atualizarValor(String novoValor);
-      def void inativar();
-      
-      Repository TipoExameRepository {
-        @TipoExame obterPorCodigo(@TipoExameId id);
-        List<@TipoExame> listarPorDescricao(String trechoDescricao);
-      }
-    }
-    
-    ValueObject TipoExameId {
-      String id
-    }
-    
-    ValueObject TipoExameEspecialidadeId {
-  		long id
-	}
-  }
-}
-
-BoundedContext Especialidades implements Suporte {
-  Aggregate EspecialidadeAggregate {
-    Entity Especialidade {
-      aggregateRoot
-      -EspecialidadeId id
-      String nome
-      String descricao
-      boolean ativa
-      
-      def void ativar();
-      def void inativar();
-      
-      Repository EspecialidadeRepository {
-        @Especialidade obterPorId(@EspecialidadeId id);
-        List<@Especialidade> listarTodas();
-        List<@Especialidade> listarAtivas();
-      }
-    }
-    
-    ValueObject EspecialidadeId {
-      long id
-    }
+  
+  Service EventoService {
+    def void postarEvento(String evento, String payload);
   }
 }
 
 ContextMap MedFlowMap {
-  contains Pacientes
-  contains TiposDeExame
-  contains Especialidades
+  contains Administracao, Catalogo, Atendimento, Financeiro, Compartilhado
   
-  TiposDeExame -> Especialidades
+  Atendimento [D] -> Compartilhado [U]
+  Atendimento [D] -> Catalogo [U]
+  Financeiro [D] -> Compartilhado [U]
+  Financeiro [D] -> Atendimento [U]
+  Catalogo [D] -> Compartilhado [U]
+  Administracao [D] -> Compartilhado [U]
 }
