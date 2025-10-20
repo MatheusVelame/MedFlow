@@ -1,4 +1,4 @@
-package com.medflow.bdd.steps;
+package br.com.medflow.dominio.referencia.especialidades;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
@@ -105,10 +105,10 @@ public class EspecialidadesSteps {
         assertFalse(alteracaoSucesso, "A alteração deveria ter sido rejeitada");
     }
 
-    @Then("exibir a mensagem {string}")
+    /* @Then("exibir a mensagem {string}")
     public void exibirMensagem(String mensagem) {
         assertEquals(mensagem, mensagemErro, "Mensagem de erro incorreta");
-    }
+    } */
 
     @Then("registrar a operação no histórico de alterações")
     public void registrarHistorico() {
@@ -178,10 +178,10 @@ public class EspecialidadesSteps {
         assertEquals(mensagem, mensagemErro, "Mensagem de erro incorreta");
     }
 
-    @Then("registrar a operação no histórico")
+    /* @Then("registrar a operação no histórico")
     public void registrarHistorico() {
         // Placeholder: implementar registro de log/histórico
-    }
+    } */
 
     // ---------------- RN2 — Nome único ----------------
     @Given("que não existe nenhuma especialidade chamada {string} no sistema")
@@ -190,13 +190,13 @@ public class EspecialidadesSteps {
         this.nome = nome;
     }
 
-    @Given("que já existe uma especialidade chamada {string} no sistema")
+    /* @Given("que já existe uma especialidade chamada {string} no sistema")
     public void nomeDuplicado(String nome) {
         // Placeholder: simular duplicidade
         this.nome = nome;
         cadastroSucesso = false;
         mensagemErro = "Especialidade já cadastrada";
-    }
+    } */
 
     @When("o administrador cadastrar {string}")
     public void cadastrarNome(String nome) {
@@ -450,13 +450,13 @@ public class EspecialidadesSteps {
         assertFalse(exclusaoSucesso, "Vínculo deveria ser rejeitado");
     }
 
-    @Then("exibir a mensagem {string}")
+    /* @Then("exibir a mensagem {string}")
     public void exibirMensagem(String mensagem) {
         assertEquals(mensagem, mensagemErro, "Mensagem de erro incorreta");
-    }
+    } */
 
-    @Then("registrar a operação no histórico de alterações")
+    /* @Then("registrar a operação no histórico de alterações")
     public void registrarHistorico() {
         // Placeholder para registrar a operação no histórico
-    }
+    } */
 }
