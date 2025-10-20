@@ -36,7 +36,6 @@ public class Convenio {
 
     // ===== MÉTODOS DE STATUS =====
     public void mudarStatus(StatusConvenio novoStatus, UsuarioResponsavelId responsavelId) {
-        // CORREÇÃO: Removida a validação contra ARQUIVADO.
         
         if (this.status != novoStatus) {
             this.status = novoStatus;
@@ -48,17 +47,14 @@ public class Convenio {
     public void validarExclusao(boolean temProcedimentoAtivo, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela exclusão não pode ser nulo.");
 
-        // Regra de Negócio: Convênio ATIVO com procedimento ATIVO não pode ser excluído.
         if (this.status == StatusConvenio.ATIVO && temProcedimentoAtivo) {
             throw new IllegalStateException("Convênio ATIVO com procedimento ATIVO não pode ser excluído.");
         }
         
-        // Regra de Negócio: Não pode excluir convênio ATIVO (sem procedimentos)
         if (this.status == StatusConvenio.ATIVO && !temProcedimentoAtivo) {
              throw new IllegalStateException("O Convênio deve estar INATIVO para ser excluído.");
         }
         
-        // A exclusão é permitida se o status for INATIVO.
     }
 
     // ===== MÉTODOS DE ALTERAÇÃO =====
@@ -96,10 +92,15 @@ public class Convenio {
         }
     }
 
-    public void adicionarEntradaHistorico(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavelId) {
-        notNull(responsavelId, "O responsável pela ação não pode ser nulo.");
-        historico.add(new HistoricoEntrada(acao, descricao, responsavelId, LocalDateTime.now()));
-    }
+
+ public Convenio.HistoricoEntrada adicionarEntradaHistorico(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavelId) {
+     notNull(responsavelId, "O responsável pela ação não pode ser nulo.");
+     
+     HistoricoEntrada novaEntrada = new HistoricoEntrada(acao, descricao, responsavelId, LocalDateTime.now());
+     historico.add(novaEntrada);
+     
+     return novaEntrada;
+ }
 
     // ===== GETTERS e CLASSE INTERNA HISTÓRICO (mantidos) =====
     // ... (Getters e HistoricoEntrada)
