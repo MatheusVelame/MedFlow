@@ -270,7 +270,7 @@ Scenario: Inativação após resolver vínculos futuros
 
 Scenario: Inativação com vínculos futuros pendentes
 	Given que o administrador tem permissão de administrador
+    Given o funcionário "Rafael Souza" possui status "Ativo" 
 	And o funcionário "Rafael Souza" possui plantões futuros agendados
 	When o administrador tenta alterar o status do funcionário para "Inativo"
-	And o administrador confirma a alteração
 	Then o sistema deve impedir a inativação

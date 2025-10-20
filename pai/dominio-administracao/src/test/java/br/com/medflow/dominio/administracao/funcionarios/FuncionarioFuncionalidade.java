@@ -15,7 +15,6 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     private String nomeFuncionario;
     private String funcaoFuncionario;
     private String contatoFuncionario;
-    private String ultimaMensagem;
     private RuntimeException excecao;
     private boolean temViculosAtivosFuncao = false;
     private boolean temAtividadesFuturas = false;
@@ -29,7 +28,6 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     private void resetContexto() {
         excecao = null;
         funcionarioEmAcao = null;
-        ultimaMensagem = null;
         nomeFuncionario = null;
         funcaoFuncionario = null;
         contatoFuncionario = null;
@@ -106,11 +104,12 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             this.funcionarioEmAcao = funcOpt.get();
         }
         
-        this.nomeFuncionario = funcionarioEmAcao.getNome();
-        this.funcaoFuncionario = funcionarioEmAcao.getFuncao();
-        this.contatoFuncionario = funcionarioEmAcao.getContato();
+//        this.nomeFuncionario = funcionarioEmAcao.getNome();
+//        this.funcaoFuncionario = funcionarioEmAcao.getFuncao();
+//        this.contatoFuncionario = funcionarioEmAcao.getContato();
         this.historicoBaseline = funcionarioEmAcao.getHistorico().size();
-    }    
+    }  
+    
     @Given("o funcionário {string} possui status {string}")
     public void o_funcionario_possui_status(String nome, String status) {
         UsuarioResponsavelId responsavel = getUsuarioId("Setup Status");
@@ -119,14 +118,16 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         Optional<Funcionario> funcOpt = obterFuncionarioPorNome(nome);
         Funcionario func;
         
+        String contatoGarantido = nome.toLowerCase().replaceAll("\\s", ".") + "@medfow.com";
+        
         if (funcOpt.isEmpty()) {
-            func = new Funcionario(nome, "Funcao Base", nome.toLowerCase().replaceAll("\\s", "") + "@email.com", responsavel);
+            func = new Funcionario(nome, "Funcao Base", contatoGarantido, responsavel);
             repositorio.salvar(func);
         } else {
             func = funcOpt.get();
         }
         
-        try {
+        try {	
              if (func.getStatus() != statusEnum) {
                  func.mudarStatus(statusEnum, responsavel, false);
                  repositorio.salvar(func);
@@ -150,6 +151,22 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         }
         
         this.historicoBaseline = funcionarioEmAcao.getHistorico().size();
+    }
+    
+    @Given("o funcionário {string} possui histórico de atendimentos anteriores")
+    public void o_funcionario_possui_historico_de_atendimentos_anteriores(String nome) {
+        // 1. Garante que o funcionário exista e esteja ativo, e carrega o objeto (reutilizando o setup)
+        o_funcionario_possui_status(nome, "Ativo");
+        
+        // 2. Adiciona uma entrada extra no histórico para garantir que a baseline seja > 1.
+        if (this.funcionarioEmAcao != null && this.funcionarioEmAcao.getHistorico().size() <= 1) {
+            UsuarioResponsavelId responsavel = getUsuarioId("SistemaSetup");
+            this.funcionarioEmAcao.adicionarEntradaHistorico(AcaoHistorico.ATUALIZACAO, "Registro de setup de histórico", responsavel);
+            repositorio.salvar(this.funcionarioEmAcao);
+        }
+        
+        // 3. Define a baseline do histórico
+        this.historicoBaseline = this.funcionarioEmAcao.getHistorico().size();
     }
 
     @Given("o funcionário {string} está ativo na função {string}")
@@ -182,10 +199,8 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         UsuarioResponsavelId responsavel = getUsuarioId("Administrador");
         try {
             funcionarioServico.cadastrar(this.nomeFuncionario, this.funcaoFuncionario, this.contatoFuncionario, responsavel);
-            this.ultimaMensagem = "Funcionário cadastrado com sucesso!";
         } catch (RuntimeException e) {
             this.excecao = e;
-            this.ultimaMensagem = e.getMessage();
         }
     }
 
@@ -231,24 +246,26 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         o_administrador_altera_o_campo_para(campo, valor);
     }
     
+ // Este é o método que precisa ser corrigido na sua FuncionarioFuncionalidade.java
+
     @When("o administrador confirma a atualização")
     public void o_administrador_confirma_a_atualizacao() {
         UsuarioResponsavelId responsavel = getUsuarioId("Administrador");
         try {
-            if (this.excecao != null) return; 
+            String nomeParaAtualizar = (nomeFuncionario != null && !nomeFuncionario.isEmpty()) ? nomeFuncionario : funcionarioEmAcao.getNome();
+            String funcaoParaAtualizar = (funcaoFuncionario != null && !funcaoFuncionario.isEmpty()) ? funcaoFuncionario : funcionarioEmAcao.getFuncao();
+            String contatoParaAtualizar = (contatoFuncionario != null && !contatoFuncionario.isEmpty()) ? contatoFuncionario : funcionarioEmAcao.getContato();
 
             funcionarioServico.atualizarDadosCadastrais(
-                    this.funcionarioEmAcao.getId(), 
-                    this.nomeFuncionario, 
-                    this.funcaoFuncionario, 
-                    this.contatoFuncionario, 
+                    funcionarioEmAcao.getId(),
+                    nomeParaAtualizar,
+                    funcaoParaAtualizar,
+                    contatoParaAtualizar,
                     responsavel,
-                    this.temViculosAtivosFuncao 
+                    temViculosAtivosFuncao
             );
-            this.ultimaMensagem = "Dados do funcionário atualizados com sucesso!";
         } catch (RuntimeException e) {
-            this.excecao = e;
-            this.ultimaMensagem = e.getMessage();
+            this.excecao = e; // ✅ captura aqui
         }
     }
 
@@ -259,7 +276,6 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             this.funcionarioEmAcao.validarAlteracaoCampoStatus(); 
         } catch (RuntimeException e) {
             this.excecao = e;
-            this.ultimaMensagem = e.getMessage();
         }
     }
     
@@ -279,14 +295,9 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
                     statusEnum, 
                     responsavel, 
                     this.temAtividadesFuturas); 
-            
-            this.ultimaMensagem = statusEnum == StatusFuncionario.INATIVO ? 
-                                  "Funcionário inativado com sucesso." : 
-                                  "Status do funcionário alterado com sucesso!";
 
         } catch (RuntimeException e) {
             this.excecao = e;
-            this.ultimaMensagem = e.getMessage();
         }
     }
     
@@ -300,10 +311,8 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     public void o_administrador_confirma_a_atribuicao() {
         try {
             funcionarioServico.validarAtribuicaoParaNovaAtividade(this.funcionarioEmAcao.getId());
-            this.ultimaMensagem = "Funcionário atribuído à escala com sucesso!";
         } catch (RuntimeException e) {
             this.excecao = e;
-            this.ultimaMensagem = e.getMessage();
         }
     }
     
@@ -312,7 +321,6 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     @When("o sistema remove ou altera registros históricos indevidamente")
     public void o_sistema_remove_ou_altera_registros_historicos_indevidamente() {
         this.excecao = new IllegalStateException("Erro: O histórico do funcionário deve ser preservado.");
-        this.ultimaMensagem = this.excecao.getMessage();
     }
 
     // THENs - Verificação de Resultados
@@ -324,6 +332,27 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         Optional<Funcionario> cadastrado = obterFuncionarioPorNomeEContato(nomeFuncionario, contatoFuncionario);
         assertTrue(cadastrado.isPresent(), "O funcionário não foi encontrado no repositório após o cadastro.");
     }
+    
+    @When("o administrador tenta alterar o status do funcionário para {string}")
+    public void o_administrador_tenta_alterar_o_status_do_funcionario_para(String novoStatus) {
+        // Reutiliza a lógica central de alteração de status
+        o_administrador_altera_o_status_do_funcionario_para(novoStatus);
+        
+        // O passo "tenta" implica que uma exceção é esperada no Then, o que é tratado pela variável 'excecao'.
+    }
+    
+    @When("o administrador confirma a alteração")
+    public void o_administrador_confirma_a_alteracao() {
+        // A ação de alteração de status real deve ser executada no step anterior: 
+        // 'When o administrador altera o status do funcionário para "Inativo"'.
+        
+        // Este step aqui, no contexto da Gestão de Status, atua apenas como um checkpoint 
+        // que, na sua implementação, já foi coberto pelo step anterior. 
+        // Apenas garantimos que nenhuma exceção ocorreu no processo.
+        if (this.excecao != null) {
+            throw this.excecao; // Lançar a exceção capturada
+        }
+    }
 
     @Then("o sistema deve impedir o cadastro")
     public void o_sistema_deve_impedir_o_cadastro() {
@@ -333,6 +362,25 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     @Then("o sistema deve salvar as alterações com sucesso")
     public void o_sistema_deve_salvar_as_alteracoes_com_sucesso() {
         assertNull(excecao, "A atualização falhou com exceção.");
+    }
+    
+ // Adicionar ao bloco THENs
+
+ // Em FuncionarioFuncionalidade.java
+
+    @Then("o sistema deve impedir a inativação")
+    public void o_sistema_deve_impedir_a_inativacao() {
+        // 1. Verifica se uma exceção foi capturada (indicando que a inativação foi impedida)
+        assertNotNull(this.excecao, "O sistema deveria ter impedido a inativação, mas a operação foi bem-sucedida.");
+
+        // 2. Opcional: Confirma que a exceção capturada é a correta, garantindo que o teste falhou pelo motivo certo
+        assertTrue(this.excecao instanceof IllegalStateException, 
+                   "Exceção capturada é do tipo errado, esperada: IllegalStateException.");
+        
+        // 3. Verifica se o status do funcionário NÃO mudou (permanece Ativo)
+        Funcionario atualizado = repositorio.obter(this.funcionarioEmAcao.getId());
+        assertEquals(StatusFuncionario.ATIVO.name(), atualizado.getStatus().name(),
+                     "O status do funcionário foi alterado indevidamente.");
     }
     
     @Then("o sistema deve impedir a alteração")
@@ -389,17 +437,33 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         assertEquals(this.funcaoFuncionario, atualizado.getFuncao());
     }
     
-    
-    @Then("o sistema deve manter todos os registros históricos inalterados")
-    public void o_sistema_deve_manter_todos_os_registros_historicos_inalterados() {
+    @Then("deve manter todos os registros de atendimentos anteriores inalterados")
+    public void deve_manter_todos_os_registros_de_atendimentos_anteriores_inalterados() {
+        // O teste aqui é implícito: se a inativação foi bem-sucedida (não houve exceção)
+        // e o tamanho do histórico aumentou (pelo log da mudança de status), 
+        // a RN é considerada atendida, pois os registros antigos foram preservados.
+        
+        assertNull(excecao, "Uma exceção foi lançada, indicando que a operação falhou.");
+
         Funcionario atualizado = repositorio.obter(funcionarioEmAcao.getId());
         
-        if (ultimaMensagem != null && ultimaMensagem.contains("sucesso")) {
-            assertTrue(atualizado.getHistorico().size() > historicoBaseline, "O histórico não foi atualizado após uma ação bem-sucedida.");
-        }
+        // Verifica se o histórico aumentou em 1 (o registro da mudança de status) 
+        // E se não houve a exceção de falha de histórico (RN 3).
+        assertTrue(atualizado.getHistorico().size() > historicoBaseline, 
+                   "O histórico deveria ter aumentado em 1 registro após a ação.");
+    }
+    
+    @Then("deve manter todos os registros históricos inalterados")
+    public void deve_manter_todos_os_registros_historicos_inalterados() {
+        // 1. Verifica se houve falha de exceção na operação. Se houve, falha o teste.
+        assertNull(excecao, "O histórico não deveria ter causado exceção na operação bem-sucedida.");
+
+        Funcionario atualizado = repositorio.obter(funcionarioEmAcao.getId());
         
-        // A principal verificação é que NÃO HOUVE exceção de falha de histórico (RN 3)
-        assertNotEquals("Erro: O histórico do funcionário deve ser preservado.", ultimaMensagem);
+        // 2. Verifica se o tamanho do histórico aumentou (indicando que a alteração foi registrada)
+        // O domínio garante que as entradas antigas foram mantidas.
+        assertTrue(atualizado.getHistorico().size() > historicoBaseline, 
+                   "O histórico deveria ter aumentado em 1 registro (log de atualização), indicando que os antigos foram preservados.");
     }
 
     @Then("o sistema deve atualizar o status do funcionário para {string}")
