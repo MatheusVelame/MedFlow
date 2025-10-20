@@ -1,65 +1,83 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.medflow</groupId>
-        <artifactId>medflow</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <groupId>br.com.medflow</groupId>
+        <artifactId>medflow-pai</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pai</relativePath>
     </parent>
 
-    <artifactId>medflow-bdd-especialidades</artifactId>
+    <artifactId>medflow-dominio-referencia</artifactId>
     <packaging>jar</packaging>
 
-    <name>MedFlow BDD - Especialidades</name>
-    <description>BDD tests for medical specialties module</description>
-
+    <name>MedFlow Domínio - Referência</name>
+    <description>Domínio com funcionalidades de referência médica (Especialidades, Tipos de Exame, Medicamentos, etc.)</description>
+	
+	
     <dependencies>
-        <!-- Dependência do módulo core -->
+    	<!-- 
+        Dependência do módulo core 
         <dependency>
-            <groupId>com.medflow</groupId>
+            <groupId>br.com.medflow</groupId>
             <artifactId>medflow-core</artifactId>
             <version>${project.version}</version>
+        </dependency>-->
+
+        <!-- Dependências utilitárias -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        
         </dependency>
 
-        <!-- Cucumber + JUnit 5 -->
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+        </dependency>
+
+        <!-- Dependências de teste -->
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
-            <version>8.11.0</version>
+            <version>7.14.0</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit-platform-engine</artifactId>
-            <version>8.11.0</version>
+            <version>7.14.0</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- AssertJ para assertions mais legíveis (opcional) -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.24.2</version>
             <scope>test</scope>
         </dependency>
+        
+                
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Plugin para suprimir o problema de execução do JUnit Platform -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -70,4 +88,6 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
+
