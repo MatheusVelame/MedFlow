@@ -26,12 +26,14 @@
 	</dependencyManagement>
 
 	<dependencies>
+		<!-- compile -->		
 		<dependency>
 		    <groupId>commons-validator</groupId>
 		    <artifactId>commons-validator</artifactId>
 		</dependency>
 
-    	<dependency>
+    	<!-- test -->
+		<dependency>
 			<groupId>io.cucumber</groupId>
 			<artifactId>cucumber-java</artifactId>
 			<scope>test</scope>

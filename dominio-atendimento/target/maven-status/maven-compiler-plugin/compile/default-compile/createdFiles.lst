@@ -1,9 +1,0 @@
-com/medflow/dominio/prontuario/LogAuditoria.class
-com/medflow/dominio/prontuario/Prontuario.class
-br/com/medflow/dominio/atendimento/consultas/StatusConsulta.class
-br/com/medflow/dominio/atendimento/consultas/Medico.class
-com/medflow/dominio/prontuario/Profissional.class
-br/com/medflow/dominio/atendimento/consultas/Paciente.class
-com/medflow/dominio/prontuario/HistoricoAtualizacao.class
-com/medflow/dominio/prontuario/StatusProntuario.class
-com/medflow/dominio/prontuario/HistoricoClinico.class
