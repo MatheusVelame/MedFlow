@@ -1,0 +1,104 @@
+########################################
+# Build e dependências Maven
+########################################
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+########################################
+# Compilação Java
+########################################
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+########################################
+# Eclipse / IDEs
+########################################
+*.classpath
+*.project
+*.settings/
+.metadata/
+bin/
+tmp/
+*.launch
+*.prefs
+*.log
+
+# Outras IDEs
+.idea/
+*.iml
+.vscode/
+out/
+
+########################################
+# Git / Git Flow
+########################################
+# Arquivos temporários de merge e rebase
+*.orig
+*.rej
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+*.merge_file_*
+
+# Stashes e locks
+*.lock
+.gitignore.lock
+
+########################################
+# Logs e temporários
+########################################
+*.log
+*.tmp
+*.swp
+*.bak
+*.old
+*.save
+
+########################################
+# Sistema operacional
+########################################
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+########################################
+# Ambientes locais / ferramentas
+########################################
+# IntelliJ / JetBrains
+.idea/
+*.iml
+out/
+
+# VSCode
+.vscode/
+.history/
+.cache/
+
+########################################
+# Arquivos do GitHub
+########################################
+# Evita enviar arquivos gerados localmente por workflows
+.github/workflows/*.log
+.github/workflows/*.tmp
