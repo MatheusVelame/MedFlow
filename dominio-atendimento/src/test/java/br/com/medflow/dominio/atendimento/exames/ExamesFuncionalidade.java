@@ -125,6 +125,27 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
         setIdMedicoAgendamento(novoExame.getMedicoId());
     }
     
+    @Given("que existe um exame de {string} agendado para o paciente {string} na data {string} às {string} com o médico {string}")
+    public void que_existe_um_exame_de_agendado_para_o_paciente_na_data_às_com_o_médico(String tipoExame, String nomePaciente, String dataStr, String horaStr, String nomeMedico) {
+        
+        LocalDateTime dataHoraPadrao = parseDataHora(dataStr, horaStr);
+        
+        simularMedico(nomeMedico, true, true);
+        simularPaciente(nomePaciente, true);
+
+        Exame novoExame = new Exame(
+            getPacienteId(nomePaciente), 
+            getMedicoId(nomeMedico), 
+            tipoExame,
+            dataHoraPadrao,    
+            getUsuarioResponsavelId("Setup")
+        );
+        
+        setExameEmTeste(repositorio.salvar(novoExame));
+        setDataHoraAgendamento(dataHoraPadrao);
+        setIdMedicoAgendamento(novoExame.getMedicoId());
+    }
+    
     @Given("que existe um exame de {string} agendado para o paciente {string}")
     public void que_existe_um_exame_de_agendado_para_o_paciente(String tipoExame, String nomePaciente) {
         
@@ -303,6 +324,14 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
         assertNotNull(getExcecaoCapturada(), "Uma exceção de erro era esperada.");
         assertTrue(getExcecaoCapturada().getMessage().contains(mensagem), 
             "Mensagem esperada: '" + mensagem + "', Mensagem real: '" + getExcecaoCapturada().getMessage() + "'");
+    }
+    
+    @Then("o status do exame deve ser alterado para {string}")
+    public void o_status_do_exame_deve_ser_alterado_para(String statusEsperado) {
+        assertNull(getExcecaoCapturada(), "Não deveria ter ocorrido exceção, apenas mudança de status.");
+        assertNotNull(getExameEmTeste(), "O exame deveria ter sido encontrado/atualizado.");
+        assertEquals(StatusExame.valueOf(statusEsperado.toUpperCase()), getExameEmTeste().getStatus(),
+            "O status do exame não foi alterado para o valor esperado: " + statusEsperado);
     }
 
     @Then("o status do exame deve ser {string}")
