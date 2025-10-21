@@ -59,8 +59,8 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         idPacienteAgendamento = getPacienteId(paciente);
     }
     
-    @Given("o médico {string} está cadastrado")
-    public void o_médico_está_cadastrado(String medico) {
+    @Given("o médico {string} está cadastrado no sistema")
+    public void o_médico_está_cadastrado_no_sistema(String medico) {
         simularMedico(medico, true, true);
         idMedicoAgendamento = getMedicoId(medico);
     }
@@ -77,8 +77,8 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         tipoExameAgendamento = tipoExame;
     }
 
-    @Given("o exame {string} está cadastrado")
-    public void o_exame_está_cadastrado(String tipoExame) {
+    @Given("o exame {string} está cadastrado no sistema")
+    public void o_exame_está_cadastrado_no_sistema(String tipoExame) {
         simularTipoExame(tipoExame, true);
         tipoExameAgendamento = tipoExame;
     }
@@ -273,6 +273,16 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         assertNull(exameEmTeste, "O exame não deveria ter sido criado.");
         assertEquals(0, eventos.size(), "Nenhum evento deveria ter sido postado.");
     }
+    
+    @Then("o sistema deve rejeitar a operação")
+    public void o_sistema_deve_rejeitar_a_operacao() {
+        // Supondo um contexto que guarda o resultado da operação
+        boolean operacaoSucesso = (boolean) contexto.getOrDefault("operacaoSucesso", false);
+        assertThat(operacaoSucesso)
+            .as("O sistema deveria rejeitar a operação, mas aceitou.")
+            .isFalse();
+    }
+
 
     @Then("exibir a mensagem {string}")
     public void exibir_a_mensagem(String mensagem) {

@@ -1,25 +1,25 @@
 Feature: Agendamento de exame
 
   # RN1 — O agendamento só pode ser realizado se o paciente e o médico já estiverem cadastrados no sistema
-  Scenario: Agendamento com paciente e médico cadastrados
+  Scenario: Agendamento com paciente e médico cadastrados no sistema
     Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados no sistema
     When o funcionário solicitar o agendamento de exame de "Raio-X"
     Then o sistema deve criar o agendamento com sucesso
 
-  Scenario: Agendamento com paciente não cadastrado
+  Scenario: Agendamento com paciente não cadastrado no sistema
     Given que o paciente "Paulo" não está cadastrado no sistema
-    And o médico "Dr. Ana" está cadastrado
+    And o médico "Dr. Ana" está cadastrado no sistema
     When o funcionário tentar agendar o exame de "Raio-X"
     Then o sistema deve rejeitar o agendamento
     And exibir a mensagem "Paciente não cadastrado no sistema"
 
   # RN2 — O tipo de exame deve estar previamente cadastrado no sistema
-  Scenario: Agendamento com tipo de exame cadastrado
+  Scenario: Agendamento com tipo de exame cadastrado no sistema
     Given que o exame "Ultrassonografia" está cadastrado no sistema
     When o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Lucas"
     Then o sistema deve criar o agendamento com sucesso
 
-  Scenario: Agendamento com tipo de exame não cadastrado
+  Scenario: Agendamento com tipo de exame não cadastrado no sistema
     Given que o exame "Eletroencefalograma" não está cadastrado no sistema
     When o funcionário tentar agendar esse exame para o paciente "Lucas"
     Then o sistema deve rejeitar o agendamento
@@ -27,14 +27,14 @@ Feature: Agendamento de exame
 
   # RN3 — A data e o horário do exame são obrigatórios
   Scenario: Agendamento com data e horário informados
-    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados
-    And o exame "Raio-X" está cadastrado
+    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados no sistema
+    And o exame "Raio-X" está cadastrado no sistema
     When o funcionário agendar o exame para o dia "10/10/2025" às "09h"
     Then o sistema deve criar o agendamento com status "Agendado"
 
   Scenario: Agendamento sem data ou horário
-    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados
-    And o exame "Raio-X" está cadastrado
+    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados no sistema
+    And o exame "Raio-X" está cadastrado no sistema
     When o funcionário tentar agendar o exame sem informar data ou horário
     Then o sistema deve rejeitar o agendamento
     And exibir a mensagem "Data e horário são obrigatórios"
@@ -52,12 +52,12 @@ Feature: Agendamento de exame
     And exibir a mensagem "Paciente já possui exame agendado neste horário"
 
   # RN5 — O médico vinculado ao exame deve estar ativo no sistema
-  Scenario: Médico ativo
+  Scenario: Médico ativo no sistema
     Given que o médico "Dr. Ana" está ativo no sistema
     When o funcionário agendar um exame para "Lucas" com esse médico
     Then o sistema deve criar o agendamento com sucesso
 
-  Scenario: Médico inativo
+  Scenario: Médico inativo no sistema
     Given que o médico "Dr. Ana" está inativo no sistema
     When o funcionário tentar agendar o exame com esse médico
     Then o sistema deve rejeitar o agendamento
@@ -77,14 +77,14 @@ Feature: Agendamento de exame
 
   # RN7 — O exame deve receber um status inicial “Agendado”
   Scenario: Verificação do status inicial
-    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados
-    And o exame "Raio-X" está cadastrado
+    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados no sistema
+    And o exame "Raio-X" está cadastrado no sistema
     When o funcionário agendar o exame
     Then o sistema deve criar o agendamento com status "Agendado"
 
   Scenario: Status inicial incorreto
-    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados
-    And o exame "Raio-X" está cadastrado
+    Given que o paciente "Lucas" e o médico "Dr. Ana" estão cadastrados no sistema
+    And o exame "Raio-X" está cadastrado no sistema
     When o funcionário agendar o exame
     And o sistema criar o agendamento com status "Pendente"
     Then a operação deve ser considerada inválida
