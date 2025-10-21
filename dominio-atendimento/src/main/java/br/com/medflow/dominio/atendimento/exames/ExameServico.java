@@ -6,8 +6,6 @@ import static org.apache.commons.lang3.Validate.notNull;
 // Importações dos pacotes de eventos compartilhados (conforme padrão dominio-catalogo)
 import br.com.medflow.dominio.evento.EventoBarramento;
 
-// A interface VerificadorExternoServico foi movida para seu próprio arquivo.
-
 /**
  * Serviço de Domínio para orquestrar as regras de negócio de Exames.
  */
@@ -25,33 +23,36 @@ public class ExameServico {
 
     public Exame agendarExame(Long pacienteId, Long medicoId, String tipoExame, LocalDateTime dataHora, UsuarioResponsavelId responsavel) {
         
-        // --- [VALIDAÇÕES DE RN1, RN2, RN3, RN4, RN5, RN6] ---
+        // RN3
         if (dataHora == null) {
-            throw new ExcecaoDominio("Data e horário são obrigatórios");
+            throw new ExcecaoDominio("Data e horário do exame são obrigatórios.");
         }
         notNull(tipoExame, "O tipo de exame é obrigatório.");
 
+        // RN1.2
         if (!verificadorExterno.pacienteEstaCadastrado(pacienteId)) {
-            throw new ExcecaoDominio("Paciente não cadastrado no sistema");
+            throw new ExcecaoDominio("Paciente não cadastrado no sistema.");
         }
+        // RN5 - CORRIGIDA a mensagem para o feature file
         if (!verificadorExterno.medicoEstaAtivo(medicoId)) {
-            throw new ExcecaoDominio("Médico inativo não pode ser vinculado ao exame");
+            throw new ExcecaoDominio("Médico vinculado ao exame deve estar ativo no sistema.");
         }
+        // RN2.2
         if (!verificadorExterno.tipoExameEstaCadastrado(tipoExame)) {
-            throw new ExcecaoDominio("Tipo de exame não cadastrado no sistema");
+            throw new ExcecaoDominio("Tipo de exame não cadastrado no sistema.");
         }
+        // RN4
         if (repositorio.obterAgendamentoConflitante(pacienteId, dataHora, null).isPresent()) {
-            throw new ExcecaoDominio("Paciente já possui exame agendado neste horário");
+            throw new ExcecaoDominio("Paciente já possui um exame agendado neste horário.");
         }
+        // RN6 - CORRIGIDA a mensagem para o feature file
         if (!verificadorExterno.medicoEstaDisponivel(medicoId, dataHora)) {
-            throw new ExcecaoDominio("Médico indisponível neste horário");
+            throw new ExcecaoDominio("Não é permitido agendar exame em horário de indisponibilidade do médico.");
         }
         
-        // FIX (Erro 1): Construtor correto com 5 argumentos
         Exame novoExame = new Exame(pacienteId, medicoId, tipoExame, dataHora, responsavel);
         Exame exameSalvo = repositorio.salvar(novoExame);
         
-        // Publica Evento de Domínio (O construtor ExameAgendadoEvent(Exame) está correto)
         eventoBarramento.postar(new ExameAgendadoEvent(exameSalvo)); 
         
         return exameSalvo;
@@ -62,18 +63,25 @@ public class ExameServico {
         Exame exame = repositorio.obterPorId(exameId)
             .orElseThrow(() -> new ExcecaoDominio("Agendamento de exame não encontrado"));
             
+        // RN9 (Inativo)
         if (!verificadorExterno.medicoEstaAtivo(novoMedicoId)) {
             throw new ExcecaoDominio("Médico inativo não pode ser vinculado ao exame");
         }
         
+        // RN10 (Conflito de Horário)
         if (repositorio.obterAgendamentoConflitante(exame.getPacienteId(), novaDataHora, exameId).isPresent()) {
-            throw new ExcecaoDominio("Conflito de horário detectado para o paciente");
+            throw new ExcecaoDominio("A alteração não pode gerar conflito de horário para o paciente.");
         }
         
+        // RN10 (Indisponibilidade Médica) - Corrigi a mensagem de erro no serviço para ser mais explícita
         if (!verificadorExterno.medicoEstaDisponivel(novoMedicoId, novaDataHora)) {
-            throw new ExcecaoDominio("Médico indisponível neste horário");
+            throw new ExcecaoDominio("A alteração não pode gerar conflito de horário para o médico.");
         }
         
+        // Simulação da RN9 (Paciente não pode ser alterado - validado no domínio por ser 'final')
+        // O serviço aqui assume que o pacienteId não está sendo passado.
+        // Se a chamada ao serviço do Step tentar alterar o paciente, a lógica abaixo irá barrar via assert.
+
         exame.atualizar(novoMedicoId, novoTipoExame, novaDataHora, responsavel);
         
         return repositorio.salvar(exame);
@@ -85,10 +93,11 @@ public class ExameServico {
             
         exame.tentarExcluir(responsavel);
         
+        // Se a tentativa de excluir resultar em cancelamento (RN12.2), salva-se o estado de cancelado.
         if (exame.getStatus() == StatusExame.CANCELADO) {
             repositorio.salvar(exame);
         } else {
-            // A chamada está correta: repositorio.excluir(Exame)
+            // Se o status for diferente de cancelado (significa que passou na RN12), exclui fisicamente.
             repositorio.excluir(exame);
         }
     }
