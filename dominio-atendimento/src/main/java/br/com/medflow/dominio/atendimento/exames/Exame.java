@@ -158,6 +158,10 @@ public class Exame {
         this.vinculadoAProntuario = vinculadoAProntuario;
     }
     
+    public void setStatus(StatusExame status) {
+        this.status = status;
+    }
+    
     public String getMotivoCancelamento() {
         return motivoCancelamento;
     }

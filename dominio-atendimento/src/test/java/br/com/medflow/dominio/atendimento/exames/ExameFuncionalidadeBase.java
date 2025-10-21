@@ -7,7 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import br.com.medflow.dominio.evento.EventoBarramento; 
+import br.com.medflow.dominio.evento.EventoBarramento;
+import br.com.medflow.dominio.evento.EventoObservador;
 
 /**
  * Classe base para os testes BDD de Exames. 
@@ -21,7 +22,8 @@ public class ExameFuncionalidadeBase {
 	protected Exame exameAgendado; // Exame de referência para cenários de Update/Delete
 	
 	// Mocks de sistemas externos e dados simulados - Deve ser 'protected'
-	protected List<Object> eventos; // Eventos capturados (Mock de EventoBarramento)
+	// protected List<Object> eventos; // Eventos capturados (Mock de EventoBarramento)
+	protected final List<Object> eventos = new ArrayList<>();
 	private final Map<Long, Boolean> pacientesCadastrados;
     private final Map<Long, Boolean> medicosAtivos;
     private final Map<Long, Map<LocalDateTime, Boolean>> medicosDisponiveis; // Médico -> Data/Hora -> Disponível
@@ -76,11 +78,16 @@ public class ExameFuncionalidadeBase {
     }
     
     /** Mock do EventoBarramento: Captura eventos em uma lista. */
-    private class EventoBarramentoMock implements EventoBarramento {
-        
-    	@Override
+    protected class EventoBarramentoMock implements EventoBarramento {
+
+        @Override
+        public <E> void adicionar(EventoObservador<E> observador) {
+            // Não precisa fazer nada aqui no mock
+        }
+
+        @Override
         public <E> void postar(E evento) {
-            eventos.add(evento);
+            eventos.add(evento); // agora funciona, pois a classe não é estática
         }
     }
 
@@ -92,7 +99,8 @@ public class ExameFuncionalidadeBase {
         this.medicosAtivos = new HashMap<>();
         this.medicosDisponiveis = new HashMap<>();
         this.tiposExameCadastrados = new HashMap<>();
-        this.eventos = new ArrayList<>();
+        // this.eventos = new ArrayList<>();
+        eventos.clear();
         this.repositorio = new ExameRepositorioMemoria();
         
         // Inicializa o ExameServico com os Mocks

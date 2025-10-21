@@ -1,18 +1,11 @@
 package br.com.medflow.dominio.evento;
 
-import java.util.ArrayList;
-import java.util.List;
+/**
+ * Interface que representa o barramento de eventos de domínio, 
+ * responsável por postar eventos e permitir a inscrição de observadores.
+ */
+public interface EventoBarramento {
+	<E> void adicionar(EventoObservador<E> observador);
 
-public class EventoBarramento {
- private final List<EventoObservador> observadores = new ArrayList<>();
-
- public void registrar(EventoObservador observador) {
-     observadores.add(observador);
- }
-
- public void publicar(Evento evento) {
-     for (EventoObservador o : observadores) {
-         o.notificar(evento);
-     }
- }
+	<E> void postar(E evento);
 }

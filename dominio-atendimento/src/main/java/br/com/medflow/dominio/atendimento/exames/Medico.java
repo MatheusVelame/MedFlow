@@ -14,7 +14,7 @@ public class Medico {
         this.id = id;
         this.nome = nome;
         this.ativo = ativo;
-        this.disponibilidade = new Disponibilidade();
+        this.disponibilidade = Disponibilidade.DISPONIVEL;
     }
 
     public Long getId() {
