@@ -11,33 +11,31 @@ import java.util.Map;
 
 import br.com.medflow.dominio.evento.EventoBarramento;
 import br.com.medflow.dominio.evento.EventoObservador;
-import io.cucumber.java.Before; // Import necessário para o Hook @Before
+import io.cucumber.java.Before; 
 
 /**
  * Classe base para os Steps Definitions de Exames.
  * Gerencia as dependências do domínio e o estado (contexto) de execução de cada cenário.
  * Segue o modelo de EspecialidadesFuncionalidadeBase.
  */
-public class ExamesFuncionalidadeBase { // Renomeado de ExameFuncionalidadeBase
+public class ExamesFuncionalidadeBase { 
 
     // DEPENDÊNCIAS DE DOMÍNIO
     protected ExameServico exameServico;
     protected ExameRepositorioMemoria repositorio;
     
     // ===========================================
-    // ESTADO DO CENÁRIO (Variáveis de Contexto) - MOVIDAS DA CLASSE Funcionalidade
+    // ESTADO DO CENÁRIO (Variáveis de Contexto) 
     // ===========================================
-    private Exame exameEmTeste; // Resultado final ou entidade sendo manipulada
-    private ExcecaoDominio excecaoCapturada; // Exceção de negócio capturada
+    private Exame exameEmTeste; 
+    private ExcecaoDominio excecaoCapturada; 
     
-    // Parâmetros de agendamento/atualização (Inputs de Cenário)
     private Long idPacienteAgendamento;
     private Long idMedicoAgendamento;
     private String tipoExameAgendamento;
     private LocalDateTime dataHoraAgendamento;
-    private Long idExameReferencia; // ID do exame a ser atualizado/excluído
+    private Long idExameReferencia; 
     
-    // Coleção para armazenar eventos de domínio postados
     private List<Object> eventos; 
 
     // Mocks e dados simulados
@@ -51,8 +49,8 @@ public class ExamesFuncionalidadeBase { // Renomeado de ExameFuncionalidadeBase
     private long pacienteIdCounter = 1L;
     private long medicoIdCounter = 1L;
 
-    /** Mock do VerificadorExternoServico (Mantido) */
-    private class VerificadorExternoMock implements VerificadorExternoServico {
+    /** Mock do VerificadorExternoServico */
+    private class VerificadorExternoMock implements VerificadorExternoServico { // Implementa a interface pública
         @Override
         public boolean pacienteEstaCadastrado(Long pacienteId) {
             return pacientesCadastrados.getOrDefault(pacienteId, false);
@@ -93,13 +91,14 @@ public class ExamesFuncionalidadeBase { // Renomeado de ExameFuncionalidadeBase
     public ExamesFuncionalidadeBase() {
         this.eventos = new ArrayList<>();
         this.repositorio = new ExameRepositorioMemoria();
+        // Acesso à interface VerificadorExternoServico corrigido
         this.exameServico = new ExameServico(this.repositorio, new VerificadorExternoMock(), new EventoBarramentoMock());
     }
     
     /**
      * Hook do Cucumber que é executado ANTES de cada cenário.
      */
-    @Before // Colocando o Hook na Base, seguindo o padrão EspecialidadesFuncionalidadeBase
+    @Before 
     public void setup() {
         resetarContexto();
     }
@@ -167,7 +166,6 @@ public class ExamesFuncionalidadeBase { // Renomeado de ExameFuncionalidadeBase
         return new UsuarioResponsavelId(1L); // ID fixo para testes
     }
     
-    // Método auxiliar para obter o UsuarioResponsavelId do setup/default
     protected UsuarioResponsavelId getUsuarioResponsavelId(String nomeUsuario) {
         return getUsuarioResponsavel(nomeUsuario); 
     }
