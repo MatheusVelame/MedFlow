@@ -1,0 +1,8 @@
+br/com/medflow/dominio/financeiro/faturamentos/TesteCenariosBDD.class
+br/com/medflow/dominio/financeiro/faturamentos/FaturamentoFuncionalidade.class
+br/com/medflow/dominio/financeiro/faturamentos/FaturamentoRepositorioMemoria.class
+br/com/medflow/dominio/financeiro/faturamentos/UsuarioContext.class
+br/com/medflow/dominio/financeiro/faturamentos/RunCucumberTest.class
+br/com/medflow/dominio/financeiro/faturamentos/AlteracaoStatusFuncionalidade.class
+br/com/medflow/dominio/financeiro/faturamentos/FaturamentoFuncionalidadeBase.class
+br/com/medflow/dominio/financeiro/faturamentos/ExclusaoFaturamentoFuncionalidade.class
