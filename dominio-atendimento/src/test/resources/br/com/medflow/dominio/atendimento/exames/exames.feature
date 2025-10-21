@@ -1,126 +1,175 @@
 Feature: Gerenciamento de Agendamento de Exames
 
-  # Contexto:
-   # Dado que o funcionário "atendente" está logado no sistema
+# -------------------------------------------------------------
+# CASO DE USO: AGENDAR NOVO EXAME
+# -------------------------------------------------------------
 
-  # Features de Agendamento de Exame
+  # RN1 — O agendamento de exame só pode ser realizado se o paciente e o médico já estiverem previamente cadastrados no sistema.
+  Scenario: [RN 1.1 - Sucesso] Agendamento com paciente e médico cadastrados
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" na data "20/12/2025" às "10h"
+    Then o agendamento do exame deve ser criado com sucesso
 
-  @agendamento
-  Scenario: Agendamento de exame com sucesso
-    Dado que o paciente "Lucas" está cadastrado no sistema
-    E que o médico "Dr. Ana" está cadastrado e ativo no sistema
-    E que o tipo de exame "Raio-X" está cadastrado no sistema
-    E que o médico "Dr. Ana" está disponível na data "20/12/2025" às "10h"
-    Quando o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" na data "20/12/2025" às "10h"
-    Então o agendamento do exame deve ser criado com sucesso
-    E o status do exame deve ser "Agendado"
+  Scenario: [RN 1.2 - Falha] Tentativa de agendamento com paciente não cadastrado
+    Given que o paciente "Carlos" não está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Carlos" com o médico "Dr. Ana" na data "20/12/2025" às "11h"
+    Then o sistema deve exibir a mensagem de erro "Paciente não cadastrado no sistema."
 
-  @agendamento
-  Scenario: Tentativa de agendamento para paciente não cadastrado
-    Dado que o paciente "Carlos" não está cadastrado no sistema
-    E que o médico "Dr. Ana" está cadastrado e ativo no sistema
-    E que o tipo de exame "Raio-X" está cadastrado no sistema
-    Quando o funcionário agendar um exame do tipo "Raio-X" para o paciente "Carlos" com o médico "Dr. Ana" na data "20/12/2025" às "11h"
-    Então o sistema deve exibir a mensagem de erro "Paciente não cadastrado no sistema."
+  Scenario: [RN 1.3 - Falha] Tentativa de agendamento com médico não cadastrado
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Jonas" não está cadastrado no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Jonas" na data "20/12/2025" às "12h"
+    Then o sistema deve exibir a mensagem de erro "Médico não cadastrado no sistema."
 
-  @agendamento
-  Scenario: Tentativa de agendamento para médico não cadastrado
-    Dado que o paciente "Lucas" está cadastrado no sistema
-    E que o médico "Dr. Jonas" não está cadastrado no sistema
-    E que o tipo de exame "Raio-X" está cadastrado no sistema
-    Quando o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Jonas" na data "20/12/2025" às "12h"
-    Então o sistema deve exibir a mensagem de erro "Médico não cadastrado no sistema."
+  # RN2 — O tipo de exame deve estar previamente cadastrado no sistema.
+  Scenario: [RN 2.1 - Sucesso] Agendamento com tipo de exame cadastrado
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Ultrassonografia" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Lucas" com o médico "Dr. Ana" na data "21/12/2025" às "09h"
+    Then o agendamento do exame deve ser criado com sucesso
 
-  @agendamento
-  Scenario: Tentativa de agendamento com tipo de exame não cadastrado
-    Dado que o paciente "Lucas" está cadastrado no sistema
-    E que o médico "Dr. Ana" está cadastrado e ativo no sistema
-    E que o tipo de exame "Densitometria Óssea" não está cadastrado no sistema
-    Quando o funcionário agendar um exame do tipo "Densitometria Óssea" para o paciente "Lucas" com o médico "Dr. Ana" na data "21/12/2025" às "10h"
-    Então o sistema deve exibir a mensagem de erro "Tipo de exame não cadastrado no sistema."
+  Scenario: [RN 2.2 - Falha] Tentativa de agendamento com tipo de exame não cadastrado
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Densitometria Óssea" não está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Densitometria Óssea" para o paciente "Lucas" com o médico "Dr. Ana" na data "21/12/2025" às "10h"
+    Then o sistema deve exibir a mensagem de erro "Tipo de exame não cadastrado no sistema."
 
-  @agendamento
-  Scenario: Tentativa de agendamento sem informar a data
-    Dado que o paciente "Lucas" está cadastrado no sistema
-    E que o médico "Dr. Ana" está cadastrado e ativo no sistema
-    E que o tipo de exame "Raio-X" está cadastrado no sistema
-    Quando o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" sem data e hora
-    Então o sistema deve exibir a mensagem de erro "Data e horário do exame são obrigatórios."
+  # RN3 — A data e o horário do exame são obrigatórios.
+  Scenario: [RN 3.1 - Sucesso] Agendamento com data e hora preenchidas
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" na data "22/12/2025" às "10h"
+    Then o agendamento do exame deve ser criado com sucesso
   
-  @agendamento
-  Scenario: Tentativa de agendar exame em horário já ocupado pelo paciente
-    Dado que o paciente "Lucas" está cadastrado no sistema
-    E que o médico "Dr. Ana" está cadastrado e ativo no sistema
-    E que o tipo de exame "Raio-X" está cadastrado no sistema
-    E existe um exame agendado para o paciente "Lucas" na data "22/12/2025" às "14h"
-    Quando o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Lucas" com o médico "Dr. Carlos" na data "22/12/2025" às "14h"
-    Então o sistema deve exibir a mensagem de erro "Paciente já possui um exame agendado neste horário."
+  Scenario: [RN 3.2 - Falha] Tentativa de agendamento sem data e hora
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" sem data e hora
+    Then o sistema deve exibir a mensagem de erro "Data e horário do exame são obrigatórios."
 
-  @agendamento
-  Scenario: Tentativa de agendamento com médico inativo
-    Dado que o paciente "Maria" está cadastrado no sistema
-    E que o médico "Dr. Paulo" está cadastrado mas inativo no sistema
-    E que o tipo de exame "Ultrassonografia" está cadastrado no sistema
-    Quando o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Maria" com o médico "Dr. Paulo" na data "23/12/2025" às "09h"
-    Então o sistema deve exibir a mensagem de erro "Médico vinculado ao exame deve estar ativo no sistema."
-  
-  @agendamento
-  Scenario: Tentativa de agendamento em horário indisponível do médico
-    Dado que o paciente "Beatriz" está cadastrado no sistema
-    E que o médico "Dr. Carlos" está cadastrado e ativo no sistema
-    E que o tipo de exame "Sangue" está cadastrado no sistema
-    E que o médico "Dr. Carlos" está indisponível na data "24/12/2025" às "15h"
-    Quando o funcionário agendar um exame do tipo "Sangue" para o paciente "Beatriz" com o médico "Dr. Carlos" na data "24/12/2025" às "15h"
-    Então o sistema deve exibir a mensagem de erro "Não é permitido agendar exame em horário de indisponibilidade do médico."
+  # RN4 — Não é permitido agendar dois exames para o mesmo paciente no mesmo horário.
+  Scenario: [RN 4.1 - Sucesso] Agendamento para paciente com horário livre
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    And não existe um exame agendado para o paciente "Lucas" na data "22/12/2025" às "15h"
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" na data "22/12/2025" às "15h"
+    Then o agendamento do exame deve ser criado com sucesso
 
-  # Features de Atualização de Agendamento
-  
-  @atualizacao
-  Scenario: Atualização de horário do exame com sucesso
-    Dado que existe um exame de "Raio-X" agendado para o paciente "Marina" com o médico "Dr. Ana" na data "15/01/2026" às "08h"
-    E que o médico "Dr. Ana" está disponível na data "16/01/2026" às "10h"
-    Quando o funcionário alterar a data e hora do exame para "16/01/2026" às "10h"
-    Então a alteração deve ser salva com sucesso
-    E o histórico de alterações do exame deve ser registrado
+  Scenario: [RN 4.2 - Falha] Tentativa de agendar exame em horário já ocupado pelo paciente
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    And existe um exame agendado para o paciente "Lucas" na data "22/12/2025" às "14h"
+    When o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Lucas" com o médico "Dr. Carlos" na data "22/12/2025" às "14h"
+    Then o sistema deve exibir a mensagem de erro "Paciente já possui um exame agendado neste horário."
 
-  @atualizacao
-  Scenario: Tentativa de alterar o paciente de um agendamento
-    Dado que existe um exame de "Raio-X" agendado para o paciente "Marina"
-    Quando o funcionário tentar alterar o paciente do exame para "Carla"
-    Então o sistema deve exibir a mensagem de erro "O paciente de um exame não pode ser alterado."
+  # RN5 — O médico vinculado ao exame deve estar ativo no sistema.
+  Scenario: [RN 5.1 - Sucesso] Agendamento com médico ativo
+    Given que o paciente "Maria" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Ultrassonografia" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Maria" com o médico "Dr. Ana" na data "23/12/2025" às "10h"
+    Then o agendamento do exame deve ser criado com sucesso
 
-  @atualizacao
-  Scenario: Tentativa de remarcar exame para horário com conflito
-    Dado que existe um exame de "Ultrassonografia" agendado para o paciente "Paulo" na data "18/01/2026" às "11h"
-    E que o médico "Dr. Carlos" está indisponível na data "19/01/2026" às "14h"
-    Quando o funcionário alterar a data e hora do exame para "19/01/2026" às "14h"
-    Então o sistema deve exibir a mensagem de erro "A alteração não pode gerar conflito de horário para o médico."
+  Scenario: [RN 5.2 - Falha] Tentativa de agendamento com médico inativo
+    Given que o paciente "Maria" está cadastrado no sistema
+    And que o médico "Dr. Paulo" está cadastrado mas inativo no sistema
+    And que o tipo de exame "Ultrassonografia" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Maria" com o médico "Dr. Paulo" na data "23/12/2025" às "09h"
+    Then o sistema deve exibir a mensagem de erro "Médico vinculado ao exame deve estar ativo no sistema."
 
-  # Features de Exclusão e Cancelamento de Exame
+  # RN6 — Não é permitido agendar exame em horário de indisponibilidade do médico.
+  Scenario: [RN 6.1 - Sucesso] Agendamento em horário disponível do médico
+    Given que o paciente "Beatriz" está cadastrado no sistema
+    And que o médico "Dr. Carlos" está cadastrado e ativo no sistema
+    And que o tipo de exame "Sangue" está cadastrado no sistema
+    And que o médico "Dr. Carlos" está disponível na data "24/12/2025" às "16h"
+    When o funcionário agendar um exame do tipo "Sangue" para o paciente "Beatriz" com o médico "Dr. Carlos" na data "24/12/2025" às "16h"
+    Then o agendamento do exame deve ser criado com sucesso
 
-  @cancelamento
-  Scenario: Cancelamento de exame com sucesso
-    Dado que existe um exame de "Raio-X" agendado para o paciente "Beatriz"
-    Quando o funcionário cancelar o exame com o motivo "Paciente solicitou"
-    Então o status do exame deve ser alterado para "Cancelado"
-    E o motivo e a data do cancelamento devem ser registrados
+  Scenario: [RN 6.2 - Falha] Tentativa de agendamento em horário indisponível do médico
+    Given que o paciente "Beatriz" está cadastrado no sistema
+    And que o médico "Dr. Carlos" está cadastrado e ativo no sistema
+    And que o tipo de exame "Sangue" está cadastrado no sistema
+    And que o médico "Dr. Carlos" está indisponível na data "24/12/2025" às "15h"
+    When o funcionário agendar um exame do tipo "Sangue" para o paciente "Beatriz" com o médico "Dr. Carlos" na data "24/12/2025" às "15h"
+    Then o sistema deve exibir a mensagem de erro "Não é permitido agendar exame em horário de indisponibilidade do médico."
 
-  @cancelamento
-  Scenario: Tentativa de excluir um exame já realizado
-    Dado que existe um exame de "Sangue" para o paciente "Lucas" com status "Realizado"
-    Quando o funcionário tentar excluir o exame
-    Então o sistema deve exibir a mensagem de erro "Não é permitido excluir exames já realizados."
+  # RN7 — O exame deve receber um status inicial "Agendado".
+  Scenario: [RN 7.1 - Sucesso] Verificação do status inicial do exame
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" na data "25/12/2025" às "10h"
+    Then o agendamento do exame deve ser criado com sucesso
+    And o status do exame deve ser "Agendado"
+
+# -------------------------------------------------------------
+# CASO DE USO: ATUALIZAR AGENDAMENTO DE EXAME
+# -------------------------------------------------------------
+
+  # RN8 — Só podem ser alterados a data, o horário, o tipo de exame e o médico.
+  Scenario: [RN 8.1 - Sucesso] Atualização de dados permitidos do exame
+    Given que existe um exame de "Raio-X" agendado para o paciente "Marina" com o médico "Dr. Ana" na data "15/01/2026" às "08h"
+    And que o médico "Dr. Carlos" está cadastrado e ativo no sistema
+    And que o médico "Dr. Carlos" está disponível na data "16/01/2026" às "10h"
+    When o funcionário alterar o médico para "Dr. Carlos" e a data e hora do exame para "16/01/2026" às "10h"
+    Then a alteração deve ser salva com sucesso
+
+  # RN9 — O paciente vinculado não pode ser alterado.
+  Scenario: [RN 9.1 - Falha] Tentativa de alterar o paciente de um agendamento
+    Given que existe um exame de "Raio-X" agendado para o paciente "Marina"
+    When o funcionário tentar alterar o paciente do exame para "Carla"
+    Then o sistema deve exibir a mensagem de erro "O paciente de um exame não pode ser alterado."
+
+  # RN10 — A alteração só será válida se não gerar conflito de horário.
+  Scenario: [RN 10.1 - Sucesso] Remarcar exame para horário vago
+    Given que existe um exame de "Ultrassonografia" agendado para o paciente "Paulo" na data "18/01/2026" às "11h" com o médico "Dr. Carlos"
+    And que o médico "Dr. Carlos" está disponível na data "19/01/2026" às "15h"
+    When o funcionário alterar a data e hora do exame para "19/01/2026" às "15h"
+    Then a alteração deve ser salva com sucesso
+
+  Scenario: [RN 10.2 - Falha] Tentativa de remarcar exame para horário com conflito
+    Given que existe um exame de "Ultrassonografia" agendado para o paciente "Paulo" na data "18/01/2026" às "11h" com o médico "Dr. Carlos"
+    And que o médico "Dr. Carlos" está indisponível na data "19/01/2026" às "14h"
+    When o funcionário alterar a data e hora do exame para "19/01/2026" às "14h"
+    Then o sistema deve exibir a mensagem de erro "A alteração não pode gerar conflito de horário para o médico."
     
-  @cancelamento
-  Scenario: Tentativa de excluir exame vinculado a um laudo
-    Dado que existe um exame de "Ultrassonografia" agendado para o paciente "Maria"
-    E o exame está vinculado a um laudo
-    Quando o funcionário tentar excluir o exame
-    Então o sistema deve exibir a mensagem de erro "Exame com laudo não pode ser excluído, apenas cancelado."
+# -------------------------------------------------------------
+# CASO DE USO: CANCELAR OU EXCLUIR EXAME
+# -------------------------------------------------------------
 
-  @cancelamento
-  Scenario: Tentativa de excluir exame associado a um registro clínico
-    Dado que existe um exame de "Raio-X" agendado para o paciente "Paulo"
-    E o exame está associado a um registro clínico no prontuário
-    Quando o funcionário tentar excluir o exame
-    Então o sistema deve exibir a mensagem de erro "Exame associado a um registro clínico não pode ser excluído."
+  # RN11 — Não é permitido excluir/cancelar exames já realizados ou em andamento.
+  Scenario: [RN 11.1 - Sucesso] Cancelamento de exame com status "Agendado"
+    Given que existe um exame de "Raio-X" agendado para o paciente "Beatriz"
+    When o funcionário cancelar o exame com o motivo "Paciente solicitou"
+    Then o status do exame deve ser alterado para "Cancelado"
+    And o motivo e a data do cancelamento devem ser registrados
+
+  Scenario: [RN 11.2 - Falha] Tentativa de cancelar um exame já realizado
+    Given que existe um exame de "Sangue" para o paciente "Lucas" com status "Realizado"
+    When o funcionário tentar cancelar o exame com o motivo "Erro de sistema"
+    Then o sistema deve exibir a mensagem de erro "Ação não permitida para o status atual do exame"
+
+  # RN12 — Exame com laudo não pode ser excluído, apenas cancelado.
+  Scenario: [RN 12.1 - Sucesso] Cancelamento de exame com laudo
+    Given que existe um exame de "Ultrassonografia" agendado para o paciente "Maria"
+    And o exame está vinculado a um laudo
+    When o funcionário cancelar o exame com o motivo "Solicitação médica"
+    Then o status do exame deve ser alterado para "Cancelado"
+
+  Scenario: [RN 12.2 - Falha] Tentativa de excluir exame com laudo
+    Given que existe um exame de "Ultrassonografia" agendado para o paciente "Maria"
+    And o exame está vinculado a um laudo
+    When o funcionário tentar excluir o exame
+    Then o sistema deve exibir a mensagem de erro "Exame com laudo não pode ser excluído, apenas cancelado."
