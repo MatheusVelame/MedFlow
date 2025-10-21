@@ -16,7 +16,7 @@
   
   <modules>
   	<module>pai</module>
-  	<module>dominio-convenios</module>
+  	<module>dominio-financeiro</module>
   </modules>
 
 </project>
