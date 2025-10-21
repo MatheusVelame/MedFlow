@@ -63,4 +63,9 @@ public class ConvenioFuncionalidadeBase implements EventoBarramento {
 			notNull(evento, "O evento não pode ser nulo");
 			eventos.add(evento);
 		}
+		
+		// ADICIONE ESTE MÉTODO:
+		protected void limparUsuarios() {
+		    this.usuariosId.clear();
+		}
 }
