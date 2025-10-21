@@ -16,6 +16,7 @@ Feature: Agendamento de exame
   # RN2 — O tipo de exame deve estar previamente cadastrado no sistema
   Scenario: Agendamento com tipo de exame cadastrado no sistema
     Given que o exame "Ultrassonografia" está cadastrado no sistema
+    And que o paciente "Lucas" está cadastrado no sistema
     When o funcionário agendar um exame do tipo "Ultrassonografia" para o paciente "Lucas"
     Then o sistema deve criar o agendamento com sucesso
 

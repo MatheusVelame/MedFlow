@@ -28,7 +28,7 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
     private String tipoExameAgendamento;
     private LocalDateTime dataHoraAgendamento;
     private Exception excecaoCapturada;
-    private Long idExameReferencia; // ID do exame a ser atualizado/excluído
+    private Long idExameReferencia;
 
     @Before
     public void setup() {
@@ -51,7 +51,7 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
 
     @Given("que o paciente {string} e o médico {string} estão cadastrados no sistema")
     public void que_o_paciente_e_o_medico_estão_cadastrados_no_sistema(String paciente, String medico) {
-        // Mocks iniciais
+        
         simularPaciente(paciente, true);
         simularMedico(medico, true, true);
         
@@ -88,6 +88,12 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
     @Given("que o paciente {string} não está cadastrado no sistema")
     public void que_o_paciente_não_está_cadastrado_no_sistema(String paciente) {
         simularPaciente(paciente, false);
+        idPacienteAgendamento = getPacienteId(paciente);
+    }
+    
+    @Given("que o paciente {string} está cadastrado no sistema")
+    public void que_o_paciente_está_cadastrado_no_sistema(String paciente) {
+    	simularPaciente(paciente, true);
         idPacienteAgendamento = getPacienteId(paciente);
     }
     
