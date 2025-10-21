@@ -3,85 +3,71 @@ package br.com.medflow.dominio.referencia.especialidades;
 import io.cucumber.java.Before;
 import org.apache.commons.lang3.RandomStringUtils;
 
-// OBS: As classes a seguir (Especialidade, EspecialidadeServico, RegraNegocioException)
-// DEVEM ser importadas ou criadas no seu projeto. Ajuste os imports conforme a sua estrutura de pacotes.
-import br.com.medflow.dominio.referencia.especialidades.Especialidade;
-import br.com.medflow.dominio.referencia.especialidades.EspecialidadeServico;
-import br.com.medflow.dominio.RegraNegocioException;
-import br.com.medflow.dominio.referencia.especialidades.EspecialidadesRepositorioMemoria;
-
-
 /**
  * Classe base para os Steps Definitions de Especialidades.
- * Gerencia as dependências do domínio e o contexto de execução de cada cenário (Before hook).
+ * Gerencia as dependências do domínio e o estado (contexto) de execução de cada cenário.
+ *
+ * NOTA: O MedicoRepositorioMemoria é uma dependência crucial para simular
+ * as Regras de Negócio de vínculo (RNs 2.3 e 3.1).
  */
 public class EspecialidadesFuncionalidadeBase {
 
-    // DEPENDÊNCIAS DE DOMÍNIO
-    // A implementação em memória é usada para testes isolados
+    // DEPENDÊNCIAS DE DOMÍNIO (Injetadas e Mockadas)
     protected EspecialidadesRepositorioMemoria repositorio;
+    protected MedicoRepositorioMemoria medicoRepositorio; // NOVO: Dependência para verificar vínculos
     protected EspecialidadeServico servico;
 
-    // CONTEXTO DO CENÁRIO (Estado do Teste)
+    // ESTADO DO CENÁRIO (Variáveis de Contexto)
     private RegraNegocioException ultimaExcecao;
     private String descricao;
     private Especialidade ultimaEspecialidadeCadastrada;
 
     /**
-     * Hook do Cucumber que é executado antes de cada cenário.
-     * Garante que o estado seja limpo e as dependências reinicializadas
-     * para isolar a execução de cada teste BDD.
+     * Hook do Cucumber que é executado ANTES de cada cenário.
+     * Garante que o estado seja limpo e as dependências reinicializadas.
      */
     @Before
     public void setup() {
-        // 1. Inicializa o Repositório de Memória
+        // 1. Inicializa Repositórios de Memória
         this.repositorio = new EspecialidadesRepositorioMemoria();
+        this.medicoRepositorio = new MedicoRepositorioMemoria(); // NOVO: Inicialização do Mock
         
-        // 2. Inicializa o Serviço com o Repositório (injeção de dependência manual para teste)
-        this.servico = new EspecialidadeServico(repositorio);
+        // 2. Inicializa o Serviço (Injeção de dependências)
+        this.servico = new EspecialidadeServico(repositorio, medicoRepositorio); // NOVO: Injeção do MedicoRepositorio
 
-        // 3. Limpa o estado do Repositório e do Contexto
+        // 3. Limpa o estado (Mocked Repositories e Contexto)
         this.repositorio.limpar();
+        this.medicoRepositorio.limpar(); // NOVO: Limpeza do Mock de Médicos
         this.ultimaExcecao = null;
         this.descricao = null;
         this.ultimaEspecialidadeCadastrada = null;
-        
-        // 4. PREENCHIMENTO DE DADOS DE CONTEXTO (Mock das Precondições - Opcional)
-        // Cenários mais complexos que foram comentados na feature podem ser inicializados aqui:
-        
-        // Exemplo:
-        // repositorio.salvar(new Especialidade("Pediatria", true, false, false));
-        // repositorio.salvar(new Especialidade("Dermatologia", true, true, true)); // Com médicos ativos
-        // repositorio.salvar(new Especialidade("Gastroenterologia", false, true, false)); // Inativa, com histórico
     }
 
     // ===========================================
-    // GETTERS E SETTERS PARA O CONTEXTO DO CENÁRIO
+    // GETTERS E SETTERS (Ponto de contato para EspecialidadesFuncionalidade)
     // ===========================================
 
+    // Getters
     public RegraNegocioException getUltimaExcecao() {
         return ultimaExcecao;
     }
 
-    public void setUltimaExcecao(RegraNegocioException ultimaExcecao) {
-        this.ultimaExcecao = ultimaExcecao;
-    }
-
     public String getDescricao() {
-        // Método auxiliar para garantir que RN 1.4 utilize a string correta
-        if (this.descricao == null) {
-            // Garante que, se a string não foi gerada no Given, use um valor padrão.
-            return ""; 
-        }
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
+        // Retorna a descrição gerada para o teste (RN 1.4)
+        return (descricao != null) ? descricao : "";
     }
 
     public Especialidade getUltimaEspecialidadeCadastrada() {
         return ultimaEspecialidadeCadastrada;
+    }
+    
+    // Setters
+    public void setUltimaExcecao(RegraNegocioException ultimaExcecao) {
+        this.ultimaExcecao = ultimaExcecao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
     }
 
     public void setUltimaEspecialidadeCadastrada(Especialidade ultimaEspecialidadeCadastrada) {
@@ -97,9 +83,9 @@ public class EspecialidadesFuncionalidadeBase {
      * Útil para testar limites de caracteres (RN 1.4).
      */
     protected String gerarString(int tamanho) {
-        // Uso de uma biblioteca como Apache Commons Lang para geração segura de strings aleatórias.
-        // Se a biblioteca não estiver disponível, uma implementação manual simples pode ser usada.
+        // Uso de uma biblioteca como Apache Commons Lang.
         if (tamanho > 0) {
+            // Este método gera uma string de 255 caracteres
             return RandomStringUtils.randomAlphanumeric(tamanho);
         }
         return "";
