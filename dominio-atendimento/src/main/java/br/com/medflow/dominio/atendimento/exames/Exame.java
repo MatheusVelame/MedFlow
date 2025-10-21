@@ -53,16 +53,40 @@ public class Exame {
      */
     public void atualizar(Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel) {
         
-        // RN4: Registro no Histórico de Alterações de Data/Hora
-        if (!this.dataHora.equals(novaDataHora)) {
-            String descricao = String.format("Data/Hora alterada de %s para %s.", this.dataHora, novaDataHora);
-            this.registrarHistorico(AcaoHistorico.ATUALIZACAO, descricao, responsavel);
-        }
+        // 1. Capturar o estado ANTES da atualização para verificar quais campos mudaram
+        LocalDateTime dataHoraAntiga = this.dataHora;
+        Long medicoIdAntigo = this.medicoId;
+        String tipoExameAntigo = this.tipoExame;
         
-        // Aplica as alterações (RN1)
+        // 2. Aplicar as alterações (RN1)
         this.medicoId = novoMedicoId;
         this.tipoExame = novoTipoExame;
         this.dataHora = novaDataHora;
+
+        // 3. Verificar as alterações
+        boolean dataHoraAlterada = !dataHoraAntiga.equals(novaDataHora);
+        boolean medicoAlterado = !medicoIdAntigo.equals(novoMedicoId);
+        boolean tipoExameAlterado = !tipoExameAntigo.equals(novoTipoExame);
+        
+        // RN4: Registro no Histórico de Alterações (Corrigido para ser abrangente)
+        if (dataHoraAlterada || medicoAlterado || tipoExameAlterado) {
+            
+            // Cria uma descrição mais detalhada para o histórico
+            StringBuilder descricao = new StringBuilder("Exame atualizado. Alterações: ");
+            
+            if (dataHoraAlterada) {
+                // Usando a dataHoraAntiga para o log
+                descricao.append(String.format("Data/Hora de %s para %s; ", dataHoraAntiga, novaDataHora));
+            }
+            if (medicoAlterado) {
+                descricao.append(String.format("Médico de %d para %d; ", medicoIdAntigo, novoMedicoId));
+            }
+            if (tipoExameAlterado) {
+                descricao.append(String.format("Tipo de Exame de %s para %s; ", tipoExameAntigo, novoTipoExame));
+            }
+            
+            this.registrarHistorico(AcaoHistorico.ATUALIZACAO, descricao.toString().trim(), responsavel);
+        }
     }
     
     /**

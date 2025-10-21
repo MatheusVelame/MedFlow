@@ -8,7 +8,13 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Optional;
+
+import br.com.medflow.dominio.atendimento.exames.Exame;
+import br.com.medflow.dominio.atendimento.exames.ExameId;
+import br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId;
 
 /**
  * Step Definitions para os cenários de BDD de Gerenciamento de Exames.
@@ -52,6 +58,32 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         idPacienteAgendamento = getPacienteId(paciente);
         idMedicoAgendamento = getMedicoId(medico);
     }
+    
+
+    @Given("o paciente {string} e o médico {string} não possuem outros agendamentos no dia {string} às {string}")
+    public void o_paciente_e_o_medico_nao_possuem_outros_agendamentos_no_dia_as(String nomePaciente, String nomeMedico, String dataStr, String horaStr) {
+        
+        Long pacienteId = getPacienteId(nomePaciente);
+        Long medicoId = getMedicoId(nomeMedico);
+        
+        LocalDateTime dataHoraReferencia = parseDataHora(dataStr, horaStr);
+        
+        Exame exame = new Exame(
+            pacienteId,
+            medicoId,
+            "Exame Padrão",
+          
+            dataHoraReferencia.minusHours(1), 
+            getUsuarioResponsavelId("Setup")
+        );
+
+        exame.setId(new ExameId(5L));
+        repositorio.salvar(exame);
+        
+        this.exameEmTeste = exame;
+        
+    }
+
 
     @Given("que o paciente {string} não está cadastrado no sistema")
     public void que_o_paciente_não_está_cadastrado_no_sistema(String paciente) {
@@ -101,6 +133,12 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         simularMedico(medico, true, true); // Ativo e Disponível (padrão)
         idMedicoAgendamento = getMedicoId(medico);
     }
+    
+    @Given("{string} é um médico ativo")
+    public void é_um_médico_ativo(String medico) {
+    	simularMedico(medico, true, true); // Ativo e Disponível (padrão)
+        idMedicoAgendamento = getMedicoId(medico);
+    }
 
     @Given("que o médico {string} está inativo no sistema")
     public void que_o_medico_está_inativo_no_sistema(String medico) {
@@ -120,6 +158,84 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         simularMedico(medico, true, false); // Indisponível (RN6)
         idMedicoAgendamento = getMedicoId(medico);
         dataHoraAgendamento = parseDataHora(data, hora);
+    }
+    
+    @Given("o médico {string} já possui outro exame agendado no dia {string} às {string}")
+    public void o_medico_ja_possui_outro_exame_agendado_no_dia_as(String nomeMedico, String dataStr, String horaStr) {
+        // Parsing da data e hora
+        LocalDate data = LocalDate.parse(dataStr, java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        LocalTime hora = LocalTime.parse(horaStr, java.time.format.DateTimeFormatter.ofPattern("H'h'"));
+        LocalDateTime dataHoraAgendada = LocalDateTime.of(data, hora);
+
+        // Mocking/Setup de IDs. Assumimos que o nome do médico corresponde a um ID mock
+        // E que o tipo de exame e paciente são mockados.
+        Long medicoIdExistente = 2L; 
+        Long pacienteIdExistente = 10L; 
+        String tipoExameExistente = "Raio-X";
+        UsuarioResponsavelId responsavel = new UsuarioResponsavelId(99L);
+
+        // Criação do objeto Exame Agendado (Usando o construtor correto)
+        Exame exameExistente = new Exame(
+            pacienteIdExistente,
+            medicoIdExistente,
+            tipoExameExistente,
+            dataHoraAgendada,
+            responsavel
+        );
+        
+        // Atribuir um ID (simulando a persistência do repositório de teste)
+        exameExistente.setId(new ExameId(2L)); 
+
+        // Persistência no repositório de teste
+        repositorio.salvar(exameExistente);
+    }
+   
+
+    @Given("existe um agendamento de exame de {string} com o paciente {string}")
+    public void existe_um_agendamento_de_exame_de_com_o_paciente(String tipoExame, String nomePaciente) {
+        
+        Long pacienteId = getPacienteId(nomePaciente);
+        Long medicoIdPadrao = ExameFuncionalidadeBase.ID_MEDICO_ANA; 
+        LocalDateTime dataHoraPadrao = LocalDateTime.of(2025, 11, 15, 14, 0); 
+        UsuarioResponsavelId responsavel = getUsuarioResponsavelId("SETUP");
+        
+        Exame novoExame = new Exame(
+            pacienteId,
+            medicoIdPadrao,
+            tipoExame,
+            dataHoraPadrao,
+            responsavel
+        );
+        
+        novoExame.setId(new ExameId(3L)); 
+        
+        repositorio.salvar(novoExame); 
+        this.exameAgendado = novoExame;
+    }
+    
+    
+    @Given("existe um agendamento de exame para o paciente {string} com o médico {string}")
+    public void existe_um_agendamento_de_exame_para_o_paciente_com_o_médico(String nomePaciente, String nomeMedico) {
+        
+        Long pacienteId = getPacienteId(nomePaciente);
+        Long medicoId = getMedicoId(nomeMedico);
+        
+        String tipoExamePadrao = "Ultrassonografia"; 
+        LocalDateTime dataHoraPadrao = LocalDateTime.of(2025, 12, 1, 10, 0); 
+        UsuarioResponsavelId responsavel = getUsuarioResponsavelId("SETUP");
+        
+        Exame novoExame = new Exame(
+            pacienteId,
+            medicoId,
+            tipoExamePadrao,
+            dataHoraPadrao,
+            responsavel
+        );
+        
+        novoExame.setId(new ExameId(4L)); 
+        
+        repositorio.salvar(novoExame); 
+        this.exameEmTeste = novoExame; 
     }
 
 
@@ -141,6 +257,11 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
     @When("o funcionário tentar agendar o exame de {string}")
     public void o_funcionário_tentar_agendar_o_exame_de(String tipoExame) {
         o_funcionário_solicitar_o_agendamento_de_exame_de(tipoExame);
+    }
+    
+    @When("o funcionário tentar agendar o exame nesse horário")
+    public void o_funcionário_tentar_agendar_o_exame_nesse_horario() {
+    	// TODO
     }
 
     @When("o funcionário agendar um exame do tipo {string} para o paciente {string}")
@@ -276,11 +397,9 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
     
     @Then("o sistema deve rejeitar a operação")
     public void o_sistema_deve_rejeitar_a_operacao() {
-        // Supondo um contexto que guarda o resultado da operação
-        boolean operacaoSucesso = (boolean) contexto.getOrDefault("operacaoSucesso", false);
-        assertThat(operacaoSucesso)
-            .as("O sistema deveria rejeitar a operação, mas aceitou.")
-            .isFalse();
+        // 'excecaoCapturada' é um campo que deve ser herdado de ExameFuncionalidadeBase (ou similar)
+        // e preenchido no método que implementa o 'When' (Ex: quando a exclusão falhar).
+        assertNotNull(excecaoCapturada, "Era esperado que uma exceção fosse lançada (operação rejeitada), mas nenhuma foi capturada.");
     }
 
 
@@ -313,6 +432,51 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         exameEmTeste = repositorio.salvar(exameSetup);
         idExameReferencia = exameEmTeste.getId().getValor();
     }
+    
+    @Given("existe um agendamento de exame para o dia {string} às {string}")
+    public void existe_um_agendamento_de_exame_para_o_dia_as(String dataStr, String horaStr) {
+        
+        LocalDateTime dataHoraInicial = parseDataHora(dataStr, horaStr);
+        
+        Exame novoExame = new Exame(
+            ID_PACIENTE_MARINA, 
+            ID_MEDICO_ANA,     
+            "Exame de Rotina",
+            dataHoraInicial,    
+            getUsuarioResponsavelId("Setup")
+        );
+        
+        novoExame.setId(new ExameId(6L)); 
+        repositorio.salvar(novoExame);
+        
+        this.exameEmTeste = novoExame;
+        
+        this.dataHoraAgendamento = dataHoraInicial; 
+    }
+    
+    @Given("existe um agendamento de exame para o paciente {string}")
+    public void existe_um_agendamento_de_exame_para_o_paciente(String nomePaciente) {
+        
+        Long pacienteId = getPacienteId(nomePaciente);
+        Long medicoId = ID_MEDICO_ANA; 
+        String tipoExame = "Ultrassonografia";
+        LocalDateTime dataHoraPadrao = parseDataHora("10/10/2025", "10h");
+        UsuarioResponsavelId responsavel = getUsuarioResponsavelId("SETUP");
+        
+        Exame novoExame = new Exame(
+            pacienteId,
+            medicoId,
+            tipoExame,
+            dataHoraPadrao,
+            responsavel
+        );
+        
+        novoExame.setId(new ExameId(7L)); 
+        
+        repositorio.salvar(novoExame); 
+        this.exameEmTeste = novoExame;
+    }
+    
     
     @Given("existe um exame com status {string} para o paciente {string}")
     public void existe_um_exame_com_status_para_o_paciente(String status, String paciente) {
@@ -386,16 +550,26 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
     
     @When("o funcionário alterar apenas o horário para {string}")
     public void o_funcionário_alterar_apenas_o_horário_para(String novoHorario) {
+        
+        String dataFormatada = this.exameEmTeste.getDataHora().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        
         try {
-            LocalDateTime novaDataHora = parseDataHora(exameEmTeste.getDataHora().toLocalDate().toString(), novoHorario);
-            // Simula a indisponibilidade do médico para forçar o conflito de horário (RN3)
-            simularDisponibilidadeMedico("Dr. Paulo", false, novaDataHora); 
+            LocalDateTime novaDataHora = parseDataHora(dataFormatada, novoHorario);
             
-            exameEmTeste = exameServico.atualizarAgendamento(exameEmTeste.getId(), exameEmTeste.getMedicoId(), exameEmTeste.getTipoExame(), novaDataHora, getUsuarioResponsavelId("Funcionário"));
+            
+            // Para este cenário de "Atualização de outros campos sem mudar o paciente" (SUCESSO):
+            exameEmTeste = exameServico.atualizarAgendamento(
+                exameEmTeste.getId(), 
+                exameEmTeste.getMedicoId(), 
+                exameEmTeste.getTipoExame(), 
+                novaDataHora, 
+                getUsuarioResponsavelId("Funcionário")
+            );
         } catch (ExcecaoDominio e) {
             excecaoCapturada = e;
         }
     }
+    
 
     @When("o funcionário alterar o horário do exame para {string}")
     public void o_funcionário_alterar_o_horário_do_exame_para(String novoHorario) {
@@ -408,7 +582,7 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         }
     }
     
-    @When("o funcionário tentar remarcar o exame para esse mesmo horário")
+    /* @When("o funcionário tentar remarcar o exame para esse mesmo horário")
     public void o_funcionário_tentar_remarcar_o_exame_para_esse_mesmo_horário() {
         // Força conflito no mock (RN3)
         LocalDateTime novaDataHora = parseDataHora("12/10/2025", "09h");
@@ -419,7 +593,56 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         } catch (ExcecaoDominio e) {
             excecaoCapturada = e;
         }
+    } 
+    @When("o funcionário tentar remarcar o exame para esse mesmo horário")
+    public void o_funcionario_tentar_remarcar_o_exame_para_esse_mesmo_horario() {
+        if (exameEmTeste == null) {
+            exameEmTeste = criarAgendamentoMock("Marcos", "Dr. Paulo", "Ultrassonografia", parseDataHora("12/10/2025", "08h"));
+        }
+
+        LocalDateTime novaDataHora = parseDataHora("12/10/2025", "09h");
+        simularDisponibilidadeMedico("Dr. Paulo", false, novaDataHora);
+
+        try {
+            exameEmTeste = exameServico.atualizarAgendamento(
+                    exameEmTeste.getId(),
+                    exameEmTeste.getMedicoId(),
+                    exameEmTeste.getTipoExame(),
+                    novaDataHora,
+                    getUsuarioResponsavelId("Funcionário")
+            );
+        } catch (ExcecaoDominio e) {
+            excecaoCapturada = e;
+        }
+    } */
+    @When("o funcionário tentar remarcar o exame para esse mesmo horário")
+    public void o_funcionário_tentar_remarcar_o_exame_para_esse_mesmo_horário() {
+       
+        LocalDateTime novaDataHora = this.dataHoraAgendamento != null ? this.dataHoraAgendamento : parseDataHora("12/10/2025", "09h");
+        
+        if (this.exameEmTeste == null) {
+            Exame exameMock = new Exame(ID_PACIENTE_CARLA, ID_MEDICO_CARLOS, "Ultrassonografia", novaDataHora.minusDays(1), getUsuarioResponsavelId("Setup"));
+            exameMock.setId(new ExameId(999L));
+            this.exameEmTeste = exameMock;
+            repositorio.salvar(exameMock);
+        }
+        
+        
+        try {
+            exameEmTeste = exameServico.atualizarAgendamento(
+                exameEmTeste.getId(), 
+                exameEmTeste.getMedicoId(), 
+                exameEmTeste.getTipoExame(), 
+                novaDataHora, 
+                getUsuarioResponsavelId("Funcionário")
+            );
+        } catch (ExcecaoDominio e) {
+            excecaoCapturada = e;
+        }
     }
+   
+
+    
     
     @When("o funcionário alterar o horário para {string}")
     public void o_funcionário_alterar_o_horário_para(String novoHorario) {
@@ -521,6 +744,23 @@ public class ExameFuncionalidade extends ExameFuncionalidadeBase {
         assertNull(excecaoCapturada);
         // Verificar se houve alteração de data/hora no histórico, se aplicável
         assertTrue(exameEmTeste.getHistorico().stream().anyMatch(h -> h.getAcao() == AcaoHistorico.ATUALIZACAO));
+    }
+    
+    @Then("o sistema deve exibir {string}")
+    public void o_sistema_deve_exibir(String mensagemEsperada) {
+        // 1. Verifica se a exceção capturada (do 'When' que falhou) contém a mensagem esperada.
+        if (excecaoCapturada != null) {
+            String mensagemAtual = excecaoCapturada.getMessage();
+            
+            // Verificação: a mensagem da exceção deve conter a mensagem esperada
+            assertTrue(mensagemAtual != null && mensagemAtual.contains(mensagemEsperada), 
+                String.format("A mensagem de exceção esperada era '%s', mas foi recebida: '%s'", mensagemEsperada, mensagemAtual));
+                
+        } else {
+            // Se a etapa 'Then' de verificação de mensagem for chamada, mas nenhuma exceção foi capturada, 
+            // algo falhou no 'When' (ou o 'Then' está sendo usado para verificar sucesso, o que não é o caso aqui).
+            assertTrue(false, String.format("Era esperado a mensagem de erro '%s', mas nenhuma exceção foi capturada.", mensagemEsperada));
+        }
     }
     
     @Then("registrar no {string} a data antiga {string} e a nova {string}")

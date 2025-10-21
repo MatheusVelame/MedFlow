@@ -1,6 +1,8 @@
 package br.com.medflow.dominio.atendimento.exames;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -145,7 +147,7 @@ public class ExameFuncionalidadeBase {
     }
 	
     /** Converte data e hora do Gherkin para LocalDateTime. */
-	protected LocalDateTime parseDataHora(String data, String hora) {
+	/* protected LocalDateTime parseDataHora(String data, String hora) {
 		// Ajuste para o formato "10/10/2025" e "09h"
 		int dia = Integer.parseInt(data.substring(0, 2));
 		int mes = Integer.parseInt(data.substring(3, 5));
@@ -153,7 +155,47 @@ public class ExameFuncionalidadeBase {
 		int h = Integer.parseInt(hora.substring(0, hora.indexOf('h')));
 		
 		return LocalDateTime.of(ano, mes, dia, h, 0);
-	}
+	} */
+    /* protected LocalDateTime parseDataHora(String data, String hora) {
+		
+        // Formatter robusto para a data "dd/MM/yyyy"
+        final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        
+        // Formatter robusto para a hora "Hh" (ex: "14h")
+        final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("H'h'");
+        
+        // Parsing seguro
+        LocalDate localDate = LocalDate.parse(data, DATE_FORMATTER); // DÁ ERRO
+        LocalTime localTime = LocalTime.parse(hora, TIME_FORMATTER);
+        
+        return LocalDateTime.of(localDate, localTime);
+	} */
+    protected LocalDateTime parseDataHora(String data, String hora) {
+        LocalDate localDate;
+        try {
+            // tenta "dd/MM/yyyy"
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            localDate = LocalDate.parse(data, formatter);
+        } catch (Exception e) {
+            // fallback para "yyyy-MM-dd"
+            localDate = LocalDate.parse(data);
+        }
+
+        // suporta "14h", "09h" ou "09:00"
+        int horaNum;
+        if (hora.contains("h")) {
+            horaNum = Integer.parseInt(hora.replace("h", "").trim());
+        } else if (hora.contains(":")) {
+            horaNum = Integer.parseInt(hora.split(":")[0]);
+        } else {
+            horaNum = Integer.parseInt(hora.trim());
+        }
+
+        return LocalDateTime.of(localDate, LocalTime.of(horaNum, 0));
+    }
+
+    
+    
     
     // --- Métodos de Simulação para GIVEN ---
     
