@@ -2,6 +2,7 @@ package br.com.medflow.dominio.atendimento.exames;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.cucumber.java.Before; // Hook deve estar na classe de Steps
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -19,11 +20,17 @@ import br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId;
  * Step Definitions para os cenários de BDD de Gerenciamento de Exames.
  * Segue o modelo de EspecialidadesFuncionalidade e herda o estado da Base.
  */
-// Renomeado de ExameFuncionalidade
 public class ExamesFuncionalidade extends ExamesFuncionalidadeBase { 
 
-    // O estado do cenário (exameEmTeste, excecaoCapturada, etc.) foi movido para ExamesFuncionalidadeBase.
-    // O hook @Before está agora em ExamesFuncionalidadeBase e chama resetarContexto().
+    /**
+     * Hook que é executado ANTES de cada cenário.
+     * Chama o método de limpeza de contexto da classe base.
+     */
+    @Before
+    public void setup() {
+        // Chamada ao método de limpeza do contexto na classe base
+        resetarContexto(); 
+    }
 
     // --- GIVEN (Agendamento) ---
 
@@ -241,7 +248,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -263,7 +270,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -294,7 +301,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -313,7 +320,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -333,7 +340,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
     
@@ -358,7 +365,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
     
@@ -382,7 +389,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -404,7 +411,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -420,7 +427,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
                  // Se o agendamento não ocorreu, não podemos checar o status
             }
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -584,7 +591,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
     
@@ -604,7 +611,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             // simulamos o erro para garantir que o THEN seja testado.
             throw new RuntimeException("Paciente não pode ser alterado."); 
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         } catch (RuntimeException e) {
             // Captura a exceção de RN2 que deve ser lançada pelo serviço
             setExcecaoCapturada(new ExcecaoDominio("Não é permitido alterar o paciente de um agendamento existente")); 
@@ -634,7 +641,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
     
@@ -656,7 +663,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
     
@@ -688,7 +695,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
    
@@ -711,7 +718,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
     
@@ -727,7 +734,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
         try {
             exameServico.tentarExcluirAgendamento(getExameEmTeste().getId(), getUsuarioResponsavelId("Funcionário"));
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 
@@ -759,7 +766,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             Exame resultado = exameServico.cancelarAgendamento(getExameEmTeste().getId(), motivo, getUsuarioResponsavelId("Funcionário"));
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
     
@@ -770,7 +777,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             Exame resultado = exameServico.cancelarAgendamento(getExameEmTeste().getId(), null, getUsuarioResponsavelId("Funcionário"));
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
-            setExcecaoCapturada((ExcecaoDominio) e);
+            setExcecaoCapturada(e);
         }
     }
 

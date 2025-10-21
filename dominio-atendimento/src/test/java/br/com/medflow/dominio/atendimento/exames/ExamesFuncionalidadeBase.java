@@ -11,12 +11,11 @@ import java.util.Map;
 
 import br.com.medflow.dominio.evento.EventoBarramento;
 import br.com.medflow.dominio.evento.EventoObservador;
-import io.cucumber.java.Before; 
+// O import io.cucumber.java.Before foi removido!
 
 /**
  * Classe base para os Steps Definitions de Exames.
  * Gerencia as dependências do domínio e o estado (contexto) de execução de cada cenário.
- * Segue o modelo de EspecialidadesFuncionalidadeBase.
  */
 public class ExamesFuncionalidadeBase { 
 
@@ -50,7 +49,7 @@ public class ExamesFuncionalidadeBase {
     private long medicoIdCounter = 1L;
 
     /** Mock do VerificadorExternoServico */
-    private class VerificadorExternoMock implements VerificadorExternoServico { // Implementa a interface pública
+    private class VerificadorExternoMock implements VerificadorExternoServico { 
         @Override
         public boolean pacienteEstaCadastrado(Long pacienteId) {
             return pacientesCadastrados.getOrDefault(pacienteId, false);
@@ -91,18 +90,11 @@ public class ExamesFuncionalidadeBase {
     public ExamesFuncionalidadeBase() {
         this.eventos = new ArrayList<>();
         this.repositorio = new ExameRepositorioMemoria();
-        // Acesso à interface VerificadorExternoServico corrigido
         this.exameServico = new ExameServico(this.repositorio, new VerificadorExternoMock(), new EventoBarramentoMock());
     }
     
-    /**
-     * Hook do Cucumber que é executado ANTES de cada cenário.
-     */
-    @Before 
-    public void setup() {
-        resetarContexto();
-    }
-
+    // O Hook @Before foi movido para a subclasse.
+    // Este método é a implementação que o Hook na subclasse irá chamar.
     protected void resetarContexto() {
         // Limpeza de Repositórios e Mocks
         repositorio.limpar();
