@@ -1,12 +1,19 @@
-package br.com.medflow.dominio.referencia.tiposExames;
+package br.com.medflow.dominio.referencia.tiposExames.test;
 
-   import static org.apache.commons.lang3.Validate.notNull;
+import static org.apache.commons.lang3.Validate.notNull;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-   import java.util.ArrayList;
-   import java.util.HashMap;
-   import java.util.List;
-   import java.util.Map;
-   import java.util.Optional;
+import br.com.medflow.dominio.referencia.tiposExames.StatusTipoExame;
+import br.com.medflow.dominio.referencia.tiposExames.TipoExame;
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameId;
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorio;
+
+
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorio;
 
    public class TipoExameRepositorioMemoria implements TipoExameRepositorio {
        private Map<TipoExameId, TipoExame> tiposExames = new HashMap<>();
