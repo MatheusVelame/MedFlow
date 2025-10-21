@@ -63,10 +63,8 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
 
     @Given("não existe um exame agendado para o paciente {string} na data {string} às {string}")
     public void não_existe_um_exame_agendado_para_o_paciente_na_data_as(String paciente, String dataStr, String horaStr) {
-        // A ausência no repositório já garante que não existe.
-        // Se o passo é usado, o teste deve garantir que o paciente está cadastrado para o WHEN
         simularPaciente(paciente, true);
-        // O repositório de memória não precisa de setup negativo.
+
     }
     
     @Given("existe um exame agendado para o paciente {string} na data {string} às {string}")
@@ -81,6 +79,8 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             getUsuarioResponsavelId("Setup")
         );
         repositorio.salvar(exameConflito);
+        simularTipoExame("Ultrassonografia", true);
+        simularMedico("Dr. Carlos", true, true);
     }
     
     @Given("que o médico {string} está cadastrado mas inativo no sistema")
@@ -99,10 +99,19 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
 
     @Given("que o médico {string} está indisponível na data {string} às {string}")
     public void que_o_médico_está_indisponível_na_data_as(String medico, String dataStr, String horaStr) {
-        simularMedico(medico, true, false); 
-        setIdMedicoAgendamento(getMedicoId(medico));
-        setDataHoraAgendamento(parseDataHora(dataStr, horaStr));
+        
+        Long medicoId = getMedicoId(medico);
+        LocalDateTime dataHora = parseDataHora(dataStr, horaStr);
+
+        simularMedico(medico, true, true); 
+        
+        simularIndisponibilidadeMedico(medicoId, dataHora); 
+        
+        setIdMedicoAgendamento(medicoId);
+        setDataHoraAgendamento(dataHora);
     }
+    
+    
     
     // --- GIVENs para Atualização/Exclusão/Cancelamento ---
     
@@ -124,6 +133,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
         setDataHoraAgendamento(dataHoraPadrao);
         setIdMedicoAgendamento(novoExame.getMedicoId());
     }
+    
     
     @Given("que existe um exame de {string} agendado para o paciente {string} na data {string} às {string} com o médico {string}")
     public void que_existe_um_exame_de_agendado_para_o_paciente_na_data_às_com_o_médico(String tipoExame, String nomePaciente, String dataStr, String horaStr, String nomeMedico) {
@@ -150,10 +160,13 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
     public void que_existe_um_exame_de_agendado_para_o_paciente(String tipoExame, String nomePaciente) {
         
         LocalDateTime dataHoraPadrao = LocalDateTime.now().plusDays(10); 
+        String nomeMedicoReferencia = "Dr. Referencia";
+        
+        simularMedico(nomeMedicoReferencia, true, true);
         
         Exame novoExame = new Exame(
             getPacienteId(nomePaciente), 
-            getMedicoId("Dr. Referencia"), 
+            getMedicoId(nomeMedicoReferencia), 
             tipoExame,
             dataHoraPadrao,    
             getUsuarioResponsavelId("Setup")
@@ -197,7 +210,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
         } catch (ExcecaoDominio e) {
             setExcecaoCapturada(e);
         }
-    }
+    } 
     
     @When("o funcionário agendar um exame do tipo {string} para o paciente {string} com o médico {string} sem data e hora")
     public void o_funcionário_agendar_um_exame_do_tipo_para_o_paciente_com_o_médico_sem_data_e_hora(String tipoExame, String nomePaciente, String nomeMedico) {
@@ -224,7 +237,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
             Exame resultado = exameServico.atualizarAgendamento(
                 getExameEmTeste().getId(), 
                 novoMedicoId, 
-                getExameEmTeste().getTipoExame(), // Mantém o tipo de exame
+                getExameEmTeste().getTipoExame(),
                 novaDataHora, 
                 getUsuarioResponsavelId("Funcionário")
             );
@@ -237,11 +250,7 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
     // RN9
     @When("o funcionário tentar alterar o paciente do exame para {string}")
     public void o_funcionário_tentar_alterar_o_paciente_do_exame_para(String novoPaciente) {
-        
-        // Simulação da RN9: Paciente não pode ser alterado.
         try {
-            // Se o serviço não lançar a exceção de RN9 (por não permitir pacienteId no update), 
-            // simulamos a falha que o serviço deveria ter implementado
             exameServico.atualizarAgendamento(
                 getExameEmTeste().getId(), 
                 getExameEmTeste().getMedicoId(), 
@@ -253,7 +262,6 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
         } catch (ExcecaoDominio e) {
             setExcecaoCapturada(e);
         } catch (RuntimeException e) {
-            // A exceção de RN9 é esperada
             setExcecaoCapturada(new ExcecaoDominio("O paciente de um exame não pode ser alterado.")); 
         }
     }
@@ -339,6 +347,13 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
         assertNull(getExcecaoCapturada());
         assertNotNull(getExameEmTeste());
         assertEquals(StatusExame.valueOf(status.toUpperCase()), getExameEmTeste().getStatus());
+    }
+    
+    @Then("o paciente vinculado deve ser {string}")
+    public void o_paciente_vinculado_deve_ser(String nomePaciente) {
+        assertNotNull(getExameEmTeste(), "O exame deveria ter sido encontrado/atualizado.");
+        assertEquals(getPacienteId(nomePaciente), getExameEmTeste().getPacienteId(), 
+            "O ID do paciente não corresponde ao paciente esperado após a operação.");
     }
 
     @Then("a alteração deve ser salva com sucesso")

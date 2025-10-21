@@ -113,6 +113,13 @@ Feature: Gerenciamento de Agendamento de Exames
     When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" na data "25/12/2025" às "10h"
     Then o agendamento do exame deve ser criado com sucesso
     And o status do exame deve ser "Agendado"
+    
+  Scenario: [RN 7.2 - Falha] Tentativa de agendamento com data/hora passada
+    Given que o paciente "Lucas" está cadastrado no sistema
+    And que o médico "Dr. Ana" está cadastrado e ativo no sistema
+    And que o tipo de exame "Raio-X" está cadastrado no sistema
+    When o funcionário agendar um exame do tipo "Raio-X" para o paciente "Lucas" com o médico "Dr. Ana" na data "01/01/2000" às "10h"
+    Then o sistema deve exibir a mensagem de erro "Não é permitido agendar exames para datas passadas."
 
 # -------------------------------------------------------------
 # CASO DE USO: ATUALIZAR AGENDAMENTO DE EXAME
@@ -125,12 +132,24 @@ Feature: Gerenciamento de Agendamento de Exames
     And que o médico "Dr. Carlos" está disponível na data "16/01/2026" às "10h"
     When o funcionário alterar o médico para "Dr. Carlos" e a data e hora do exame para "16/01/2026" às "10h"
     Then a alteração deve ser salva com sucesso
+   
+  Scenario: [RN 8.2 - Falha] Tentativa de alterar para médico inativo
+    Given que existe um exame de "Raio-X" agendado para o paciente "Paula" com o médico "Dr. Pedro" na data "15/01/2026" às "11h"
+    And que o médico "Dr. Pedro" está cadastrado mas inativo no sistema
+    When o funcionário alterar o médico para "Dr. Pedro" e a data e hora do exame para "15/01/2026" às "12h"
+    Then o sistema deve exibir a mensagem de erro "Médico inativo não pode ser vinculado ao exame."
 
   # RN9 — O paciente vinculado não pode ser alterado.
   Scenario: [RN 9.1 - Falha] Tentativa de alterar o paciente de um agendamento
     Given que existe um exame de "Raio-X" agendado para o paciente "Marina"
     When o funcionário tentar alterar o paciente do exame para "Carla"
     Then o sistema deve exibir a mensagem de erro "O paciente de um exame não pode ser alterado."
+    
+  Scenario: [RN 9.2 - Sucesso] Alteração de outro campo (data) mantém o paciente
+    Given que existe um exame de "Raio-X" agendado para o paciente "Marina"
+    When o funcionário alterar a data e hora do exame para "20/01/2026" às "14h"
+    Then a alteração deve ser salva com sucesso
+    And o paciente vinculado deve ser "Marina"
 
   # RN10 — A alteração só será válida se não gerar conflito de horário.
   Scenario: [RN 10.1 - Sucesso] Remarcar exame para horário vago

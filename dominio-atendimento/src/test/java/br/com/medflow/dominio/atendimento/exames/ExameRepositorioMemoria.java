@@ -35,21 +35,14 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
         exames.remove(exame.getId());
     }
 
-    /**
-     * Implementação da lógica de conflito de agendamento para o Paciente.
-     * RN: Paciente só pode ter um exame agendado por data e hora.
-     */
+    
     @Override
     public Optional<Exame> obterAgendamentoConflitante(Long pacienteId, LocalDateTime dataHora, ExameId idExcluido) {
         
         return exames.values().stream()
-                // 1. Deve ser o mesmo paciente
                 .filter(exame -> exame.getPacienteId().equals(pacienteId))
-                // 2. Deve ser a mesma data e hora
                 .filter(exame -> exame.getDataHora().equals(dataHora))
-                // 3. Deve ignorar o próprio exame em caso de atualização (idExcluido)
                 .filter(exame -> idExcluido == null || !exame.getId().equals(idExcluido))
-                // Retorna o primeiro exame que satisfaz as condições de conflito
                 .findFirst();
     }
     

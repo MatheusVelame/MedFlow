@@ -11,7 +11,6 @@ import java.util.Map;
 
 import br.com.medflow.dominio.evento.EventoBarramento;
 import br.com.medflow.dominio.evento.EventoObservador;
-// O import io.cucumber.java.Before foi removido!
 
 /**
  * Classe base para os Steps Definitions de Exames.
@@ -76,7 +75,7 @@ public class ExamesFuncionalidadeBase {
         }
     }
     
-    /** Mock do EventoBarramento (Mantido) */
+    /** Mock do EventoBarramento */
     protected class EventoBarramentoMock implements EventoBarramento {
         @Override
         public <E> void adicionar(EventoObservador<E> observador) {}
@@ -94,7 +93,6 @@ public class ExamesFuncionalidadeBase {
     }
     
     // O Hook @Before foi movido para a subclasse.
-    // Este método é a implementação que o Hook na subclasse irá chamar.
     protected void resetarContexto() {
         // Limpeza de Repositórios e Mocks
         repositorio.limpar();
@@ -167,6 +165,10 @@ public class ExamesFuncionalidadeBase {
         LocalDate localDate = LocalDate.parse(data, dateFormatter);
         int horaInt = Integer.parseInt(hora.replace("h", ""));
         return LocalDateTime.of(localDate, LocalTime.of(horaInt, 0));
+    }
+    
+    protected void simularIndisponibilidadeMedico(Long medicoId, LocalDateTime dataHora) {
+        agendaMedicos.computeIfAbsent(medicoId, k -> new HashMap<>()).put(dataHora, false);
     }
     
     protected void simularPaciente(String nome, boolean cadastrado) {

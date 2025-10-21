@@ -11,22 +11,17 @@ import static org.apache.commons.lang3.Validate.notNull;
 public class Exame {
 
     private ExameId id;
-    private final Long pacienteId; // RN2: O paciente vinculado não pode ser alterado (final)
+    private final Long pacienteId;
     private Long medicoId;
     private String tipoExame;
     private LocalDateTime dataHora;
     private StatusExame status;
     private final List<HistoricoEntrada> historico;
-    
-    // Propriedades de suporte à RN2 e RN3 do Cancelamento/Exclusão
     private boolean vinculadoALaudo = false;
     private boolean vinculadoAProntuario = false;
     private String motivoCancelamento;
 
-
-    // Construtor para NOVO Agendamento
     public Exame(Long pacienteId, Long medicoId, String tipoExame, LocalDateTime dataHora, UsuarioResponsavelId responsavel) {
-        // Validações básicas de criação (outras validações estão no ExameServico, como RN1, RN2, RN3, RN4, RN5, RN6)
         notNull(pacienteId, "O paciente é obrigatório.");
         
         this.pacienteId = pacienteId;
@@ -34,48 +29,35 @@ public class Exame {
         this.tipoExame = tipoExame;
         this.dataHora = dataHora;
         
-        // RN7: O exame deve receber um status inicial “Agendado”
+        // RN7
         this.status = StatusExame.AGENDADO;
         this.historico = new ArrayList<>();
         this.registrarHistorico(AcaoHistorico.CRIACAO, "Agendamento inicial criado.", responsavel);
     }
     
-    // Construtor usado pelo repositório (JPA, por exemplo)
     protected Exame() {
         this.historico = new ArrayList<>();
         this.pacienteId = null; 
     }
 
-    /**
-     * Atualiza os campos permitidos do exame.
-     * RN1: Só podem ser alterados a data, o horário, o tipo de exame e o médico responsável.
-     * RN4: O histórico de alterações de data/hora deve ser registrado.
-     */
     public void atualizar(Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel) {
-        
-        // 1. Capturar o estado ANTES da atualização para verificar quais campos mudaram
         LocalDateTime dataHoraAntiga = this.dataHora;
         Long medicoIdAntigo = this.medicoId;
         String tipoExameAntigo = this.tipoExame;
-        
-        // 2. Aplicar as alterações (RN1)
+
         this.medicoId = novoMedicoId;
         this.tipoExame = novoTipoExame;
         this.dataHora = novaDataHora;
 
-        // 3. Verificar as alterações
         boolean dataHoraAlterada = !dataHoraAntiga.equals(novaDataHora);
         boolean medicoAlterado = !medicoIdAntigo.equals(novoMedicoId);
         boolean tipoExameAlterado = !tipoExameAntigo.equals(novoTipoExame);
         
-        // RN4: Registro no Histórico de Alterações (Corrigido para ser abrangente)
+        // RN4
         if (dataHoraAlterada || medicoAlterado || tipoExameAlterado) {
-            
-            // Cria uma descrição mais detalhada para o histórico
             StringBuilder descricao = new StringBuilder("Exame atualizado. Alterações: ");
             
             if (dataHoraAlterada) {
-                // Usando a dataHoraAntiga para o log
                 descricao.append(String.format("Data/Hora de %s para %s; ", dataHoraAntiga, novaDataHora));
             }
             if (medicoAlterado) {
@@ -89,13 +71,16 @@ public class Exame {
         }
     }
     
-    /**
-     * Marca o exame como CANCELADO (soft delete de agendamento).
-     * RN4 (Cancelamento): Deve registrar a data e o motivo.
-     */
     public void cancelar(String motivo, UsuarioResponsavelId responsavel) {
+        
+        // RN11
+        if (this.status != StatusExame.AGENDADO) {
+            throw new ExcecaoDominio("Ação não permitida para o status atual do exame");
+        }
+        
+        // RN4
         if (motivo == null || motivo.trim().isEmpty()) {
-            throw new ExcecaoDominio("É obrigatório informar o motivo do cancelamento"); // RN4
+            throw new ExcecaoDominio("É obrigatório informar o motivo do cancelamento"); 
         }
         
         this.status = StatusExame.CANCELADO;
@@ -103,29 +88,23 @@ public class Exame {
         this.registrarHistorico(AcaoHistorico.CANCELAMENTO, "Exame cancelado. Motivo: " + motivo, responsavel);
     }
     
-    /**
-     * Tenta excluir o exame (físico ou lógico).
-     * RN1, RN2, RN3 da Feature Exclusão.
-     */
     public void tentarExcluir(UsuarioResponsavelId responsavel) {
         
-        // RN1: Não é permitido excluir exames já realizados ou em andamento.
+        // RN1
         if (this.status != StatusExame.AGENDADO) {
             throw new ExcecaoDominio("Exames realizados ou em andamento não podem ser excluídos");
         }
         
-        // RN3: A exclusão só é permitida se o exame ainda não estiver associado a nenhum registro clínico.
+        // RN3
         if (this.vinculadoAProntuario) {
             throw new ExcecaoDominio("Não é permitido excluir exames associados a registros clínicos do paciente");
         }
         
-        // RN2: Caso o exame já esteja vinculado a um laudo, não pode ser excluído (fisicamente), deve ser apenas "Cancelado"
+        // RN2
         if (this.vinculadoALaudo) {
-            // Se o status é AGENDADO e tem laudo (inconsistente, mas a RN prioriza o cancelamento)
-            // Na prática, esta RN geralmente se aplica quando o status é REALIZADO, mas vamos seguir o teste.
-            this.cancelar("Exclusão física bloqueada por vínculo com laudo.", responsavel);
-            return; 
+            throw new ExcecaoDominio("Exame com laudo não pode ser excluído, apenas cancelado.");
         }
+        
 
         // Se passar em todas as RNs de bloqueio, pode-se prosseguir com a exclusão física/lógica final
         this.registrarHistorico(AcaoHistorico.EXCLUSAO, "Exame excluído com sucesso (físico/lógico).", responsavel);
@@ -170,7 +149,7 @@ public class Exame {
         return vinculadoALaudo;
     }
 
-    public void setVinculadoALaudo(boolean vinculadoALaudo) { // Apenas para testes/população do GIVEN
+    public void setVinculadoALaudo(boolean vinculadoALaudo) {
         this.vinculadoALaudo = vinculadoALaudo;
     }
 
@@ -178,7 +157,7 @@ public class Exame {
         return vinculadoAProntuario;
     }
 
-    public void setVinculadoAProntuario(boolean vinculadoAProntuario) { // Apenas para testes/população do GIVEN
+    public void setVinculadoAProntuario(boolean vinculadoAProntuario) {
         this.vinculadoAProntuario = vinculadoAProntuario;
     }
     

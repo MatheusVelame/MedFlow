@@ -27,13 +27,25 @@ public class ExameServico {
         if (dataHora == null) {
             throw new ExcecaoDominio("Data e horário do exame são obrigatórios.");
         }
+        
+        // RN7
+        if (dataHora.isBefore(LocalDateTime.now().minusMinutes(1))) {
+            throw new ExcecaoDominio("Não é permitido agendar exames para datas passadas.");
+        }
+        
         notNull(tipoExame, "O tipo de exame é obrigatório.");
 
-        // RN1.2
+        // RN1.2 - Paciente
         if (!verificadorExterno.pacienteEstaCadastrado(pacienteId)) {
             throw new ExcecaoDominio("Paciente não cadastrado no sistema.");
         }
-        // RN5 - CORRIGIDA a mensagem para o feature file
+        
+        // ***** CORREÇÃO PARA RN 1.3 (Médico não cadastrado) *****
+        if (!verificadorExterno.medicoEstaCadastrado(medicoId)) {
+            throw new ExcecaoDominio("Médico não cadastrado no sistema.");
+        }
+        
+        // RN5 - Médico ativo
         if (!verificadorExterno.medicoEstaAtivo(medicoId)) {
             throw new ExcecaoDominio("Médico vinculado ao exame deve estar ativo no sistema.");
         }
@@ -45,7 +57,7 @@ public class ExameServico {
         if (repositorio.obterAgendamentoConflitante(pacienteId, dataHora, null).isPresent()) {
             throw new ExcecaoDominio("Paciente já possui um exame agendado neste horário.");
         }
-        // RN6 - CORRIGIDA a mensagem para o feature file
+        // RN6
         if (!verificadorExterno.medicoEstaDisponivel(medicoId, dataHora)) {
             throw new ExcecaoDominio("Não é permitido agendar exame em horário de indisponibilidade do médico.");
         }
@@ -65,7 +77,7 @@ public class ExameServico {
             
         // RN9 (Inativo)
         if (!verificadorExterno.medicoEstaAtivo(novoMedicoId)) {
-            throw new ExcecaoDominio("Médico inativo não pode ser vinculado ao exame");
+            throw new ExcecaoDominio("Médico inativo não pode ser vinculado ao exame.");
         }
         
         // RN10 (Conflito de Horário)
