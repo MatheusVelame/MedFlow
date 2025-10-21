@@ -1,0 +1,27 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'TipoExameAggregate' Aggregate" <<Rectangle>> {
+	class TipoExame <<(A,#fffab8) Aggregate Root>> {
+		String descricao
+		String valor
+		String status
+		TipoExameId id
+		TipoExameEspecialidadeId id
+		void atualizarDescricao(String novaDescricao)
+		void atualizarValor(String novoValor)
+		void inativar()
+	}
+	class TipoExameId <<(V,DarkSeaGreen) Value Object>> {
+		String id
+	}
+	class TipoExameEspecialidadeId <<(V,DarkSeaGreen) Value Object>> {
+		long id
+	}
+}
+TipoExame --> TipoExameId : id
+TipoExame --> TipoExameEspecialidadeId : id
+
+
+@enduml

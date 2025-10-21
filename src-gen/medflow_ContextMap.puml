@@ -1,0 +1,15 @@
+@startuml
+
+skinparam componentStyle uml2
+
+component [Pacientes]
+component [TiposDeExame]
+component [Especialidades]
+
+interface "Upstream-Downstream" as Especialidades_to_TiposDeExame
+[TiposDeExame] --> Especialidades_to_TiposDeExame
+Especialidades_to_TiposDeExame <.. [Especialidades] : consume
+
+
+
+@enduml

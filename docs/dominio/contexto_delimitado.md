@@ -13,6 +13,13 @@
   - Contato: meios de comunicação do paciente (telefone, e-mail, responsável).
   - Endereço: localização residencial do paciente.
   - Situação Cadastral: Ativo/Inativo (controle administrativo, não clínico).
+- **Restrições / Regras de Negócio Essenciais**
+  - Nome, CPF, data de nascimento e telefone são obrigatórios.
+  - CPF e data de nascimento devem ser validados (11 dígitos numéricos e formato dd/mm/aaaa, respectivamente).
+  - O CPF é único e não pode ser alterado após o cadastro.
+  - O status inicial de todo paciente cadastrado é “Ativo”.
+  - Não é possível remover paciente sem CPF cadastrado ou com agendamento vinculado, apenas inativá-lo.
+  - Consultas devem sempre exibir os dados mínimos: nome, CPF, data de nascimento, telefone e status.
 
 ## 2. Gerenciamento de Médicos e Funcionários
 
@@ -72,4 +79,22 @@
   - O histórico de alterações (data/hora, médico, tipo) deve ser registrado.
   - Consultas a exames devem sempre exibir os dados mínimos: paciente, médico, tipo, data/hora e status.
 
+## 8. Gerenciamento de Tipos de Exame
+
+- **Visão Geral**
+  - Responsável por manter o catálogo de tipos de exame da clínica, incluindo cadastro, alteração, inativação/exclusão e listagem. Este contexto é a fonte única de verdade para os metadados de cada tipo de exame (código, descrição, especialidade, valor e status), garantindo unicidade e consistência. 
+- **Termos Específicos**
+    - Tipo de Exame: entrada do catálogo que descreve um exame (ex.: Hemograma Completo), identificada por Código único.
+    - Código do Exame: identificador único, estável e não reutilizável.
+    - Descrição: nome/definição do exame; texto curto e claro.
+    - Especialidade: especialidade médica necessária para solicitar/realizar o exame.
+    - Valor: preço-base do tipo de exame.
+    - Status: Ativo/Inativo, indicando disponibilidade para novos agendamentos.
+- **Restrições / Regras de Negócio Essenciais**
+  - O código é único e obrigatório para cada tipo de exame.
+  - A especialidade vinculada deve estar Ativa no contexto de Gerenciamento de Especialidades.
+  - Status inicial “Ativo” ao cadastrar um novo tipo de exame.
+  - Alteração permitida apenas quando não tiver agendamentos vinculados.
+  - Exclusão física somente quando não houver histórico (agendamentos, resultados, faturamentos) associado, permitida a inativação.
+  - Consultas devem sempre exibir os dados mínimos: código, descrição, especialidade e valor.
 ---
