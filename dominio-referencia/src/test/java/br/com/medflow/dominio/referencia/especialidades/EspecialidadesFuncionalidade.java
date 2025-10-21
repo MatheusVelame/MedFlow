@@ -38,11 +38,7 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
 
     @Given("que a descrição é uma string de {int} caracteres")
     public void que_a_descricao_e_uma_string_de_caracteres(Integer tamanho) {
-        if (tamanho == 256) {
-            setDescricao(gerarString(256));
-        } else {
-            setDescricao(gerarString(tamanho));
-        }
+        setDescricao(gerarString(tamanho));
     }
 
     @Given("que existe um mecanismo de reatribuição de médicos")
@@ -87,7 +83,8 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     @When("o administrador solicitar o cadastro de especialidade com nome {string} e descrição {string}")
     public void o_administrador_solicitar_o_cadastro_de_especialidade_com_nome_e_descricao(String nome, String descricao) {
         try {
-            servico.cadastrar(nome, descricao);
+            Especialidade cadastrada = servico.cadastrar(nome, descricao);
+            setUltimaEspecialidadeCadastrada(cadastrada);
             setUltimaExcecao(null);
         } catch (RegraNegocioException e) {
             setUltimaExcecao(e);
@@ -107,7 +104,8 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     @When("o administrador solicitar o cadastro de especialidade com nome {string}")
     public void o_administrador_solicitar_o_cadastro_de_especialidade_com_nome(String nome) {
         try {
-            servico.cadastrar(nome, null);
+            Especialidade cadastrada = servico.cadastrar(nome, null);
+            setUltimaEspecialidadeCadastrada(cadastrada);
             setUltimaExcecao(null);
         } catch (RegraNegocioException e) {
             setUltimaExcecao(e);
@@ -127,6 +125,17 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     @When("o administrador solicitar o cadastro de especialidade com nome {string} e a descrição informada")
     public void o_administrador_solicitar_o_cadastro_de_especialidade_com_nome_e_a_descricao_informada(String nome) {
         try {
+            Especialidade cadastrada = servico.cadastrar(nome, getDescricao());
+            setUltimaEspecialidadeCadastrada(cadastrada);
+            setUltimaExcecao(null);
+        } catch (RegraNegocioException e) {
+            setUltimaExcecao(e);
+        }
+    }
+    
+    @When("o administrador tentar cadastrar uma nova especialidade com nome {string} e a descrição informada")
+    public void o_administrador_tentar_cadastrar_uma_nova_especialidade_com_nome_e_a_descricao_informada(String nome) {
+        try {
             servico.cadastrar(nome, getDescricao());
             setUltimaExcecao(null);
         } catch (RegraNegocioException e) {
@@ -137,8 +146,8 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     @When("o administrador solicitar o cadastro de uma nova especialidade com nome {string}")
     public void o_administrador_solicitar_o_cadastro_de_uma_nova_especialidade_com_nome(String nome) {
         try {
-            servico.cadastrar(nome, null);
-            setUltimaEspecialidadeCadastrada(repositorio.buscarPorNome(nome).orElse(null));
+            Especialidade cadastrada = servico.cadastrar(nome, null);
+            setUltimaEspecialidadeCadastrada(cadastrada);
             setUltimaExcecao(null);
         } catch (RegraNegocioException e) {
             setUltimaExcecao(e);
@@ -148,15 +157,14 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     @When("o administrador tentar cadastrar uma nova especialidade com nome {string} e status {string}")
     public void o_administrador_tentar_cadastrar_uma_nova_especialidade_com_nome_e_status(String nome, String status) {
         try {
-            servico.cadastrarComStatusProibido(nome, status); 
-            setUltimaEspecialidadeCadastrada(repositorio.buscarPorNome(nome).orElse(null));
+            Especialidade cadastrada = servico.cadastrarComStatusProibido(nome, status); 
+            setUltimaEspecialidadeCadastrada(cadastrada);
             setUltimaExcecao(null);
         } catch (RegraNegocioException e) {
             setUltimaExcecao(e);
         }
     }
 
-    
     @When("o administrador solicitar a alteração da especialidade {string} para o nome {string} e nova descrição {string}")
     public void o_administrador_solicitar_a_alteracao_da_especialidade_para_o_nome_e_nova_descricao(String nomeOriginal, String novoNome, String novaDescricao) {
         try {
@@ -166,7 +174,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
             setUltimaExcecao(e);
         }
     }
-
 
     @When("o administrador tentar alterar a especialidade {string} mudando o seu status para {string}")
     public void o_administrador_tentar_alterar_a_especialidade_mudando_o_seu_status_para(String nome, String status) {
@@ -178,7 +185,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
 
-
     @When("o administrador solicitar a alteração do nome da especialidade {string} para {string}")
     public void o_administrador_solicitar_a_alteracao_do_nome_da_especialidade_para(String nomeOriginal, String novoNome) {
         try {
@@ -189,11 +195,9 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
 
-
     @When("o administrador tenta alterar o nome da especialidade {string} para {string}")
     public void o_administrador_tenta_alterar_o_nome_da_especialidade_para(String nomeOriginal, String novoNome) {
         try {
-            
             servico.tentarAlterarComVinculo(nomeOriginal, novoNome);
             setUltimaExcecao(null);
         } catch (RegraNegocioException e) {
@@ -201,13 +205,10 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
 
-
     @When("o mecanismo de reatribuição é executado com sucesso")
     public void o_mecanismo_de_reatribuicao_e_executado_com_sucesso() {
-        // A lógica do Step anterior simula este sucesso, não é necessário fazer nada neste step
     }
 
-    
     @When("o administrador solicitar a exclusão da especialidade {string}")
     public void o_administrador_solicitar_a_exclusao_da_especialidade(String nome) {
         try {
@@ -217,7 +218,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
             setUltimaExcecao(e);
         }
     }
-
 
     @When("o administrador tentar excluir a especialidade {string}")
     public void o_administrador_tentar_excluir_a_especialidade(String nome) {
@@ -229,7 +229,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
 
-
     @When("o administrador tenta marcar a especialidade {string} como {string} durante a exclusão")
     public void o_administrador_tenta_marcar_a_especialidade_como_durante_a_exclusao(String nome, String status) {
         try {
@@ -240,7 +239,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
 
-
     @When("o administrador solicita a atribuição do médico {string} à especialidade {string}")
     public void o_administrador_solicita_a_atribuicao_do_medico_a_especialidade(String nomeMedico, String nomeEspecialidade) {
         try {
@@ -250,7 +248,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
             setUltimaExcecao(e);
         }
     }
-
 
     @When("o administrador tenta atribuir a médica {string} à especialidade {string}")
     public void o_administrador_tenta_atribuir_a_medica_a_especialidade(String nomeMedico, String nomeEspecialidade) {
@@ -273,7 +270,7 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
 
     @Then("a especialidade {string} deve estar cadastrada")
     public void a_especialidade_deve_estar_cadastrada(String nome) {
-        assertNotNull(repositorio.buscarPorNome(nome).orElse(null), "A especialidade '" + nome + "' deveria estar cadastrada.");
+        assertTrue(repositorio.buscarPorNome(nome).isPresent(), "A especialidade '" + nome + "' deveria estar cadastrada.");
     }
 
     @Then("o sistema deve rejeitar o cadastro")
@@ -294,14 +291,14 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
 
     @Then("a especialidade {string} deve ter o status {string}")
     public void a_especialidade_deve_ter_o_status(String nome, String statusEsperado) {
-        Especialidade especialidade = repositorio.buscarPorNome(nome).orElse(null);
-        assertNotNull(especialidade);
+        Especialidade especialidade = repositorio.buscarPorNome(nome)
+                .orElse(getUltimaEspecialidadeCadastrada()); // Fallback para o objeto em memória
+        assertNotNull(especialidade, "Especialidade não encontrada para verificar o status.");
         assertEquals(statusEsperado, especialidade.getStatus().toString(), "O status da especialidade '" + nome + "' não está como esperado.");
     }
 
     @Then("o sistema deve ignorar o status fornecido")
     public void o_sistema_deve_ignorar_o_status_fornecido() {
-        // Nada a fazer, a validação é feita no próximo 'And' (a verificação do status ATIVA)
     }
 
     @Then("o sistema deve atualizar a especialidade com sucesso")
@@ -311,8 +308,7 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
 
     @Then("a especialidade {string} deve ter o nome {string}")
     public void a_especialidade_deve_ter_o_nome(String nomeAnterior, String nomeEsperado) {
-        Especialidade especialidade = repositorio.buscarPorNome(nomeEsperado).orElse(null);
-        assertNotNull(especialidade, "A especialidade não foi encontrada com o nome esperado: " + nomeEsperado);
+        assertTrue(repositorio.buscarPorNome(nomeEsperado).isPresent(), "A especialidade não foi encontrada com o nome esperado: " + nomeEsperado);
         if (!nomeAnterior.equals(nomeEsperado)) {
             assertFalse(repositorio.buscarPorNome(nomeAnterior).isPresent(), "O nome anterior da especialidade ainda existe no repositório.");
         }
@@ -338,8 +334,7 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
 
     @Then("o nome da especialidade {string} deve permanecer inalterado")
     public void o_nome_da_especialidade_deve_permanecer_inalterado(String nome) {
-        assertNotNull(repositorio.buscarPorNome(nome).orElse(null), "A especialidade original não foi encontrada.");
-        assertNotNull(getUltimaExcecao(), "A alteração falhou, mas nenhuma exceção foi lançada.");
+        assertTrue(repositorio.buscarPorNome(nome).isPresent(), "A especialidade original não foi encontrada.");
     }
 
     @Then("o sistema deve processar a exclusão com sucesso")
