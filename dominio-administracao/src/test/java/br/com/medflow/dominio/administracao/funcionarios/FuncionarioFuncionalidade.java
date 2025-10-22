@@ -27,7 +27,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     private RuntimeException excecao;
     private boolean temViculosAtivosFuncao = false;
     private boolean temAtividadesFuturas = false;
-    private int historicoBaseline; 
+    private int historicoBaseline;
 
     @Before
     public void setup() {
@@ -38,7 +38,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         excecao = null;
         funcionarioEmAcao = null;
         ultimaMensagem = null;
-        nomeFuncionario = NOME_PADRAO; 
+        nomeFuncionario = NOME_PADRAO;
         funcaoFuncionario = FUNCAO_PADRAO;
         contatoFuncionario = CONTATO_EMAIL_PADRAO;
         temViculosAtivosFuncao = false;
@@ -47,24 +47,20 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         eventos.clear();
         repositorio.clear();
     }
-    
-    // ====================================================================
-    // GIVENs - Contexto e Pré-condições
-    // ====================================================================
 
     @Given("que o administrador tem permissão")
     @Given("que o administrador tem permissão de administrador")
     public void que_o_administrador_tem_permissao() {}
-    
+
     @Given("que o funcionário está ativo")
     @Given("que o administrador acessa o cadastro")
     public void que_o_funcionario_esta_ativo() {
-        o_funcionario_possui_status(NOME_PADRAO, "Ativo"); 
+        o_funcionario_possui_status(NOME_PADRAO, "Ativo");
     }
-    
+
     @Given("que o funcionário {string} está ativo")
     public void que_o_funcionario_está_ativo(String nome) {
-        o_funcionario_possui_status(nome, "Ativo"); 
+        o_funcionario_possui_status(nome, "Ativo");
     }
 
     @Given("que o funcionário possui registros anteriores")
@@ -73,7 +69,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     public void que_o_funcionario_possui_historico() {
         o_funcionario_possui_registros_de_historico_anterior(NOME_PADRAO);
     }
-    
+
     @Given("que já existe funcionário {string} com e-mail diferente")
     public void que_ja_existe_funcionario_com_email_diferente(String nome) {
         UsuarioResponsavelId responsavel = getUsuarioId("SetupUnico");
@@ -81,9 +77,9 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         try {
             Funcionario existente = new Funcionario(nome, FUNCAO_PADRAO, contatoUnico, responsavel);
             repositorio.salvar(existente);
-        } catch (RuntimeException e) { /* Ignorar setup exceptions */ }
+        } catch (RuntimeException e) {  }
     }
-    
+
     @Given("que já existe funcionário {string} com mesmo e-mail")
     public void que_ja_existe_funcionario_com_mesmo_email(String nome) {
         UsuarioResponsavelId responsavel = getUsuarioId("SetupUnico");
@@ -94,63 +90,57 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             this.nomeFuncionario = nome;
             this.contatoFuncionario = contatoDuplicado;
             this.funcaoFuncionario = FUNCAO_PADRAO;
-        } catch (RuntimeException e) { /* Ignorar setup exceptions */ }
+        } catch (RuntimeException e) {  }
     }
-    
+
     @Given("que o funcionário possui plantões futuros")
     public void que_o_funcionario_possui_plantoes_futuros() {
         o_funcionario_possui_status(NOME_PADRAO, "Ativo");
         this.temAtividadesFuturas = true;
     }
-    
+
     @Given("que o funcionário está ativo na função atual")
     public void que_o_funcionario_esta_ativo_na_funcao_atual() {
         o_funcionario_possui_status(NOME_PADRAO, "Ativo");
     }
-    
+
 
     @Given("que o funcionário está inativo")
     public void que_o_funcionario_esta_inativo() {
         o_funcionario_possui_status(NOME_PADRAO, "Inativo");
     }
 
-    // --- IMPLEMENTAÇÕES DE SETUP CONSOLIDADAS E FALTANTES ---
-    
-    /**
-     * Implementação crucial para garantir que this.funcionarioEmAcao não é null.
-     */
+
     @Given("o funcionário {string} possui status {string}")
     public void o_funcionario_possui_status(String nome, String status) {
         UsuarioResponsavelId responsavel = getUsuarioId("Setup Status");
         StatusFuncionario statusEnum = StatusFuncionario.valueOf(status.toUpperCase());
-        
+
         Optional<Funcionario> funcOpt = obterFuncionarioPorNome(nome);
         Funcionario func;
-        
+
         if (funcOpt.isEmpty()) {
-            String nomeSemAcentos = Normalizer.normalize(nome, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""); 
+            String nomeSemAcentos = Normalizer.normalize(nome, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", "");
             String contatoGarantido = nomeSemAcentos.toLowerCase().replaceAll("\\s", ".") + "@medfow.com";
-            
+
             func = new Funcionario(nome, FUNCAO_PADRAO, contatoGarantido, responsavel);
             repositorio.salvar(func);
         } else {
             func = funcOpt.get();
         }
-        
+
         try {	
-             if (func.getStatus() != statusEnum) {
-                 func.mudarStatus(statusEnum, responsavel, false);
-                 repositorio.salvar(func);
-             }
-        } catch (RuntimeException e) { /* Ignorar exceptions de setup */ }
-        
+            if (func.getStatus() != statusEnum) {
+                func.mudarStatus(statusEnum, responsavel, false);
+                repositorio.salvar(func);
+            }
+        } catch (RuntimeException e) {  }
+
         this.funcionarioEmAcao = func;
         this.historicoBaseline = func.getHistorico().size();
     }
-    
-    /**
-     * Implementação que depende de o_funcionario_possui_status.
-     */
+
+
     @Given("o funcionário {string} possui registros de atendimentos anteriores")
     @Given("o funcionário {string} possui registros de escalas e atendimentos anteriores")
     public void o_funcionario_possui_registros_de_historico_anterior(String nome) {
@@ -161,79 +151,71 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             funcionarioEmAcao.adicionarEntradaHistorico(AcaoHistorico.ATUALIZACAO, "Registro de setup de histórico", responsavel);
             repositorio.salvar(funcionarioEmAcao);
         }
-        
+
         this.historicoBaseline = funcionarioEmAcao.getHistorico().size();
     }
-    
-    
 
-    // ====================================================================
-    // WHENs - Ação do Usuário
-    // ====================================================================
-    
-    // --- CADASTRO ---
-    
     @When("preenche o nome {string} e envia o formulário")
     public void preenche_o_nome_e_envia_o_formulario(String nome) {
         this.nomeFuncionario = nome;
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("informa {string} e função {string}")
     public void informa_e_funcao(String nome, String funcao) {
         this.nomeFuncionario = nome;
         this.funcaoFuncionario = funcao;
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("informa o nome {string}")
     public void informa_o_nome(String nome) {
         this.nomeFuncionario = nome;
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("o nome contém caracteres inválidos")
     public void o_nome_contem_caracteres_invalidos() {
         this.nomeFuncionario = NOME_INVALIDO;
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("preenche o e-mail {string}")
     public void preenche_o_email(String email) {
         this.contatoFuncionario = email;
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("informa o telefone {string}")
     public void informa_o_telefone(String telefone) {
         this.contatoFuncionario = telefone;
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("o e-mail não possui formato válido")
     public void o_email_nao_possui_formato_valido() {
         this.contatoFuncionario = CONTATO_EMAIL_INVALIDO;
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("deixa o nome em branco")
     public void deixa_o_nome_em_branco() {
-        this.nomeFuncionario = ""; 
+        this.nomeFuncionario = "";
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("deixa a função em branco")
     public void deixa_a_funcao_em_branco() {
-        this.funcaoFuncionario = ""; 
+        this.funcaoFuncionario = "";
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("deixa o contato em branco")
     public void deixa_o_contato_em_branco() {
-        this.contatoFuncionario = ""; 
+        this.contatoFuncionario = "";
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("cadastra um novo funcionário")
     public void cadastra_um_novo_funcionario() {
         executarCadastroComDadosCorretos();
@@ -245,14 +227,12 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         this.contatoFuncionario = "novo.contato." + UUID.randomUUID().toString().substring(0, 5) + "@medfow.com";
         executarCadastroComDadosCorretos();
     }
-    
+
     @When("tenta cadastrar novamente")
     public void tenta_cadastrar_novamente() {
         executarCadastroComDadosCorretos();
     }
-    
-    // --- ATUALIZAÇÃO ---
-    
+
     @When("altera nome, função e contato")
     public void altera_nome_funcao_e_contato() {
         this.nomeFuncionario = "Ana Carolina Souza";
@@ -260,16 +240,16 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         this.contatoFuncionario = "ana.carolina@clinica.medfow";
         executarConfirmacaoAtualizacao();
     }
-    
+
     @When("tenta alterar o status")
     public void tenta_alterar_o_status() {
         try {
-            this.funcionarioEmAcao.validarAlteracaoCampoStatus(); 
+            this.funcionarioEmAcao.validarAlteracaoCampoStatus();
         } catch (RuntimeException e) {
             this.excecao = e;
         }
     }
-    
+
     @When("altera o nome para {string}")
     public void altera_o_nome_para(String nome) {
         this.nomeFuncionario = nome;
@@ -294,7 +274,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         this.temViculosAtivosFuncao = true;
         executarConfirmacaoAtualizacao();
     }
-    
+
     @When("altera a função com reatribuição correta")
     public void altera_a_funcao_com_reatribuicao_correta() {
         this.funcaoFuncionario = "Enfermagem";
@@ -308,9 +288,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         this.temViculosAtivosFuncao = true;
         executarConfirmacaoAtualizacao();
     }
-    
-    // --- GESTÃO DE STATUS ---
-    
+
     @When("altera o status para inativo")
     public void altera_o_status_para_inativo() {
         executarMudancaStatus("Inativo");
@@ -318,9 +296,9 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
 
     @When("não altera o campo de status")
     public void nao_altera_o_campo_de_status() {
-        executarMudancaStatus(this.funcionarioEmAcao.getStatus().name()); 
+        executarMudancaStatus(this.funcionarioEmAcao.getStatus().name());
     }
-    
+
     @When("tenta incluí-lo em uma nova escala")
     @When("tenta incluí-lo em novo agendamento")
     public void tenta_inclui_lo_em_uma_nova_escala() {
@@ -335,7 +313,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     public void a_inativacao_remove_registros() {
         this.excecao = new IllegalStateException("Erro: O histórico do funcionário deve ser preservado.");
     }
-    
+
     @When("remove os vínculos e altera o status")
     public void remove_os_vinculos_e_altera_o_status() {
         this.temAtividadesFuturas = false;
@@ -346,10 +324,6 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     public void tenta_alterar_o_status_para_inativo() {
         executarMudancaStatus("Inativo");
     }
-    
-    // ====================================================================
-    // MÉTODOS DE EXECUÇÃO INTERNA (LOGICALLY CONSOLIDATED)
-    // ====================================================================
 
     private void executarCadastroComDadosCorretos() {
         UsuarioResponsavelId responsavel = getUsuarioId("Administrador");
@@ -361,35 +335,30 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             this.ultimaMensagem = e.getMessage();
         }
     }
-    
-    /**
-     * Corrigido com checagem de nulo para evitar o NullPointerException.
-     */
+
     private void executarConfirmacaoAtualizacao() {
         UsuarioResponsavelId responsavel = getUsuarioId("Administrador");
-        
+
         if (this.funcionarioEmAcao == null) {
-             this.excecao = new IllegalStateException("O contexto de setup falhou: Funcionário 'funcionarioEmAcao' é nulo. Verifique o Step 'Given'.");
-             this.ultimaMensagem = this.excecao.getMessage();
-             return; 
+            this.excecao = new IllegalStateException("O contexto de setup falhou: Funcionário 'funcionarioEmAcao' é nulo. Verifique o Step 'Given'.");
+            this.ultimaMensagem = this.excecao.getMessage();
+            return;
         }
 
         Funcionario funcionarioOriginal = this.funcionarioEmAcao;
 
         try {
-            if (this.excecao != null) return; 
+            if (this.excecao != null) return;
 
-            String nomeFinal = (this.nomeFuncionario != null) ? 
+            String nomeFinal = (this.nomeFuncionario != null) ?
                                this.nomeFuncionario : funcionarioOriginal.getNome();
+
+            String funcaoFinal = (this.funcaoFuncionario != null) ?
+                                   this.funcaoFuncionario : funcionarioOriginal.getFuncao();
+
+            String contatoFinal = (this.contatoFuncionario != null) ?
+                                     this.contatoFuncionario : funcionarioOriginal.getContato();
             
-            // Função:
-            String funcaoFinal = (this.funcaoFuncionario != null) ? 
-                                 this.funcaoFuncionario : funcionarioOriginal.getFuncao();
-            
-            // Contato:
-            String contatoFinal = (this.contatoFuncionario != null) ? 
-                                  this.contatoFuncionario : funcionarioOriginal.getContato();
-           
             if (this.nomeFuncionario == NOME_PADRAO) {
                 nomeFinal = funcionarioOriginal.getNome();
             }
@@ -401,12 +370,12 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             }
 
             funcionarioServico.atualizarDadosCadastrais(
-                    funcionarioOriginal.getId(), 
-                    nomeFinal, 
-                    funcaoFinal, 
-                    contatoFinal, 
+                    funcionarioOriginal.getId(),
+                    nomeFinal,
+                    funcaoFinal,
+                    contatoFinal,
                     responsavel,
-                    this.temViculosAtivosFuncao 
+                    this.temViculosAtivosFuncao
             );
             this.ultimaMensagem = "Dados do funcionário atualizados com sucesso!";
         } catch (RuntimeException e) {
@@ -414,20 +383,20 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             this.ultimaMensagem = e.getMessage();
         }
     }
-    
+
     private void executarMudancaStatus(String novoStatus) {
         StatusFuncionario statusEnum = StatusFuncionario.valueOf(novoStatus.toUpperCase());
         UsuarioResponsavelId responsavel = getUsuarioId("Administrador");
-        
+
         try {
             funcionarioServico.mudarStatus(
-                    this.funcionarioEmAcao.getId(), 
-                    statusEnum, 
-                    responsavel, 
-                    this.temAtividadesFuturas); 
-            
-            this.ultimaMensagem = statusEnum == StatusFuncionario.INATIVO ? 
-                                  "Funcionário inativado com sucesso." : 
+                    this.funcionarioEmAcao.getId(),
+                    statusEnum,
+                    responsavel,
+                    this.temAtividadesFuturas);
+
+            this.ultimaMensagem = statusEnum == StatusFuncionario.INATIVO ?
+                                  "Funcionário inativado com sucesso." :
                                   "Status do funcionário alterado com sucesso!";
 
         } catch (RuntimeException e) {
@@ -436,44 +405,39 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         }
     }
 
-    // ====================================================================
-    // THENs - Verificação de Resultados
-    // ====================================================================
-    
     @Then("o sistema deve cadastrar o funcionário com sucesso")
     @Then("o sistema deve cadastrar o funcionário")
     public void o_sistema_deve_cadastrar_o_funcionario_com_sucesso() {
         assertNull(excecao, "O cadastro falhou com exceção: " + (excecao != null ? excecao.getMessage() : ""));
-        
+
         Optional<Funcionario> cadastrado = obterFuncionarioPorNomeEContato(nomeFuncionario, contatoFuncionario);
         assertTrue(cadastrado.isPresent(), "O funcionário não foi encontrado no repositório após o cadastro.");
     }
-    
+
     @Then("o sistema impede o cadastro")
     @Then("o sistema deve impedir o cadastro")
     public void o_sistema_deve_impedir_o_cadastro() {
         assertNotNull(excecao, "O cadastro deveria ter falhado, mas foi bem-sucedido.");
     }
-    
+
     @Then("o status deve ser definido como {string}")
     public void o_status_deve_ser_definido_como(String statusEsperado) {
         Optional<Funcionario> optFunc = obterFuncionarioPorNomeEContato(nomeFuncionario, contatoFuncionario);
-        
+
         assertTrue(optFunc.isPresent(), "Funcionário não encontrado no repositório.");
-        
+
         String statusReal = optFunc.get().getStatus().name();
-        
-        assertTrue(statusReal.equalsIgnoreCase(statusEsperado), 
-                   String.format("Status esperado: <%s> (case-insensitive), Status real: <%s>", 
-                                 statusEsperado, statusReal));
+
+        assertTrue(statusReal.equalsIgnoreCase(statusEsperado),
+                           String.format("Status esperado: <%s> (case-insensitive), Status real: <%s>",
+                                         statusEsperado, statusReal));
     }
-    
-    @Then("o sistema deve salvar as alterações")
+
     @Then("o sistema deve salvar a alteração")
-    public void o_sistema_deve_salvar_as_alteracoes() {
-        assertNull(excecao, "A atualização falhou com exceção.");
+    public void o_sistema_deve_salvar_as_alteracoes_do_funcionario() {
+        assertNull(excecao, "A atualização do funcionário falhou com exceção.");
     }
-    
+
     @Then("o sistema deve impedir a alteração")
     @Then("o sistema deve impedir a atualização")
     @Then("o sistema deve impedir a ação")
@@ -495,27 +459,27 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     @Then("o histórico deve ser mantido")
     public void o_historico_deve_ser_mantido() {
         assertNull(excecao, "O histórico não deveria ter causado exceção na operação bem-sucedida.");
-        
+
         Funcionario atualizado = repositorio.obter(funcionarioEmAcao.getId());
-        
-        assertTrue(atualizado.getHistorico().size() > historicoBaseline, 
-                   "O histórico deveria ter aumentado em 1 registro (log de atualização), indicando que os antigos foram preservados.");
+
+        assertTrue(atualizado.getHistorico().size() > historicoBaseline,
+                           "O histórico deveria ter aumentado em 1 registro (log de atualização), indicando que os antigos foram preservados.");
     }
 
     @Then("o sistema deve permitir a inativação")
     public void o_sistema_deve_permitir_a_inativacao() {
         assertNull(excecao, "A inativação deveria ter sido permitida, mas falhou.");
     }
-    
+
     @Then("o sistema deve impedir a inativação")
     public void o_sistema_deve_impedir_a_inativacao() {
         assertNotNull(this.excecao, "O sistema deveria ter impedido a inativação, mas a operação foi bem-sucedida.");
-        
+
         Funcionario atualizado = repositorio.obter(this.funcionarioEmAcao.getId());
         assertEquals(StatusFuncionario.ATIVO.name(), atualizado.getStatus().name(),
-                     "O status do funcionário foi alterado indevidamente.");
+                             "O status do funcionário foi alterado indevidamente.");
     }
-    
+
     @Then("deve exibir a mensagem {string}")
     public void deve_exibir_a_mensagem(String mensagemEsperada) {
         assertEquals(mensagemEsperada, ultimaMensagem);

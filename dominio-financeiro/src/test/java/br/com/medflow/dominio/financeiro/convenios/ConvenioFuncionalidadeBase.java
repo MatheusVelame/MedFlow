@@ -15,15 +15,12 @@ import br.com.medflow.dominio.financeiro.evento.EventoBarramento;
 import br.com.medflow.dominio.financeiro.evento.EventoObservador;
 
 public class ConvenioFuncionalidadeBase implements EventoBarramento {
-	// Variáveis de domínio/ambiente
 		protected ConvenioServico convenioServico;
 		protected ConvenioRepositorioMemoria repositorio;
 		
-		// Mocks de Usuários e Permissões
 		private Map<String, UsuarioResponsavelId> usuariosId = new HashMap<>(); 
 		private Map<String, List<String>> permissoes = new HashMap<>();
 		
-		// Eventos capturados
 		protected List<Object> eventos;
 
 		public ConvenioFuncionalidadeBase() {
@@ -31,7 +28,6 @@ public class ConvenioFuncionalidadeBase implements EventoBarramento {
 			this.convenioServico = new ConvenioServico(repositorio);
 			this.eventos = new ArrayList<>();
 			
-			// Simulação do sistema de permissões
 			permissoes.put("Administrador", List.of("cadastrar", "alterar", "excluir"));
 			permissoes.put("Administrador Sênior", List.of("cadastrar", "alterar", "excluir"));
 			permissoes.put("Médico", List.of("alterar")); 

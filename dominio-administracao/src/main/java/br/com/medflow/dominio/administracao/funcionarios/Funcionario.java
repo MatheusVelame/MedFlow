@@ -118,8 +118,6 @@ public class Funcionario {
         }
     }
     
-    // ===== MÉTODOS DE STATUS =====
-
 
     public void mudarStatus(StatusFuncionario novoStatus, UsuarioResponsavelId responsavelId, boolean temAtividadesFuturas) {
         notNull(responsavelId, "O responsável pela alteração não pode ser nulo.");
@@ -148,7 +146,6 @@ public class Funcionario {
         throw new IllegalArgumentException("Os dados informados são inválidos.");
     }
     
-    // ===== MÉTODOS DE HISTÓRICO =====
     
     public void adicionarEntradaHistorico(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela ação não pode ser nulo.");

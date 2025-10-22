@@ -59,16 +59,13 @@ public class ConvenioServico {
 		var convenio = repositorio.obterPorCodigoIdentificacao(codigoIdentificacao)
 				.orElseThrow(() -> new IllegalArgumentException("Convênio não encontrado."));
 
-		// 1. Validação (mantida a lógica de domínio)
 		convenio.validarExclusao(temProcedimentoAtivo, responsavelId);
 
-		// 2. Registra o Histórico de EXCLUSÃO e CAPTURA o objeto retornado
 		HistoricoEntrada logRemocao = convenio.adicionarEntradaHistorico(AcaoHistorico.EXCLUSAO,
 				"Convênio excluído permanentemente.", responsavelId);
 
 		barramento.postar(logRemocao);
 
-		// 4. REMOÇÃO FÍSICA NO REPOSITÓRIO
 		repositorio.remover(convenio.getId());
 	}
 
@@ -80,7 +77,6 @@ public class ConvenioServico {
 		return repositorio.obterPorCodigoIdentificacao(codigoIdentificacao);
 	}
 
-	// CORREÇÃO: Removido o filtro de arquivado
 	public List<Convenio> pesquisarPadrao() {
 		return repositorio.pesquisar();
 	}

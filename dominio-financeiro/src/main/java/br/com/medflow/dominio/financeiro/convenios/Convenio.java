@@ -14,7 +14,6 @@ public class Convenio {
     private StatusConvenio status;
     private List<HistoricoEntrada> historico = new ArrayList<>();
 
-    // ===== CONSTRUTORES =====
     public Convenio(String nome, String codigoIdentificacao, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela criação não pode ser nulo.");
         setNome(nome);
@@ -34,7 +33,6 @@ public class Convenio {
         }
     }
 
-    // ===== MÉTODOS DE STATUS =====
     public void mudarStatus(StatusConvenio novoStatus, UsuarioResponsavelId responsavelId) {
         
         if (this.status != novoStatus) {
@@ -57,12 +55,10 @@ public class Convenio {
         
     }
 
-    // ===== MÉTODOS DE ALTERAÇÃO =====
     public void alterarNome(String novoNome, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela alteração não pode ser nulo.");
         notBlank(novoNome, "O nome do convênio é obrigatório");
         
-        // Regra de Negócio: Alteração só pode ocorrer se estiver ATIVO
         if (this.status != StatusConvenio.ATIVO) {
             throw new IllegalStateException("Não é possível alterar dados de um convênio INATIVO.");
         }
@@ -73,7 +69,6 @@ public class Convenio {
         }
     }
 
-    // ===== MÉTODOS DE CADASTRO =====
     public void setNome(String nome) {
         notBlank(nome, "O nome do convênio é obrigatório");
         this.nome = nome.trim();
@@ -102,8 +97,6 @@ public class Convenio {
      return novaEntrada;
  }
 
-    // ===== GETTERS e CLASSE INTERNA HISTÓRICO (mantidos) =====
-    // ... (Getters e HistoricoEntrada)
     public ConvenioId getId() { return id; }
     public String getNome() { return nome; }
     public String getCodigoIdentificacao() { return codigoIdentificacao; }

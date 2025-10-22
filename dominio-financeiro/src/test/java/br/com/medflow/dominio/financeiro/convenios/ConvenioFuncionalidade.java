@@ -24,8 +24,7 @@ import io.cucumber.java.en.Then;
  */
 public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 
-	// --- Variáveis de Contexto ---
-	private Convenio convenioEmAcao; // Objeto principal em uso (novo ou existente)
+	private Convenio convenioEmAcao;
 	private String nomeConvenio;
 	private String codigoIdentificacao;
 	private String usuarioAtual;
@@ -34,10 +33,8 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 	private RuntimeException excecao;
 	private int historicoBaseline;
 
-	// Variável para simular condições de RN que não são inerentes ao convênio
 	private boolean temProcedimentoAtivo = false;
 
-	// --- Constantes de Perfil ---
 	private final String PERFIL_ADMINISTRADOR = "Administrador";
 
 	@Before
@@ -56,11 +53,8 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 		eventos.clear();
 		repositorio.clear(); 
 		
-		// CORREÇÃO CRÍTICA: Força a limpeza direta e garante que o ID 1 seja consumido.
-		// ASSUMINDO que você adicionou getUsuariosIdMap() na base, ou usando o método que deveria funcionar.
 		limparUsuarios(); 
 		
-		// FORÇA O CONSUMO DO ID 1 pelo usuário de setup, garantindo que o próximo usuário ÚNICO seja o ID 2.
 		getUsuarioId("USUARIO_TEMPORARIO_ID1_CONSUMER"); 
 	}
 
@@ -84,13 +78,11 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 
 	@Given("que o convênio com código {string} já existe")
 	public void que_o_convenio_com_codigo_ja_existe(String codigo) {
-		UsuarioResponsavelId id = getUsuarioId("SetupCadastro"); // Consome ID 2 ou 3
+		UsuarioResponsavelId id = getUsuarioId("SetupCadastro");
 
-		// Cria e salva diretamente, pulando a validação de Servico (é setup)
 		Convenio conv = new Convenio("Convênio de Setup", codigo, id);
 		repositorio.salvar(conv);
 
-		// Recarrega o objeto com o ID (necessário pelo mock do RepositorioMemoria)
 		convenioEmAcao = repositorio.obterPorCodigoIdentificacao(codigo)
 				.orElseThrow(() -> new IllegalStateException("Falha de repositório no setup."));
 
@@ -107,7 +99,6 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 	@And("o convênio {string} com código {string} está com status {string}") 
 	public void que_o_convenio_com_codigo_esta_com_status(String nome, String codigo, String status) {
 		
-		// Garante que o usuário de setup não será "Luiza Oliveira"
 		UsuarioResponsavelId id = getUsuarioId("USUARIO_SETUP_DIFERENTE"); 
 
 		Convenio conv = new Convenio(nome, codigo, id);
@@ -143,7 +134,6 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 	// WHENs - Mapeamento de Ações
 	// ====================================================================
 
-	// --- CADASTRO ---
 
 	@When("cadastra o convênio {string} com código {string}")
 	public void cadastra_o_convenio_com_codigo(String nome, String codigo) {
@@ -192,7 +182,6 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 		cadastra_o_convenio_com_codigo(nome, "CODIGO" + nome.substring(0, 3).toUpperCase());
 	}
 
-	// --- EXCLUSÃO ---
 
 	@When("o administrador {string} solicita a exclusão definitiva")
 	public void o_administrador_solicita_a_exclusao_definitiva(String usuario) {
@@ -201,11 +190,10 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 			UsuarioResponsavelId id = getUsuarioId(usuarioAtual);
 			String codigoParaExcluir = convenioEmAcao.getCodigoIdentificacao();
 
-			// Passa 'this' (o EventoBarramento)
 			convenioServico.excluir(codigoParaExcluir, id, temProcedimentoAtivo, this);
 
 			codigoIdentificacao = codigoParaExcluir;
-			convenioEmAcao = null; // Indica sucesso
+			convenioEmAcao = null;
 		} catch (RuntimeException e) {
 			excecao = e;
 			ultimaMensagem = e.getMessage();
@@ -219,11 +207,9 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 
 	@When("a exclusão é solicitada e o registro de histórico falha")
 	public void a_exclusao_e_solicitada_e_o_registro_de_historico_falha() {
-		// Consome o usuário para o Then/And (se aplicável), garantindo que ele tenha um ID
 		usuarioAtual = "Dr. Falha";
 
 		try {
-			// Simula a falha de auditoria (o Then verifica a exceção e o AND verifica a permanência do convênio)
 			throw new IllegalStateException("Falha no processo de auditoria interna.");
 		} catch (RuntimeException e) {
 			excecao = e;
@@ -324,7 +310,6 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 
 	@Then("o histórico de remoções deve ser registrado")
 	public void o_historico_de_remocoes_deve_ser_registrado() {
-		// Verifica se o objeto HistoricoEntrada com AcaoHistorico.EXCLUSAO foi postado no Barramento
 		boolean historicoRemocaoEncontrado = eventos.stream().anyMatch(evento -> evento instanceof HistoricoEntrada
 				&& ((HistoricoEntrada) evento).getAcao() == AcaoHistorico.EXCLUSAO);
 
@@ -357,7 +342,6 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 	public void o_sistema_deve_impedir_a_alteracao() {
 		assertNotNull(excecao, "A alteração deveria ter sido impedida.");
 
-		// Recarrega o convênio para garantir que o nome persistido não mudou
 		Convenio convOriginal = repositorio.obterPorCodigoIdentificacao(convenioEmAcao.getCodigoIdentificacao())
 				.orElseThrow(() -> new IllegalStateException("Convênio sumiu durante o teste!"));
 
@@ -383,7 +367,6 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 
 	@Then("o histórico deve registrar a ação do usuário {string}")
 	public void o_historico_deve_registrar_a_ação_do_usuario(String nomeResponsavel) {
-		// CRÍTICO: Garante que "Luiza Oliveira" terá o ID 2, pois um usuário temporário (ID 1) foi criado no Before.
 		UsuarioResponsavelId responsavelEsperado = getUsuarioId(nomeResponsavel); 
 		
 		Convenio.HistoricoEntrada ultimoRegistro = convenioEmAcao.getHistorico()

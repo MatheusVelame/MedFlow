@@ -24,12 +24,10 @@ public class ConvenioRepositorioMemoria implements ConvenioRepositorio{
 	public void salvar(Convenio convenio) {
 		notNull(convenio, "O convênio não pode ser nulo");
 		
-		// Simula a geração de ID (para novos agregados) ou atualização
 		if (convenio.getId() == null) {
 			sequenciaId++;
 			ConvenioId novoId = new ConvenioId(sequenciaId);
 			
-			// Reconstrução forçada para atribuir o ID, mantendo a imutabilidade do AGGREGATE ROOT
 			Convenio novo = new Convenio(
 				novoId, 
 				convenio.getNome(), 
@@ -66,7 +64,6 @@ public class ConvenioRepositorioMemoria implements ConvenioRepositorio{
 	
 	@Override
 	public List<Convenio> pesquisar() {
-		// Retorna todos, exceto os ARQUIVADOS (Lista Padrão)
 		return convenios.values().stream()
 				.filter(m -> m.getStatus() != StatusConvenio.ARQUIVADO)
 				.toList();
@@ -76,8 +73,6 @@ public class ConvenioRepositorioMemoria implements ConvenioRepositorio{
 	public void remover(ConvenioId id) { 
 	    notNull(id, "O ID para remoção não pode ser nulo.");
 	    
-	    // CORREÇÃO: Remover a entrada diretamente.
-	    // O ID é a chave do Map. Se equals/hashCode estiverem certos, deve funcionar.
 	    if (!convenios.containsKey(id)) {
 	        throw new IllegalArgumentException("Convênio com ID " + id.toString() + " não está no repositório.");
 	    }
