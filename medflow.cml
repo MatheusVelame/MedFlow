@@ -1,1 +1,273 @@
+Domain MedFlow {
+    Subdomain Administracao
+    Subdomain Atendimento
+    Subdomain Prontuario
+    Subdomain Financeiro
+    Subdomain Referencia
+    Subdomain Catalogo
+}
 
+ContextMap {
+    contains Administracao
+    contains Referencia
+    contains Catalogo
+    contains Atendimento
+    contains Prontuario
+    contains Financeiro
+
+    Atendimento Shared-Kernel Administracao
+    Financeiro Shared-Kernel Administracao
+    Prontuario Shared-Kernel Administracao
+    Atendimento Shared-Kernel Referencia
+    Prontuario Shared-Kernel Catalogo
+
+    Administracao Shared-Kernel Referencia
+}
+
+BoundedContext Administracao implements Administracao {
+    Aggregate Paciente {
+        Entity Paciente {
+            aggregateRoot
+            -PacienteId_Adm id
+            -Cpf_Adm cpf
+            String nome
+            Date dataNascimento
+            Boolean ativo
+
+            def boolean podeSerRemovido();
+
+            Repository PacienteRepository {
+                @Paciente obter(@PacienteId_Adm id);
+            }
+        }
+        ValueObject PacienteId_Adm { String codigo }
+        ValueObject Cpf_Adm { String numero }
+    }
+
+    Aggregate Funcionario {
+        Entity Funcionario {
+            aggregateRoot
+            -FuncionarioId_Adm id
+            String nome
+            String funcao
+            String contato
+            String status
+
+            Repository FuncionarioRepository {
+                @Funcionario obter(@FuncionarioId_Adm id);
+            }
+        }
+
+        Entity Medico extends Funcionario {
+            String crm
+            -EspecialidadeId_Ref especialidade
+        }
+
+        ValueObject FuncionarioId_Adm { String codigo }
+        ValueObject MedicoId_Adm extends FuncionarioId_Adm
+    }
+}
+
+BoundedContext Referencia implements Referencia {
+    Aggregate Especialidade {
+        Entity Especialidade {
+            aggregateRoot
+            -EspecialidadeId_Ref id
+            String nome unique
+            String status
+
+            Repository EspecialidadeRepository {
+                @Especialidade obter(@EspecialidadeId_Ref id);
+            }
+        }
+        ValueObject EspecialidadeId_Ref { int id }
+    }
+
+    Aggregate TipoExame {
+        Entity TipoExame {
+            aggregateRoot
+            -TipoExameId_Ref id
+            String codigo unique
+            String descricao
+            -Valor_Ref valorPadrao
+            -EspecialidadeId_Ref especialidade
+
+            Repository TipoExameRepository {
+                @TipoExame obter(@TipoExameId_Ref id);
+            }
+        }
+
+        ValueObject TipoExameId_Ref { String codigo }
+        ValueObject Valor_Ref { Double quantia }
+    }
+}
+
+BoundedContext Catalogo implements Catalogo {
+    Aggregate Medicamento {
+        Entity Medicamento {
+            aggregateRoot
+            -MedicamentoId_Cat id
+            String nome unique
+            String usoPrincipal notEmpty
+            String contraindicacoes nullable
+            String status
+            String statusRevisao
+
+            Repository MedicamentoRepository {
+                @Medicamento obter(@MedicamentoId_Cat id);
+            }
+        }
+
+        Service MedicamentoServico {
+            void revisarEspecialista(@MedicamentoId_Cat id, String justificativa);
+        }
+
+        DomainEvent MedicamentoRevisadoEvento { -MedicamentoId_Cat id }
+        ValueObject MedicamentoId_Cat { String codigo }
+    }
+}
+
+BoundedContext Atendimento implements Atendimento {
+    Aggregate Consulta {
+        Entity Consulta {
+            aggregateRoot
+            -ConsultaId_Att id
+            -PacienteId_Adm paciente
+            -MedicoId_Adm medico
+            Date horario
+            String status
+
+            def boolean isDisponivel();
+
+            Repository ConsultaRepository {
+                @Consulta obter(@ConsultaId_Att id);
+            }
+        }
+
+        Service AgendamentoServico {
+            void agendarConsulta(@PacienteId_Adm paciente, @MedicoId_Adm medico, Date horario);
+            void remarcarConsulta(@ConsultaId_Att consulta, Date novoHorario);
+            void cancelarConsulta(@ConsultaId_Att consulta);
+        }
+
+        DomainEvent ConsultaAgendadaEvento { -ConsultaId_Att consulta -PacienteId_Adm paciente }
+        DomainEvent ConsultaCanceladaEvento { -ConsultaId_Att consulta }
+
+        ValueObject ConsultaId_Att { String codigo }
+    }
+
+    Aggregate Exame {
+        Entity Exame {
+            aggregateRoot
+            -ExameId_Att id
+            -PacienteId_Adm paciente
+            -MedicoId_Adm medico
+            -TipoExameId_Ref tipoExame
+            Date dataAgendamento
+            String status
+
+            Repository ExameRepository {
+                @Exame obter(@ExameId_Att id);
+            }
+        }
+
+        ValueObject ExameId_Att { String codigo }
+    }
+}
+
+BoundedContext Prontuario implements Prontuario {
+    Aggregate Prontuario {
+        DomainEvent HistoricoRegistradoEvento {
+            -ProntuarioId_Pront prontuario
+            -HistoricoClinico registro
+        }
+
+        Entity Prontuario {
+            aggregateRoot
+            -ProntuarioId_Pront id
+            -PacienteId_Adm paciente
+            String status
+            -List<HistoricoClinico> historico
+
+            def HistoricoRegistradoEvento adicionarHistorico(@HistoricoClinico registro);
+
+            Repository ProntuarioRepository {
+                @Prontuario obter(@ProntuarioId_Pront id);
+                List<@HistoricoClinico> buscarHistorico(@PacienteId_Adm paciente);
+            }
+        }
+
+        Entity HistoricoClinico {
+            -Profissional profissional
+            String sintomas notEmpty
+            String diagnostico notEmpty
+            String condutaTratamento notEmpty
+            Date dataRegistro
+        }
+
+        ValueObject ProntuarioId_Pront { String codigo }
+        ValueObject Profissional { -MedicoId_Adm medico String nome }
+    }
+
+    Aggregate Prescricao {
+        Entity Prescricao {
+            aggregateRoot
+            -PrescricaoId_Pront id
+            -MedicamentoId_Cat medicamento
+            String dosagem
+            String posologia
+            -ProntuarioId_Pront prontuario
+
+            Repository PrescricaoRepository {
+                @Prescricao obter(@PrescricaoId_Pront id);
+            }
+        }
+
+        ValueObject PrescricaoId_Pront { String codigo }
+    }
+}
+
+BoundedContext Financeiro implements Financeiro {
+    Aggregate Faturamento {
+        Entity Faturamento {
+            aggregateRoot
+            -FaturamentoId_Fin id
+            -PacienteId_Adm paciente
+            -Valor_Fin valor
+            String tipoProcedimento
+            String status
+            -List<HistoricoFaturamento> historico
+
+            def boolean podeSerExcluido();
+
+            Repository FaturamentoRepository {
+                @Faturamento obter(@FaturamentoId_Fin id);
+            }
+        }
+
+        ValueObject FaturamentoId_Fin { String codigo }
+        ValueObject Valor_Fin { Double quantia }
+
+        Entity HistoricoFaturamento {
+            String acao
+            Date data
+            String justificativa nullable
+        }
+    }
+
+    Aggregate Convenio {
+        Entity Convenio {
+            aggregateRoot
+            -ConvenioId_Fin id
+            String nome unique
+            String codigo unique
+            String status
+
+            Repository ConvenioRepository {
+                @Convenio obter(@ConvenioId_Fin id);
+            }
+        }
+
+        ValueObject ConvenioId_Fin { String codigo }
+    }
+}
