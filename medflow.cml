@@ -60,9 +60,18 @@ BoundedContext Catalogo implements Referencia {
       aggregateRoot
       -EspecialidadeId id
       String nome
-      String descricao
-      boolean ativa
+      String descricao?
+      StatusCadastro status
+      boolean possuiVinculoHistorico
+      
+      def void alterarNome(String novoNome);
+      def void alterarDescricao(String novaDescricao);
       def void inativar();
+      def void excluir();
+    }
+    
+    Repository MedicoRepositorio {
+      boolean temMedicoAtivoVinculado(EspecialidadeId id);
     }
   }
 
@@ -70,12 +79,21 @@ BoundedContext Catalogo implements Referencia {
     Entity TipoExame {
       aggregateRoot
       -TipoExameId id
-      -EspecialidadeId especialidadeId
+      String codigo
       String descricao
-      Money valor
+      String especialidade
+      Double valor
       StatusCadastro status // ATIVO | INATIVO
+
       def void atualizarDescricao(String novaDescricao);
+      def void atualizarEspecialidade(String novaEspecialidade);
+      def void atualizarValor(Double novoValor);
       def void inativar();
+      def void excluir();
+    }
+    
+    DomainService VerificadorExternoServico {
+      boolean temAgendamentosVinculados(TipoExameId id);
     }
   }
 
@@ -112,7 +130,7 @@ BoundedContext AtendimentoClinico implements Atendimento {
       -MedicoId medicoId
       LocalDateTime horario
       String motivo?
-      StatusAtendimento status // AGENDADA | REALIZADA | CANCELADA
+      StatusAtendimento status // AGENDADA | CANCELADA | REALIZADA
     }
   }
 
@@ -121,11 +139,19 @@ BoundedContext AtendimentoClinico implements Atendimento {
       aggregateRoot
       -ExameId id
       -PacienteId pacienteId
-      -MedicoId solicitanteId
-      -TipoExameId tipoExameId
-      LocalDateTime horario?
-      String resultado?
+      -MedicoId medicoId
+      -TipoExameId TipoExameId
+      String tipoExame
+      LocalDateTime dataHora
       StatusAtendimento status
+      boolean vinculadoALaudo
+      boolean vinculadoAProntuario
+      String motivoCancelamento?
+
+      def void agendar(PacienteId pacienteId, MedicoId medicoId, String tipoExame, LocalDateTime dataHora);
+      def void atualizar(MedicoId novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora);
+      def void cancelar(String motivo);
+      def void excluir();
     }
   }
 
@@ -215,7 +241,7 @@ BoundedContext Compartilhado implements Compartilhado {
   ValueObject FolhaPagamentoId { String id }
 
   Enum StatusCadastro { ATIVO, INATIVO }
-  Enum StatusAtendimento { AGENDADA, REALIZADA, CANCELADA }
+  Enum StatusAtendimento { AGENDADA, REALIZADA, CANCELADA, EM_ANDAMENTO, PENDENTE }
   Enum StatusCobranca { PENDENTE, PAGO, CANCELADO }
   Enum TipoEventoAgenda { BLOCO, CONSULTA, EXAME }
 
@@ -244,4 +270,3 @@ ContextMap MedFlowMap {
 
 
 }
-
