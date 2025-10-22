@@ -31,7 +31,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
 
     @Given("que a especialidade {string} já está cadastrada")
     public void que_a_especialidade_ja_esta_cadastrada(String nomeEspecialidade) {
-        // Correção para garantir que o dado de alteração (RN 7) e vínculo (RN 12) exista.
         if (repositorio.buscarPorNome(nomeEspecialidade).isEmpty()) {
              repositorio.popular(nomeEspecialidade, "Descrição base", StatusEspecialidade.ATIVA, false);
         }
@@ -39,7 +38,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     
     @Given("que a especialidade {string} está cadastrada")
     public void que_a_especialidade_esta_cadastrada(String nomeEspecialidade) {
-        // Reutiliza a lógica do step 'já está cadastrada'
         if (repositorio.buscarPorNome(nomeEspecialidade).isEmpty()) {
              repositorio.popular(nomeEspecialidade, "Descrição base", StatusEspecialidade.ATIVA, false);
         }
@@ -81,13 +79,10 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     
     @Given("a especialidade {string} tem o status {string}")
     public void a_especialidade_tem_o_status(String nomeEspecialidade, String status) {
-        // Reutiliza a lógica de setup, garantindo que o status e histórico sejam definidos
         StatusEspecialidade statusEnum = StatusEspecialidade.valueOf(status.toUpperCase());
         
-        // Remove e recria o mock para garantir o estado, se a especialidade ainda não existe ou precisa ser atualizada
         repositorio.buscarPorNome(nomeEspecialidade).ifPresent(repositorio::remover);
         
-        // Se Inativa, assume-se que há histórico para ser consistente com a RN
         boolean possuiHistorico = statusEnum == StatusEspecialidade.INATIVA;
         
         repositorio.popular(nomeEspecialidade, "Descrição de " + nomeEspecialidade, statusEnum, possuiHistorico);
@@ -145,16 +140,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
     
-    /* @When("o administrador solicitar o cadastro de especialidade com nome {string} e a descrição informada")
-    public void o_administrador_solicitar_o_cadastro_de_especialidade_com_nome_e_a_descricao_informada(String nome) {
-        try {
-            Especialidade cadastrada = servico.cadastrar(nome, getDescricao());
-            setUltimaEspecialidadeCadastrada(cadastrada);
-            setUltimaExcecao(null);
-        } catch (RegraNegocioException e) {
-            setUltimaExcecao(e);
-        }
-    } */
     @When("o administrador solicitar o cadastro de especialidade com nome {string} e a descrição informada")
     public void o_administrador_solicitar_o_cadastro_de_especialidade_com_nome_e_a_descricao_informada(String nome) {
         try {
@@ -175,16 +160,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
     
-    /*
-    @When("o administrador tentar cadastrar uma nova especialidade com nome {string} e a descrição informada")
-    public void o_administrador_tentar_cadastrar_uma_nova_especialidade_com_nome_e_a_descricao_informada(String nome) {
-        try {
-            servico.cadastrar(nome, getDescricao());
-            setUltimaExcecao(null);
-        } catch (RegraNegocioException e) {
-            setUltimaExcecao(e);
-        }
-    } */
     
     @When("o administrador solicitar o cadastro de uma nova especialidade com nome {string}")
     public void o_administrador_solicitar_o_cadastro_de_uma_nova_especialidade_com_nome(String nome) {
@@ -248,34 +223,17 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         }
     }
     
-    /*
+
     @When("o administrador tenta alterar o nome da especialidade {string} para {string}")
     public void o_administrador_tenta_alterar_o_nome_da_especialidade_para(String nomeOriginal, String novoNome) {
         try {
-            servico.tentarAlterarComVinculo(nomeOriginal, novoNome);
-            setUltimaExcecao(null);
-        } catch (RegraNegocioException e) {
-            setUltimaExcecao(e);
-        }
-    }
-    */
-    @When("o administrador tenta alterar o nome da especialidade {string} para {string}")
-    public void o_administrador_tenta_alterar_o_nome_da_especialidade_para(String nomeOriginal, String novoNome) {
-        try {
-            // SIMULAÇÃO DO TRATAMENTO BEM-SUCEDIDO (RN 8.1): 
-            // Força o mock count a zero ANTES da chamada para simular o sucesso da reatribuição,
-            // permitindo que o servico.alterar() passe no cheque de vínculo.
-            
+
             if (nomeOriginal.equals("Dermatologia")) {
-                // MOCK FIX: Zera a contagem para simular o sucesso.
                 medicoRepositorio.mockContagem(nomeOriginal, 0); 
             }
 
-            // Chama o método do serviço. Agora deve passar.
             servico.tentarAlterarComVinculo(nomeOriginal, novoNome);
             setUltimaExcecao(null);
-
-            // O estado do mock será restaurado pelo @Before do próximo teste.
 
         } catch (RegraNegocioException e) {
             setUltimaExcecao(e);
@@ -371,15 +329,6 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         assertNotNull(repositorio.buscarPorNome(nome).orElse(null), "A especialidade '" + nome + "' deveria ter sido criada.");
     }
 
-    /*
-    @Then("a especialidade {string} deve ter o status {string}")
-    public void a_especialidade_deve_ter_o_status(String nome, String statusEsperado) {
-        Especialidade especialidade = repositorio.buscarPorNome(nome)
-                .orElse(getUltimaEspecialidadeCadastrada()); // Fallback para o objeto em memória
-        assertNotNull(especialidade, "Especialidade não encontrada para verificar o status.");
-        assertEquals(statusEsperado, especialidade.getStatus().toString(), "O status da especialidade '" + nome + "' não está como esperado.");
-    } */
-    
     @Then("a especialidade {string} deve ter o status {string}")
     public void a_especialidade_deve_ter_o_status(String nome, String statusEsperado) {
         Especialidade especialidade = repositorio.buscarPorNome(nome).orElse(null);
@@ -405,8 +354,7 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     }
     
     @Then("a especialidade {string} deve ter seu status alterado para {string}")
-    public void a_especialidade_deve_ter_seu_status_alterado_para(String nome, String statusEsperado) {
-        // Reutiliza a lógica do step que verifica o status final (já corrigido para case-insensitivity)
+    public void a_especialidade_deve_ter_seu_status_alterado_para(String nome, String statusEsperado) {)
         a_especialidade_deve_ter_o_status(nome, statusEsperado);
     }
 
@@ -415,17 +363,9 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
         assertNotNull(getUltimaExcecao(), "A alteração deveria ter sido rejeitada, mas foi bem-sucedida.");
     }
 
-    /*
-    @Then("a especialidade {string} deve manter o status {string}")
-    public void a_especialidade_deve_manter_o_status(String nome, String status) {
-        Especialidade especialidade = repositorio.buscarPorNome(nome).orElse(null);
-        assertNotNull(especialidade);
-        assertEquals(status, especialidade.getStatus().toString(), "O status da especialidade foi alterado indevidamente.");
-    } */
     
     @Then("a especialidade {string} deve ser removida fisicamente do sistema")
     public void a_especialidade_deve_ser_removida_fisicamente_do_sistema(String nome) {
-        // Reutiliza a lógica de verificação de exclusão física:
         assertFalse(repositorio.buscarPorNome(nome).isPresent(), "A exclusão física falhou: a especialidade ainda está no sistema.");
     }
     

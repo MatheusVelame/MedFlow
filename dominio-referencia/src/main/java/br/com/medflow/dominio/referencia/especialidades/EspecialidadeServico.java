@@ -26,28 +26,6 @@ public class EspecialidadeServico {
         return cadastrar(nome, "Descrição");
     }
 
-    /*public Especialidade alterar(String nomeOriginal, String novoNome, String novaDescricao) {
-        Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nomeOriginal)
-                .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada."));
-
-        if (!nomeOriginal.equals(novoNome) && medicoRepositorio.contarMedicosAtivosVinculados(nomeOriginal) > 0) {
-            throw new RegraNegocioException("Não é possível alterar o nome: existem médicos ativos vinculados"); 
-        }
-
-        if (!nomeOriginal.equals(novoNome)) {
-            if (especialidadeRepositorio.existePorNome(novoNome)) {
-                throw new RegraNegocioException("Já existe outra especialidade com este nome");
-            }
-            especialidade.alterarNome(novoNome);
-        }
-
-        if (novaDescricao != null) {
-            especialidade.alterarDescricao(novaDescricao);
-        }
-
-        especialidadeRepositorio.salvar(especialidade);
-        return especialidade;
-    } */
     public Especialidade alterar(String nomeOriginal, String novoNome, String novaDescricao) {
         Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nomeOriginal)
                 .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada."));
@@ -60,10 +38,7 @@ public class EspecialidadeServico {
             if (especialidadeRepositorio.existePorNome(novoNome)) {
                 throw new RegraNegocioException("Já existe outra especialidade com este nome");
             }
-            
-            // --- FIX INÍCIO ---
-            // Cria um objeto temporário com o NOME ORIGINAL para forçar a remoção no repositório.
-            // Usa o construtor de carga de dados para criar uma 'cópia' de remoção.
+
             Especialidade entidadeAntiga = new Especialidade(
                 nomeOriginal, 
                 especialidade.getDescricao(), 
@@ -71,7 +46,6 @@ public class EspecialidadeServico {
                 especialidade.isPossuiVinculoHistorico()
             );
             especialidadeRepositorio.remover(entidadeAntiga);
-            // --- FIX FIM ---
 
             especialidade.alterarNome(novoNome);
         }
