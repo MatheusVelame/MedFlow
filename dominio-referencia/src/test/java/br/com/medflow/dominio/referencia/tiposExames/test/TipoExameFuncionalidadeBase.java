@@ -12,7 +12,6 @@ import br.com.medflow.dominio.evento.EventoBarramento;
 import br.com.medflow.dominio.evento.EventoObservador;
 import br.com.medflow.dominio.referencia.tiposExames.TipoExame;
 import br.com.medflow.dominio.referencia.tiposExames.TipoExameId;
-import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorioMemoria;
 import br.com.medflow.dominio.referencia.tiposExames.TipoExameServico;
 import br.com.medflow.dominio.referencia.tiposExames.UsuarioResponsavelId;
 
