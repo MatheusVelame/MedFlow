@@ -16,11 +16,11 @@
   
   <modules>
   	<module>pai</module>
-  	<module>medflow-dominio-catalogo</module>
-  	<module>medflow-dominio-atendimento</module>
-  	<module>medflow-dominio-financeiro</module>
-    <module>medflow-dominio-referencia</module>
-    <module>medflow-dominio-administracao</module>
+  	<module>dominio-catalogo</module>
+  	<module>dominio-atendimento</module>
+  	<module>dominio-financeiro</module>
+    <module>dominio-referencia</module>
+    <module>dominio-administracao</module>
   </modules>
 
 </project>
