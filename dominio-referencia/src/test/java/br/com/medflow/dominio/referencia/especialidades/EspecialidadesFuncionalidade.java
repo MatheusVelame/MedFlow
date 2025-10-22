@@ -354,7 +354,7 @@ public class EspecialidadesFuncionalidade extends EspecialidadesFuncionalidadeBa
     }
     
     @Then("a especialidade {string} deve ter seu status alterado para {string}")
-    public void a_especialidade_deve_ter_seu_status_alterado_para(String nome, String statusEsperado) {)
+    public void a_especialidade_deve_ter_seu_status_alterado_para(String nome, String statusEsperado) {
         a_especialidade_deve_ter_o_status(nome, statusEsperado);
     }
 
