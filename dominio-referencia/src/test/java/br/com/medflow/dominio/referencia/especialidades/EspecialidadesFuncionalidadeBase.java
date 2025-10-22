@@ -26,7 +26,7 @@ public class EspecialidadesFuncionalidadeBase {
 
         this.repositorio = new EspecialidadesRepositorioMemoria();
         this.medicoRepositorio = new MedicoRepositorioMemoria();
- 
+     
         this.servico = new EspecialidadeServico(repositorio, medicoRepositorio);
 
         this.repositorio.limpar();
@@ -34,6 +34,15 @@ public class EspecialidadesFuncionalidadeBase {
         this.ultimaExcecao = null;
         this.descricao = null;
         this.ultimaEspecialidadeCadastrada = null;
+
+        this.repositorio.popular("Pediatria", "Pediatria Geral", StatusEspecialidade.ATIVA, false);
+        this.medicoRepositorio.mockContagem("Pediatria", 0); 
+
+        this.repositorio.popular("Dermatologia", "Dermatologia Estética", StatusEspecialidade.ATIVA, true);
+        this.medicoRepositorio.mockContagem("Dermatologia", 2); 
+
+        this.repositorio.popular("Gastroenterologia", "Tratamento Gastro", StatusEspecialidade.ATIVA, true);
+        this.medicoRepositorio.mockContagem("Gastroenterologia", 0);
     }
 
     // ===========================================
