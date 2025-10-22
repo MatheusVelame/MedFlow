@@ -47,6 +47,10 @@ Toda a documentação do sistema está na pasta `docs/`:
 - `docs/requisitos/` → Funcionalidades detalhadas e Regras de Negócio
 - `docs/diagramas/` → Diagramas ERD e outros diagramas visuais
 
+## Links Relevantes
+
+[Apresentação](https://www.canva.com/design/DAG2SOGRfNA/2dYa-JtEtf6IzFEaxkcMcg/edit?utm_content=DAG2SOGRfNA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+
 ## Como Contribuir
 
 1. Faça fork do repositório
