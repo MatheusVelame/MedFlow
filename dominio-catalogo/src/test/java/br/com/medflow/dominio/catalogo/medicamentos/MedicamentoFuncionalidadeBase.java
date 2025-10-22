@@ -12,10 +12,6 @@ import br.com.medflow.dominio.evento.EventoBarramento;
 import br.com.medflow.dominio.evento.EventoObservador;
 	
 
-/**
- * Classe base para os testes BDD de Farmácia. 
- * Responsável por configurar o ambiente (serviços in-memory) e simular o barramento de eventos.
- */
 public class MedicamentoFuncionalidadeBase implements EventoBarramento {
 	// Variáveis de domínio/ambiente
 	protected MedicamentoServico medicamentoServico;
@@ -55,11 +51,9 @@ public class MedicamentoFuncionalidadeBase implements EventoBarramento {
 		return permissoes.getOrDefault(perfil, List.of()).contains(acao);
 	}
 	
-	// Implementação mock do EventoBarramento (apenas para teste)
+	// Implementação mock do EventoBarramento
 	@Override
-	// ASSINATURA CORRIGIDA: Inclui o tipo de interface 'EventoObservador'
 	public <E> void adicionar(EventoObservador<E> observador) { 
-		// Não necessário para este conjunto de cenários, mas mantém a arquitetura
 		throw new UnsupportedOperationException();
 	}
 

@@ -1,7 +1,5 @@
 package br.com.medflow.dominio.atendimento.consultas;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -9,11 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Importar as classes Medico e Paciente do código principal
-import br.com.medflow.dominio.atendimento.consultas.Medico;
-import br.com.medflow.dominio.atendimento.consultas.Paciente;
 
-// Mock do Serviço de Notificação (apenas registra se foi chamado)
 class NotificacaoServicoMock {
     public List<String> notificacoesEnviadas = new ArrayList<>();
     
@@ -24,9 +18,7 @@ class NotificacaoServicoMock {
 }
 
 
-// --- Classe Base BDD ---
 public class ConsultaFuncionalidadeBase {
-    // Agora usando o repositório em arquivo separado
     protected ConsultaRepositorioMemoria repositorio = new ConsultaRepositorioMemoria(); 
     protected Map<String, Medico> medicos = new HashMap<>();
     protected Map<String, Paciente> pacientes = new HashMap<>();
@@ -34,13 +26,11 @@ public class ConsultaFuncionalidadeBase {
     
     protected RuntimeException excecao;
     protected String ultimaMensagem;
-    protected Consulta consultaAtual; // A classe Consulta é do novo arquivo
+    protected Consulta consultaAtual;
     protected String usuarioAtual;
     
-    // Campo para armazenar a consulta alvo em cenários de Remarcação
-    protected Consulta consultaJoao; // A classe Consulta é do novo arquivo
+    protected Consulta consultaJoao;
     
-    // Mock do tempo do sistema
     protected LocalDateTime dataHoraAtual;
     protected LocalDateTime dataHoraConsulta;
     protected LocalDateTime dataHoraNovaConsulta;
@@ -49,13 +39,11 @@ public class ConsultaFuncionalidadeBase {
     protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public ConsultaFuncionalidadeBase() {
-        // Inicialização de dados fixos (para testes que não se importam com o usuário)
         medicos.put("Dr. Eduardo", new Medico("Dr. Eduardo", "Cardiologia", "E-mail"));
         medicos.put("Dra. Helena", new Medico("Dra. Helena", "Dermatologia", "E-mail"));
         medicos.put("Dr. Bruno", new Medico("Dr. Bruno", "Ortopedia", "E-mail"));
         medicos.put("Dr. House", new Medico("Dr. House", "Diagnóstico", "E-mail"));
 
-        // Inicializa todos os pacientes usados nos testes
         pacientes.put("Ana Silva", new Paciente("Ana Silva", "E-mail"));
         pacientes.put("Pedro Alves", new Paciente("Pedro Alves", "SMS"));
         pacientes.put("Joana Lima", new Paciente("Joana Lima", "E-mail"));
@@ -77,7 +65,6 @@ public class ConsultaFuncionalidadeBase {
         dataHoraNovaConsulta = null;
         consultaJoao = null;
         
-        // Resetar contadores de penalidade
         pacientes.values().forEach(p -> p.setCancelamentosRecentes(0)); 
     }
     
@@ -100,14 +87,12 @@ public class ConsultaFuncionalidadeBase {
     }
     
     protected void cadastrarConsulta(String medicoNome, String pacienteNome, LocalDateTime dataHora) {
-        // A classe Consulta agora é a do ConsultaRepositorioMemoria.java
         Consulta nova = new Consulta(medicoNome, pacienteNome, dataHora);
         String chave = medicoNome + dataHora.toString();
         repositorio.salvar(chave, nova);
         consultaAtual = nova;
     }
     
-    // Método que o ConsultaServico real faria:
     protected void marcarConsulta(String medicoNome, String pacienteNome, String especialidade, LocalDateTime dataHora, String usuario) throws Exception {
         if (!usuarioAtual.equals("Recepcionista")) {
             throw new SecurityException("Usuário não tem permissão de recepcionista.");
@@ -116,8 +101,7 @@ public class ConsultaFuncionalidadeBase {
         if (!repositorio.isHorarioLivre(medicoNome, dataHora)) {
             throw new IllegalArgumentException("Horário já está ocupado.");
         }
-        
-        // As buscas por Medico e Paciente continuam usando os mocks internos da classe base
+
         if (pacientes.get(pacienteNome) == null) {
             throw new IllegalArgumentException("Paciente não encontrado.");
         }
@@ -160,14 +144,12 @@ public class ConsultaFuncionalidadeBase {
              throw new IllegalArgumentException("O motivo é obrigatório");
         }
         
-        // Simula a regra das 24h
         if (dataHoraAtual.plusDays(1).isAfter(consultaAtual.getDataHora())) {
              throw new IllegalStateException("O prazo limite de 24 horas foi excedido");
         }
         
         Paciente paciente = pacientes.get(consultaAtual.getPacienteNome());
         
-        // Simula a penalidade
         if (paciente.getCancelamentosRecentes() >= 2) {
             throw new IllegalStateException("Penalidade: restrição de agendamento por 30 dias");
         }

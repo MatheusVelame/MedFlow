@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Implementação em memória do repositório para uso exclusivo em testes BDD.
- */
 public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 	private Map<MedicamentoId, Medicamento> medicamentos = new HashMap<>();
 	private int sequenciaId = 0;
@@ -19,12 +16,10 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 	public void salvar(Medicamento medicamento) {
 		notNull(medicamento, "O medicamento não pode ser nulo");
 		
-		// Simula a geração de ID (para novos agregados) ou atualização
 		if (medicamento.getId() == null) {
 			sequenciaId++;
 			MedicamentoId novoId = new MedicamentoId(sequenciaId);
 			
-			// Reconstrução forçada para atribuir o ID, mantendo a imutabilidade do AGGREGATE ROOT
 			Medicamento novo = new Medicamento(
 				novoId, 
 				medicamento.getNome(), 
@@ -68,9 +63,7 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 		return new ArrayList<>(medicamentos.values());
 	}
     
-    /**
-     * Limpa o repositório em memória. Essencial para isolamento de testes BDD.
-     */
+    // Limpa o repositório em memória. Essencial para isolamento de testes BDD.
     public void clear() {
         medicamentos.clear();
         sequenciaId = 0;

@@ -6,7 +6,8 @@
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../pai</relativePath>
   </parent>
-  <artifactId>dominio-administracao</artifactId>
+  
+  <artifactId>medflow-dominio-administracao</artifactId>
   
   <dependencyManagement>
 		<dependencies>

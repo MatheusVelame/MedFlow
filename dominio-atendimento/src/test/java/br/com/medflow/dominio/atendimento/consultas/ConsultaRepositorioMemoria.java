@@ -7,9 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// Mocks de Infraestrutura para Testes
-
-// Mock do Histórico para simplificação
 class HistoricoRemarcacao {
     public final LocalDateTime dataHoraOriginal;
     public final LocalDateTime novaDataHora;
@@ -23,12 +20,10 @@ class HistoricoRemarcacao {
     public LocalDateTime getNovaDataHora() { return novaDataHora; }
 }
 
-// Mock da entidade Consulta
 class Consulta {
     private String medicoNome;
     private String pacienteNome;
     private LocalDateTime dataHora;
-    // Usando StatusConsulta do código principal
     private StatusConsulta status = StatusConsulta.AGENDADA; 
     private int remarcaçõesCount = 0;
     private List<HistoricoRemarcacao> historico = new ArrayList<>();
@@ -60,7 +55,6 @@ class Consulta {
     }
 }
 
-// Mock do repositório em memória
 public class ConsultaRepositorioMemoria {
     private Map<String, Consulta> consultas = new HashMap<>();
 
@@ -73,7 +67,6 @@ public class ConsultaRepositorioMemoria {
     }
 
     public boolean isHorarioLivre(String medicoNome, LocalDateTime dataHora) {
-        // Verifica se existe alguma consulta ativa para este médico neste horário
         return consultas.values().stream()
                 .noneMatch(c -> c.getMedicoNome().equals(medicoNome) && 
                                 c.getDataHora().equals(dataHora) &&

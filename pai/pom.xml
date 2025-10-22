@@ -79,7 +79,4 @@
 			</dependency>			
 		</dependencies>		
 	</dependencyManagement>
-	<modules>
-		<module>dominio-administracao</module>
-	</modules>
 </project>
