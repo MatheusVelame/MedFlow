@@ -27,7 +27,7 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 			</plugin>
-      		<!--	
+      			
 			<plugin>
 				<groupId>com.github.ferstl</groupId>
 				<artifactId>depgraph-maven-plugin</artifactId>
@@ -47,8 +47,7 @@
 						<include>br.com.medflow*</include>
 					</includes>					
 				</configuration>
-			</plugin> 
-			-->
+			</plugin>
 		</plugins>
 	</build>
 	
