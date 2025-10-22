@@ -8,95 +8,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-// --- Mocks de Infraestrutura ---
-
-// Mock do Histórico para simplificação
-class HistoricoRemarcacao {
-    public final LocalDateTime dataHoraOriginal;
-    public final LocalDateTime novaDataHora;
-
-    public HistoricoRemarcacao(LocalDateTime dataHoraOriginal, LocalDateTime novaDataHora) {
-        this.dataHoraOriginal = dataHoraOriginal;
-        this.novaDataHora = novaDataHora;
-    }
-}
-
-// Mock da entidade Consulta
-class Consulta {
-    private String medicoNome;
-    private String pacienteNome;
-    private LocalDateTime dataHora;
-    private StatusConsulta status = StatusConsulta.AGENDADA;
-    private int remarcaçõesCount = 0;
-    private List<HistoricoRemarcacao> historico = new ArrayList<>();
-    private String motivoCancelamento;
-
-    public Consulta(String medicoNome, String pacienteNome, LocalDateTime dataHora) {
-        this.medicoNome = medicoNome;
-        this.pacienteNome = pacienteNome;
-        this.dataHora = dataHora;
-    }
-
-    public String getMedicoNome() { return medicoNome; }
-    public String getPacienteNome() { return pacienteNome; }
-    public LocalDateTime getDataHora() { return dataHora; }
-    public StatusConsulta getStatus() { return status; }
-    public int getRemarcacoesCount() { return remarcaçõesCount; }
-    public String getMotivoCancelamento() { return motivoCancelamento; }
-    
-    // Getter para o campo privado 'historico'
-    public List<HistoricoRemarcacao> getHistorico() { return historico; }
-    
-    public void remarcar(LocalDateTime novaDataHora) {
-        historico.add(new HistoricoRemarcacao(this.dataHora, novaDataHora));
-        this.dataHora = novaDataHora;
-        this.remarcaçõesCount++;
-    }
-
-    public void cancelar(String motivo) {
-        this.status = StatusConsulta.CANCELADA;
-        this.motivoCancelamento = motivo; 
-    }
-}
-
-// Mock do repositório
-class ConsultaRepositorioMemoria {
-    private Map<String, Consulta> consultas = new HashMap<>();
-
-    public void salvar(String chave, Consulta consulta) {
-        consultas.put(chave, consulta);
-    }
-
-    public Optional<Consulta> obter(String chave) {
-        return Optional.ofNullable(consultas.get(chave));
-    }
-
-    public boolean isHorarioLivre(String medicoNome, LocalDateTime dataHora) {
-        // Verifica se existe alguma consulta ativa para este médico neste horário
-        return consultas.values().stream()
-                .noneMatch(c -> c.getMedicoNome().equals(medicoNome) && 
-                                c.getDataHora().equals(dataHora) &&
-                                c.getStatus() == StatusConsulta.AGENDADA);
-    }
-    
-    public Optional<Consulta> findByMedicoAndDate(String medicoNome, LocalDateTime dataHora) {
-        return consultas.values().stream()
-                .filter(c -> c.getMedicoNome().equals(medicoNome) && c.getDataHora().equals(dataHora))
-                .findFirst();
-    }
-    
-    public List<Consulta> findAll() {
-        return new ArrayList<>(consultas.values());
-    }
-
-    public void clear() {
-        consultas.clear();
-    }
-}
+// Importar as classes Medico e Paciente do código principal
+import br.com.medflow.dominio.atendimento.consultas.Medico;
+import br.com.medflow.dominio.atendimento.consultas.Paciente;
 
 // Mock do Serviço de Notificação (apenas registra se foi chamado)
 class NotificacaoServicoMock {
@@ -111,18 +26,19 @@ class NotificacaoServicoMock {
 
 // --- Classe Base BDD ---
 public class ConsultaFuncionalidadeBase {
-    protected ConsultaRepositorioMemoria repositorio = new ConsultaRepositorioMemoria();
+    // Agora usando o repositório em arquivo separado
+    protected ConsultaRepositorioMemoria repositorio = new ConsultaRepositorioMemoria(); 
     protected Map<String, Medico> medicos = new HashMap<>();
     protected Map<String, Paciente> pacientes = new HashMap<>();
     protected NotificacaoServicoMock notificacaoServico = new NotificacaoServicoMock();
     
     protected RuntimeException excecao;
     protected String ultimaMensagem;
-    protected Consulta consultaAtual;
+    protected Consulta consultaAtual; // A classe Consulta é do novo arquivo
     protected String usuarioAtual;
     
     // Campo para armazenar a consulta alvo em cenários de Remarcação
-    protected Consulta consultaJoao; 
+    protected Consulta consultaJoao; // A classe Consulta é do novo arquivo
     
     // Mock do tempo do sistema
     protected LocalDateTime dataHoraAtual;
@@ -184,6 +100,7 @@ public class ConsultaFuncionalidadeBase {
     }
     
     protected void cadastrarConsulta(String medicoNome, String pacienteNome, LocalDateTime dataHora) {
+        // A classe Consulta agora é a do ConsultaRepositorioMemoria.java
         Consulta nova = new Consulta(medicoNome, pacienteNome, dataHora);
         String chave = medicoNome + dataHora.toString();
         repositorio.salvar(chave, nova);
@@ -200,6 +117,7 @@ public class ConsultaFuncionalidadeBase {
             throw new IllegalArgumentException("Horário já está ocupado.");
         }
         
+        // As buscas por Medico e Paciente continuam usando os mocks internos da classe base
         if (pacientes.get(pacienteNome) == null) {
             throw new IllegalArgumentException("Paciente não encontrado.");
         }
