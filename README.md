@@ -53,7 +53,7 @@ Toda a documentação do sistema está na pasta `docs/`:
 
 [Mapa de História do Usuário](https://docs.google.com/spreadsheets/d/1kf9p6PZdcArcFrWaBAwNw4lFPddTfPL4PkI4kUyHw2Q/edit?usp=sharing)
 
-[Protótipo de Alta]([https://lovable.dev/projects/83b3df5b-93cc-497f-9b20-9732f14e1075](https://lovable.dev/projects/83b3df5b-93cc-497f-9b20-9732f14e1075?magic_link=mc_8d36ffe6-018b-4986-979c-299ff2c2c9e9) )
+[Protótipo de Alta](https://lovable.dev/projects/83b3df5b-93cc-497f-9b20-9732f14e1075)
 
 ## Como Contribuir
 
