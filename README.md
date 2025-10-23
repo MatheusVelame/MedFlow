@@ -55,6 +55,8 @@ Toda a documentação do sistema está na pasta `docs/`:
 
 [Protótipo de Alta](https://lovable.dev/projects/83b3df5b-93cc-497f-9b20-9732f14e1075)
 
+[Divisão de Funcionalidades](https://docs.google.com/spreadsheets/d/1t92giffg4_3fWzn12EcefGPzbG3hpNor4TrYLyCI4VA/edit?gid=646963064#gid=646963064)
+
 ## Como Contribuir
 
 1. Faça fork do repositório
