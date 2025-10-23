@@ -1,0 +1,6 @@
+br/com/medflow/dominio/prontuario/HistoricoClinico.class
+br/com/medflow/dominio/prontuario/Prontuario.class
+br/com/medflow/dominio/prontuario/Profissional.class
+br/com/medflow/dominio/prontuario/StatusProntuario.class
+br/com/medflow/dominio/prontuario/HistoricoAtualizacao.class
+br/com/medflow/dominio/prontuario/LogAuditoria.class

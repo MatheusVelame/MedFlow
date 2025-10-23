@@ -17,6 +17,10 @@
   <modules>
   	<module>pai</module>
   	<module>dominio-catalogo</module>
+  	<module>dominio-atendimento</module>
+  	<module>dominio-financeiro</module>
+    <module>dominio-referencia</module>
+    <module>dominio-administracao</module>
   </modules>
 
 </project>

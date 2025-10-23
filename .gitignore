@@ -102,3 +102,4 @@ out/
 # Evita enviar arquivos gerados localmente por workflows
 .github/workflows/*.log
 .github/workflows/*.tmp
+target/
