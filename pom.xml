@@ -21,6 +21,9 @@
   	<module>dominio-financeiro</module>
     <module>dominio-referencia</module>
     <module>dominio-administracao</module>
+    <module>aplicacao</module>
+    <module>infraestrutura</module>
+    <module>apresentacao-backend</module>
   </modules>
 
 </project>
