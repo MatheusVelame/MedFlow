@@ -10,7 +10,7 @@ public interface MedicamentoRepositorioAplicacao {
 
 	Optional<MedicamentoDetalhes> obterDetalhesPorId(Integer id);
     
-	List<MedicamentoResumo> pesquisarPorStatus(StatusMedicamento status);
+	List<MedicamentoResumo> findByStatus(StatusMedicamento status);
 	
 	List<MedicamentoResumo> pesquisarMedicamentosComRevisaoPendente();
 }

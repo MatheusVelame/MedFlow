@@ -29,6 +29,6 @@ public class MedicamentoServicoAplicacao {
 	}
 
     public List<MedicamentoResumo> pesquisarPorStatus(StatusMedicamento status) {
-		return repositorio.pesquisarPorStatus(status);
+		return repositorio.findByStatus(status);
 	}
 }
