@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects; // <-- NOVO IMPORT
 
 public class Medicamento {
 	private MedicamentoId id;
@@ -17,8 +18,14 @@ public class Medicamento {
 	private StatusMedicamento status;
 
 	private List<HistoricoEntrada> historico = new ArrayList<>();
-	// Referência agora é para a classe externa
-	private RevisaoPendente revisaoPendente; 
+	private RevisaoPendente revisaoPendente;
+
+    /**
+     * Construtor padrão exigido pelo ModelMapper para mapeamento JPA -> Domínio.
+     */
+    public Medicamento() {
+        this.historico = new ArrayList<>();
+    }
 
 	public Medicamento(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) {
 		this.id = null;
@@ -45,7 +52,8 @@ public class Medicamento {
 	public void atualizarUsoPrincipal(String novoUsoPrincipal, UsuarioResponsavelId responsavelId) {
 		notBlank(novoUsoPrincipal, "O uso principal não pode estar em branco.");
 
-		if (this.usoPrincipal.equals(novoUsoPrincipal)) {
+		// CORREÇÃO: Usa Objects.equals() para comparação segura contra null
+		if (Objects.equals(this.usoPrincipal, novoUsoPrincipal)) {
 			return;
 		}
 
@@ -81,8 +89,7 @@ public class Medicamento {
 		
 		this.revisaoPendente = new RevisaoPendente(novaContraindicacao, responsavelId);
 		adicionarEntradaHistorico(AcaoHistorico.REVISAO_SOLICITADA, "Alteração crítica de Contraindicações solicitada: " + novaContraindicacao, responsavelId);
-		// Usa a exceção externa que você já tem
-		throw new RevisaoPendenteException("Alteração crítica exige revisão."); 
+		throw new RevisaoPendenteException("Alteração crítica exige revisão.");
 	}
 
 	public void aprovarRevisao(UsuarioResponsavelId revisorId) {
@@ -110,7 +117,8 @@ public class Medicamento {
 		this.nome = nome;
 	}
 	
-	private void setUsoPrincipal(String usoPrincipal) {
+	// Adicione este setter para auxiliar o ModelMapper na reconstrução (Recomendado)
+	public void setUsoPrincipal(String usoPrincipal) {
 		notBlank(usoPrincipal, "O uso principal do medicamento é obrigatório.");
 		this.usoPrincipal = usoPrincipal;
 	}

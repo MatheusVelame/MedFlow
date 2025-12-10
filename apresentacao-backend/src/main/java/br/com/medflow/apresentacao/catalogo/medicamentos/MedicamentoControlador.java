@@ -18,11 +18,11 @@ import java.util.List;
 public class MedicamentoControlador {
 
     private final MedicamentoServicoAplicacao servicoConsulta; 
-    private final MedicamentoServico servicoDominio;
+    private final MedicamentoServico servicoDominio; // Usaremos servicoDominio consistentemente
 
     public MedicamentoControlador(
             MedicamentoServicoAplicacao servicoConsulta, 
-            MedicamentoServico servicoDominio) {
+            MedicamentoServico servicoDominio) { // Injeção correta
         this.servicoConsulta = servicoConsulta;
         this.servicoDominio = servicoDominio;
     }
@@ -59,7 +59,7 @@ public class MedicamentoControlador {
     public void cadastrarMedicamento(@Valid @RequestBody MedicamentoFormulario formulario) {
         var responsavelId = new UsuarioResponsavelId(formulario.getResponsavelId());
         
-        servicoDominio.cadastrar(
+        servicoDominio.cadastrar( 
             formulario.getNome(),
             formulario.getUsoPrincipal(),
             formulario.getContraindicacoes(),
@@ -71,32 +71,31 @@ public class MedicamentoControlador {
     // PUT /backend/medicamentos/{id}/uso-principal
     @PutMapping("/{id}/uso-principal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void atualizarUsoPrincipal(@PathVariable Integer id, @Valid @RequestBody MedicamentoFormulario formulario) {
+    public void atualizarUsoPrincipal(@PathVariable Integer id, @Valid @RequestBody UsoPrincipalFormulario formulario) {
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(formulario.getResponsavelId());
         
-        servicoDominio.atualizarUsoPrincipal(
+        servicoDominio.atualizarUsoPrincipal( // CORRIGIDO: Usando servicoDominio
             medicamentoId, 
-            formulario.getUsoPrincipal(), 
+            formulario.getNovoUsoPrincipal(), // Assumindo que você está usando UsoPrincipalFormulario corrigido
             responsavelId
         );
     }
 
     // 3. Comando: mudarStatus (Geral)
     // PUT /backend/medicamentos/{id}/status/{novoStatus}
-    // NOTA: O método mudarStatus requer StatusMedicamento no path e o boolean temPrescricaoAtiva no query param.
     @PutMapping("/{id}/status/{novoStatus}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void mudarStatus(
             @PathVariable Integer id, 
-            @PathVariable StatusMedicamento novoStatus, // Mapeia o Enum automaticamente
+            @PathVariable StatusMedicamento novoStatus, 
             @Valid @RequestBody UsuarioResponsavelFormulario responsavel,
             @RequestParam(defaultValue = "false") boolean temPrescricaoAtiva) { 
         
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(responsavel.getResponsavelId());
 
-        servicoDominio.mudarStatus(
+        servicoDominio.mudarStatus( // CORRIGIDO: Usando servicoDominio
             medicamentoId, 
             novoStatus, 
             responsavelId, 
@@ -116,7 +115,7 @@ public class MedicamentoControlador {
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(responsavel.getResponsavelId());
 
-        servicoDominio.arquivar(medicamentoId, responsavelId, temPrescricaoAtiva);
+        servicoDominio.arquivar(medicamentoId, responsavelId, temPrescricaoAtiva); // CORRIGIDO: Usando servicoDominio
     }
     
     // 5. Comando: solicitarRevisaoContraindicacoes
@@ -127,7 +126,7 @@ public class MedicamentoControlador {
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(formulario.getResponsavelId());
 
-        servicoDominio.solicitarRevisaoContraindicacoes(
+        servicoDominio.solicitarRevisaoContraindicacoes( // CORRIGIDO: Usando servicoDominio
             medicamentoId, 
             formulario.getNovaContraindicacao(), 
             responsavelId
@@ -142,7 +141,7 @@ public class MedicamentoControlador {
         var medicamentoId = new MedicamentoId(id);
         var revisorId = new UsuarioResponsavelId(revisor.getResponsavelId());
 
-        servicoDominio.aprovarRevisao(medicamentoId, revisorId);
+        servicoDominio.aprovarRevisao(medicamentoId, revisorId); // CORRIGIDO: Usando servicoDominio
     }
 
     // 7. Comando: rejeitarRevisao
@@ -153,6 +152,6 @@ public class MedicamentoControlador {
         var medicamentoId = new MedicamentoId(id);
         var revisorId = new UsuarioResponsavelId(revisor.getResponsavelId());
 
-        servicoDominio.rejeitarRevisao(medicamentoId, revisorId);
+        servicoDominio.rejeitarRevisao(medicamentoId, revisorId); // CORRIGIDO: Usando servicoDominio
     }
 }
