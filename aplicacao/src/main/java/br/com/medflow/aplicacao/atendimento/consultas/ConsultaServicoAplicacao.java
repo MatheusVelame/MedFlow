@@ -18,7 +18,6 @@ public class ConsultaServicoAplicacao {
     private final ConsultaRepositorioAplicacao repositorio;
 
     public ConsultaServicoAplicacao(ConsultaRepositorioAplicacao repositorio) {
-        // Validação seguindo o padrão do projeto
         notNull(repositorio, "O repositório de consulta não pode ser nulo"); 
         this.repositorio = repositorio;
     }
@@ -45,7 +44,6 @@ public class ConsultaServicoAplicacao {
      * Retorna apenas as consultas que estão com status agendado.
      */
     public List<ConsultaResumo> pesquisarConsultasAgendadas() {
-        // Usa o StatusConsulta do Domínio para filtrar
         return repositorio.pesquisarPorStatus(StatusConsulta.AGENDADA); 
     }
 }

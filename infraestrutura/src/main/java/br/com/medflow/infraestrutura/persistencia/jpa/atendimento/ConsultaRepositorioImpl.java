@@ -35,12 +35,11 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
     @Override
     public Optional<Consulta> buscarPorId(ConsultaId id) {
         return jpaRepository.findById(id.getValor())
-                .map(this::toDomain); // Converte ConsultaJpa para a Entidade de Domínio Consulta
+                .map(this::toDomain); 
     }
 
     @Override
     public void salvar(Consulta consulta) {
-        // Converte a Entidade de Domínio Consulta para ConsultaJpa para persistir
         ConsultaJpa jpa = toJpa(consulta);
         jpaRepository.save(jpa);
     }
@@ -48,7 +47,7 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
     // Métodos de mapeamento interno (Domain <=> JPA)
     
     private Consulta toDomain(ConsultaJpa jpa) {
-        // Mapeamento simples de reconstrução
+        // Na reconstrução, assumimos que os IDs Paciente/Médico foram mapeados para o objeto Consulta
         return new Consulta(
             new ConsultaId(jpa.getId()),
             jpa.getDataHora(),
@@ -60,16 +59,17 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
     
     private ConsultaJpa toJpa(Consulta consulta) {
         ConsultaJpa jpa = new ConsultaJpa();
-        // Mapeamento do ID para atualização ou criação
+        
         if (consulta.getId() != null) {
             jpa.setId(consulta.getId().getValor());
         }
         jpa.setDataHora(consulta.getDataHora());
         jpa.setDescricao(consulta.getDescricao());
         jpa.setStatus(consulta.getStatus().name()); 
-        // Lógica para obter e setar pacienteId/medicoId do objeto Consulta real...
-        // Exemplo: jpa.setPacienteId(consulta.getPacienteId().getValor()); 
-        // Exemplo: jpa.setMedicoId(consulta.getMedicoId().getValor()); 
+        
+        // CORREÇÃO CRÍTICA: Mapeamento dos IDs do Domínio para o JPA
+        jpa.setPacienteId(consulta.getPacienteId()); 
+        jpa.setMedicoId(consulta.getMedicoId());   
         
         return jpa;
     }
@@ -101,7 +101,6 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
     // Métodos de mapeamento interno (JPA -> DTO)
 
     private ConsultaResumo toResumoDto(ConsultaJpa jpa) {
-        // Simulação da busca de nomes
         String nomePaciente = "Paciente " + jpa.getPacienteId();
         String nomeMedico = "Médico " + jpa.getMedicoId();
         
@@ -115,7 +114,6 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
     }
 
     private ConsultaDetalhes toDetalhesDto(ConsultaJpa jpa) {
-        // Simulação de detalhes
         return new ConsultaDetalhes(
             jpa.getId(), 
             jpa.getDataHora(), 

@@ -43,7 +43,7 @@ public class ConsultaDetalhes {
         this.historico = historico;
     }
 
-    // Classe interna (ou record em Java moderno) para simplificar o histórico
+    // Classe interna para o histórico (simplificando)
     public record HistoricoConsultaDetalhes(LocalDateTime data, String acao, String responsavel) {}
 
     // Getters
