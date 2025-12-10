@@ -1,0 +1,35 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Consulta' Aggregate" <<Rectangle>> {
+	class Consulta <<(A,#fffab8) Aggregate Root>> {
+		Date horario
+		String status
+		ConsultaId_Att id
+		PacienteId_Adm paciente
+		MedicoId_Adm medico
+		boolean isDisponivel()
+	}
+	class ConsultaAgendadaEvento <<(E,#ff9f4b) Domain Event>> {
+		ConsultaId_Att consulta
+		PacienteId_Adm paciente
+	}
+	class ConsultaCanceladaEvento <<(E,#ff9f4b) Domain Event>> {
+		ConsultaId_Att consulta
+	}
+	class ConsultaId_Att <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class AgendamentoServico <<(S,DarkSeaGreen) Service>> {
+		void agendarConsulta(PacienteId_Adm paciente, MedicoId_Adm medico, Date horario)
+		void remarcarConsulta(ConsultaId_Att consulta, Date novoHorario)
+		void cancelarConsulta(ConsultaId_Att consulta)
+	}
+}
+ConsultaAgendadaEvento --> ConsultaId_Att : consulta
+Consulta --> ConsultaId_Att : id
+ConsultaCanceladaEvento --> ConsultaId_Att : consulta
+
+
+@enduml

@@ -1,0 +1,56 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Prontuario' Aggregate" <<Rectangle>> {
+	class HistoricoRegistradoEvento <<(E,#ff9f4b) Domain Event>> {
+		ProntuarioId_Pront prontuario
+		HistoricoClinico registro
+	}
+	class Prontuario <<(A,#fffab8) Aggregate Root>> {
+		String status
+		ProntuarioId_Pront id
+		PacienteId_Adm paciente
+		List<HistoricoClinico> historico
+		HistoricoRegistradoEvento adicionarHistorico(HistoricoClinico registro)
+	}
+	class HistoricoClinico <<(E,DarkSeaGreen) Entity>> {
+		String sintomas
+		String diagnostico
+		String condutaTratamento
+		Date dataRegistro
+		Profissional profissional
+	}
+	class ProntuarioId_Pront <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class Profissional <<(V,DarkSeaGreen) Value Object>> {
+		String nome
+		MedicoId_Adm medico
+	}
+}
+package "'Prescricao' Aggregate" <<Rectangle>> {
+	class Prescricao <<(A,#fffab8) Aggregate Root>> {
+		String dosagem
+		String posologia
+		PrescricaoId_Pront id
+		MedicamentoId_Cat medicamento
+		ProntuarioId_Pront prontuario
+	}
+	class PrescricaoId_Pront <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+}
+HistoricoRegistradoEvento --> HistoricoClinico : registro
+HistoricoClinico --> Profissional : profissional
+HistoricoRegistradoEvento --> ProntuarioId_Pront : prontuario
+Prontuario --> ProntuarioId_Pront : id
+Prontuario "1" *--> "*" HistoricoClinico : historico
+Prescricao --> ProntuarioId_Pront : prontuario
+Prescricao --> PrescricaoId_Pront : id
+legend left
+  This bounded context implements the subdomain 'Prontuario'.
+end legend
+
+
+@enduml

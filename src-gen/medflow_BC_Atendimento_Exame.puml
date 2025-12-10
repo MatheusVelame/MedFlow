@@ -1,0 +1,21 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Exame' Aggregate" <<Rectangle>> {
+	class Exame <<(A,#fffab8) Aggregate Root>> {
+		Date dataAgendamento
+		String status
+		ExameId_Att id
+		PacienteId_Adm paciente
+		MedicoId_Adm medico
+		TipoExameId_Ref tipoExame
+	}
+	class ExameId_Att <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+}
+Exame --> ExameId_Att : id
+
+
+@enduml

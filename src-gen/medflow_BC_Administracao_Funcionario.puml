@@ -1,0 +1,34 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Funcionario' Aggregate" <<Rectangle>> {
+	class Funcionario <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String funcao
+		String contato
+		String status
+		FuncionarioId_Adm id
+	}
+	class Medico <<(E,DarkSeaGreen) Entity>> {
+		CRM crm
+		EspecialidadeId_Ref especialidade
+		boolean podeSerDesativado()
+	}
+	class FuncionarioId_Adm <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class MedicoId_Adm <<(V,DarkSeaGreen) Value Object>> {
+	}
+	class CRM <<(V,DarkSeaGreen) Value Object>> {
+		String numero
+		String uf
+	}
+}
+Medico --> CRM : crm
+Funcionario --> FuncionarioId_Adm : id
+Medico --|> Funcionario
+MedicoId_Adm --|> FuncionarioId_Adm
+
+
+@enduml

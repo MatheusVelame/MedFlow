@@ -2,13 +2,24 @@
 
 skinparam componentStyle uml2
 
-component [Pacientes]
-component [TiposDeExame]
-component [Especialidades]
+component [Administracao]
+component [Referencia]
+component [Catalogo]
+component [Atendimento]
+component [Prontuario]
+component [Financeiro]
 
-interface "Upstream-Downstream" as Especialidades_to_TiposDeExame
-[TiposDeExame] --> Especialidades_to_TiposDeExame
-Especialidades_to_TiposDeExame <.. [Especialidades] : consume
+[Atendimento]<-->[Administracao] : Shared Kernel
+
+[Financeiro]<-->[Administracao] : Shared Kernel
+
+[Prontuario]<-->[Administracao] : Shared Kernel
+
+[Atendimento]<-->[Referencia] : Shared Kernel
+
+[Prontuario]<-->[Catalogo] : Shared Kernel
+
+[Administracao]<-->[Referencia] : Shared Kernel
 
 
 

@@ -55,16 +55,22 @@ BoundedContext Administracao implements Administracao {
 
             Repository FuncionarioRepository {
                 @Funcionario obter(@FuncionarioId_Adm id);
+                @Medico obterPorCrm(@CRM crm);
             }
         }
 
         Entity Medico extends Funcionario {
-            String crm
+            -CRM crm
             -EspecialidadeId_Ref especialidade
+            def boolean podeSerDesativado(); 
         }
 
         ValueObject FuncionarioId_Adm { String codigo }
         ValueObject MedicoId_Adm extends FuncionarioId_Adm
+        ValueObject CRM {
+          String numero unique notEmpty // RN: CRM deve ser único
+          String uf notEmpty           // O CRM deve ter um UF (ex: 12345/PE)
+        }
     }
 }
 
