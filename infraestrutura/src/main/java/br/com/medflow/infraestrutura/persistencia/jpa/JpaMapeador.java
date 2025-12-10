@@ -5,10 +5,10 @@ import br.com.medflow.infraestrutura.persistencia.jpa.catalogo.HistoricoEntradaJ
 import br.com.medflow.dominio.catalogo.medicamentos.Medicamento;
 import br.com.medflow.infraestrutura.persistencia.jpa.catalogo.MedicamentoJpa;
 
-// NOVOS IMPORTS PARA CONSULTAS
+// IMPORTS NECESSÁRIOS PARA CONSULTAS (Estavam faltando!)
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaDetalhes;
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaResumo;
-import br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ConsultaJpa; // Assumindo o pacote
+import br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ConsultaJpa; 
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
@@ -45,19 +45,12 @@ public class JpaMapeador extends ModelMapper {
                 mapper.skip(MedicamentoJpa::setHistorico);
             });
             
-        // Se precisar de mapeamento do ID do Medicamento (VO -> int/Integer)
-        // createTypeMap(Medicamento.class, MedicamentoJpa.class)
-        //     .addMappings(mapper -> {
-        //         mapper.map(src -> src.getId().getId(), MedicamentoJpa::setId); 
-        //     });
-
-        // === 3. NOVOS MAPEAMENTOS JPA (ConsultaJpa) para DTOs de Aplicação (Queries) ===
-        // O ModelMapper mapeará automaticamente os campos com o mesmo nome (ex: id, pacienteNome)
+        // === 3. CONFIGURAÇÃO DE MAPA PARA CONSULTAS (RESOLVE O PROBLEMA DO NULL) ===
         
-        // Mapeamento para DTO de Detalhes
+        // Mapeamento de ConsultaJpa para ConsultaDetalhes (necessário para campos finais)
         createTypeMap(ConsultaJpa.class, ConsultaDetalhes.class);
         
-        // Mapeamento para DTO de Resumo
+        // Mapeamento de ConsultaJpa para ConsultaResumo (necessário para campos finais)
         createTypeMap(ConsultaJpa.class, ConsultaResumo.class);
 	}
 }
