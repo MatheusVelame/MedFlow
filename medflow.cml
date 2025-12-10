@@ -55,11 +55,11 @@ BoundedContext Administracao implements Administracao {
 
             Repository FuncionarioRepository {
                 @Funcionario obter(@FuncionarioId_Adm id);
-                @Medico obterPorCrm(@CRM crm);
+                @br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico obterPorCrm(@CRM crm);
             }
         }
 
-        Entity Medico extends Funcionario {
+        Entity br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico extends Funcionario {
             -CRM crm
             -EspecialidadeId_Ref especialidade
             def boolean podeSerDesativado(); 

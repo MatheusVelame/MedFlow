@@ -85,7 +85,7 @@ entity "Paciente" as Paciente {
   Status : string  
 }  
   
-entity "Médico" as Medico {  
+entity "Médico" as br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico {  
   *ID : int  
   --  
   Nome : string  
@@ -229,14 +229,14 @@ Paciente ||--o{ Exame : "realiza"
 Paciente ||--o{ Prontuario : "possui"  
 Paciente }|--|| Convenio : "pode estar vinculado"  
   
-Medico ||--o{ Consulta : "atende"  
-Medico ||--o{ Exame : "realiza"  
-Medico }|--|| Especialidade : "possui"  
-Medico ||--o{ Agenda : "possui"  
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico ||--o{ Consulta : "atende"  
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico ||--o{ Exame : "realiza"  
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico }|--|| Especialidade : "possui"  
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico ||--o{ Agenda : "possui"  
   
 Funcionario ||--o{ FolhaPagamento : "recebe"  
   
-Especialidade ||--o{ Medico : "atribui"  
+Especialidade ||--o{ br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico : "atribui"  
 Especialidade ||--o{ TipoExame : "possui"
 
 TipoExame ||--o{ Exame : "gera"

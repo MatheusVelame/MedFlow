@@ -10,7 +10,7 @@ package "'Funcionario' Aggregate" <<Rectangle>> {
 		String status
 		FuncionarioId_Adm id
 	}
-	class Medico <<(E,DarkSeaGreen) Entity>> {
+	class br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico <<(E,DarkSeaGreen) Entity>> {
 		CRM crm
 		EspecialidadeId_Ref especialidade
 		boolean podeSerDesativado()
@@ -25,9 +25,9 @@ package "'Funcionario' Aggregate" <<Rectangle>> {
 		String uf
 	}
 }
-Medico --> CRM : crm
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico --> CRM : crm
 Funcionario --> FuncionarioId_Adm : id
-Medico --|> Funcionario
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico --|> Funcionario
 MedicoId_Adm --|> FuncionarioId_Adm
 
 
