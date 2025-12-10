@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-// Implementa o contrato da Camada de Domínio (Commands)
 @Component("medicamentoRepositorioImpl")
 public class MedicamentoRepositorioImpl implements MedicamentoRepositorio { 
 
@@ -27,6 +26,13 @@ public class MedicamentoRepositorioImpl implements MedicamentoRepositorio {
 	public void salvar(Medicamento medicamento) { 
 		MedicamentoJpa jpa = mapeador.map(medicamento, MedicamentoJpa.class);
 
+
+        if (jpa.getHistorico() != null) {
+            jpa.getHistorico().forEach(h -> {
+                h.setMedicamento(jpa);
+            });
+        }
+        
 		jpaRepository.save(jpa);
 	}
 

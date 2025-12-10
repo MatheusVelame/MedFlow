@@ -12,6 +12,11 @@ public class HistoricoEntradaJpa {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+
+    @ManyToOne
+    @JoinColumn(name = "medicamento_id", nullable = false)
+    private MedicamentoJpa medicamento; 
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private AcaoHistorico acao;
@@ -37,14 +42,22 @@ public class HistoricoEntradaJpa {
     }
 
 
+    public void setAcao(AcaoHistorico acao) { this.acao = acao; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public void setResponsavelId(Integer responsavelId) { this.responsavelId = responsavelId; }
+    
+
+    public void setDataHora(LocalDateTime dataHora) { this.dataHora = dataHora; } 
+    
+
+    public void setMedicamento(MedicamentoJpa medicamento) { this.medicamento = medicamento; } 
+
+    // --- Getters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public AcaoHistorico getAcao() { return acao; }
-    public void setAcao(AcaoHistorico acao) { this.acao = acao; }
     public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
     public Integer getResponsavelId() { return responsavelId; }
-    public void setResponsavelId(Integer responsavelId) { this.responsavelId = responsavelId; }
     public LocalDateTime getDataHora() { return dataHora; }
-    public void setDataHora(LocalDateTime dataHora) { this.dataHora = dataHora; }
+    public MedicamentoJpa getMedicamento() { return medicamento; }
 }

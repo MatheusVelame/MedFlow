@@ -30,8 +30,8 @@ public class MedicamentoJpa {
 	@JoinColumn(name = "revisao_pendente_id")
 	private RevisaoPendenteJpa revisaoPendente;
     
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-	@JoinColumn(name = "medicamento_id", nullable = false)
+
+	@OneToMany(mappedBy = "medicamento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	private List<HistoricoEntradaJpa> historico = new ArrayList<>();
 
     public MedicamentoJpa() {}
@@ -44,7 +44,7 @@ public class MedicamentoJpa {
         this.usoPrincipal = usoPrincipal;
         this.contraindicacoes = contraindicacoes;
         this.status = status;
-        this.historico = historico;
+        this.historico = historico != null ? historico : new ArrayList<>();
         this.revisaoPendente = revisaoPendente;
     }
 
@@ -59,7 +59,14 @@ public class MedicamentoJpa {
     public StatusMedicamento getStatus() { return status; }
     public void setStatus(StatusMedicamento status) { this.status = status; }
     public List<HistoricoEntradaJpa> getHistorico() { return historico; }
-    public void setHistorico(List<HistoricoEntradaJpa> historico) { this.historico = historico; }
+    
+    public void setHistorico(List<HistoricoEntradaJpa> historico) { 
+        this.historico = historico;
+        if (historico != null) {
+            historico.forEach(h -> h.setMedicamento(this));
+        }
+    }
+    
     public RevisaoPendenteJpa getRevisaoPendente() { return revisaoPendente; }
     public void setRevisaoPendente(RevisaoPendenteJpa revisaoPendente) { this.revisaoPendente = revisaoPendente; }
 }

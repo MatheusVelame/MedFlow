@@ -17,7 +17,8 @@ public class Medicamento {
 	private StatusMedicamento status;
 
 	private List<HistoricoEntrada> historico = new ArrayList<>();
-	private RevisaoPendente revisaoPendente;
+	// Referência agora é para a classe externa
+	private RevisaoPendente revisaoPendente; 
 
 	public Medicamento(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) {
 		this.id = null;
@@ -80,7 +81,8 @@ public class Medicamento {
 		
 		this.revisaoPendente = new RevisaoPendente(novaContraindicacao, responsavelId);
 		adicionarEntradaHistorico(AcaoHistorico.REVISAO_SOLICITADA, "Alteração crítica de Contraindicações solicitada: " + novaContraindicacao, responsavelId);
-		throw new RevisaoPendenteException("Alteração crítica exige revisão.");
+		// Usa a exceção externa que você já tem
+		throw new RevisaoPendenteException("Alteração crítica exige revisão."); 
 	}
 
 	public void aprovarRevisao(UsuarioResponsavelId revisorId) {
@@ -143,53 +145,4 @@ public class Medicamento {
 	public List<HistoricoEntrada> getHistorico() { return List.copyOf(historico); }
 	public MedicamentoId getId() { return id; }
 
-	public static class RevisaoPendenteException extends IllegalStateException {
-		private static final long serialVersionUID = 1L;
-		public RevisaoPendenteException(String s) { super(s); }
-	}
-}
-
-class RevisaoPendente {
-    private final String novoValor;
-    private final UsuarioResponsavelId solicitante;
-    private StatusRevisao status;
-	private UsuarioResponsavelId revisor;
-	
-    public RevisaoPendente(String novoValor, UsuarioResponsavelId solicitante) {
-        this.novoValor = novoValor;
-        this.solicitante = solicitante;
-        this.status = StatusRevisao.PENDENTE;
-    }
-
-	public void aprovar(UsuarioResponsavelId revisorId) {
-		this.status = StatusRevisao.APROVADA;
-		this.revisor = revisorId;
-	}
-
-	public void rejeitar(UsuarioResponsavelId revisorId) {
-		this.status = StatusRevisao.REPROVADA;
-		this.revisor = revisorId;
-	}
-
-	public String getNovoValor() { return novoValor; }
-    public StatusRevisao getStatus() { return status; }
-	public UsuarioResponsavelId getSolicitante() { return solicitante; }
-	public UsuarioResponsavelId getRevisor() { return revisor; }
-}
-
-class HistoricoEntrada {
-	private final AcaoHistorico acao;
-	private final String descricao;
-	private final UsuarioResponsavelId responsavel;
-	private final LocalDateTime dataHora;
-
-	public HistoricoEntrada(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavel, LocalDateTime dataHora) {
-		this.acao = acao;
-		this.descricao = descricao;
-		this.responsavel = responsavel;
-		this.dataHora = dataHora;
-	}
-	
-	public AcaoHistorico getAcao() { return acao; }
-	public UsuarioResponsavelId getResponsavel() { return responsavel; }
 }
