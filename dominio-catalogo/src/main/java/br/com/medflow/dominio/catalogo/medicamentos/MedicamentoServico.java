@@ -5,6 +5,7 @@ import static org.apache.commons.lang3.Validate.notNull;
 import java.util.List;
 import java.util.Optional;
 
+// IMPORTS DO SPRING REMOVIDOS
 public class MedicamentoServico {
 	private final MedicamentoRepositorio repositorio;
 
@@ -29,10 +30,11 @@ public class MedicamentoServico {
 		return repositorio.obter(id);
 	}
 	
+	// Transação será definida no Controller (ou Application Service)
 	public void atualizarUsoPrincipal(MedicamentoId id, String novoUsoPrincipal, UsuarioResponsavelId responsavelId) {
-		var medicamento = obter(id);
+		var medicamento = obter(id); // Entidade é carregada (e será gerenciada pela transação no Controller)
 		medicamento.atualizarUsoPrincipal(novoUsoPrincipal, responsavelId);
-		repositorio.salvar(medicamento);
+		// CORREÇÃO MANTIDA: Removido repositorio.salvar(medicamento);
 	}
 	
 	public void mudarStatus(MedicamentoId id, StatusMedicamento novoStatus, UsuarioResponsavelId responsavelId, boolean temPrescricaoAtiva) {
@@ -43,32 +45,32 @@ public class MedicamentoServico {
 		}
 		
 		medicamento.mudarStatus(novoStatus, responsavelId);
-		repositorio.salvar(medicamento);
+		// CORREÇÃO MANTIDA: Removido repositorio.salvar(medicamento);
 	}
 	
 	public void arquivar(MedicamentoId id, UsuarioResponsavelId responsavelId, boolean temPrescricaoAtiva) {
 		var medicamento = obter(id);
 		
 		medicamento.arquivar(temPrescricaoAtiva, responsavelId);
-		repositorio.salvar(medicamento);
+		// CORREÇÃO MANTIDA: Removido repositorio.salvar(medicamento);
 	}
 	
 	public void solicitarRevisaoContraindicacoes(MedicamentoId id, String novaContraindicacao, UsuarioResponsavelId responsavelId) {
 		var medicamento = obter(id);
 		medicamento.solicitarRevisaoContraindicacoes(novaContraindicacao, responsavelId);
-		repositorio.salvar(medicamento);
+		// CORREÇÃO MANTIDA: Removido repositorio.salvar(medicamento);
 	}
 
 	public void aprovarRevisao(MedicamentoId id, UsuarioResponsavelId revisorId) {
 		var medicamento = obter(id);
 		medicamento.aprovarRevisao(revisorId);
-		repositorio.salvar(medicamento);
+		// CORREÇÃO MANTIDA: Removido repositorio.salvar(medicamento);
 	}
 
 	public void rejeitarRevisao(MedicamentoId id, UsuarioResponsavelId revisorId) {
 		var medicamento = obter(id);
 		medicamento.rejeitarRevisao(revisorId);
-		repositorio.salvar(medicamento);
+		// CORREÇÃO MANTIDA: Removido repositorio.salvar(medicamento);
 	}
 	
 	public Optional<Medicamento> pesquisar(String nome) {

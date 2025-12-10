@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional; // NOVO IMPORT
 import java.util.List;
 
 @RestController
@@ -18,11 +19,11 @@ import java.util.List;
 public class MedicamentoControlador {
 
     private final MedicamentoServicoAplicacao servicoConsulta; 
-    private final MedicamentoServico servicoDominio; // Usaremos servicoDominio consistentemente
+    private final MedicamentoServico servicoDominio;
 
     public MedicamentoControlador(
             MedicamentoServicoAplicacao servicoConsulta, 
-            MedicamentoServico servicoDominio) { // Injeção correta
+            MedicamentoServico servicoDominio) {
         this.servicoConsulta = servicoConsulta;
         this.servicoDominio = servicoDominio;
     }
@@ -54,6 +55,7 @@ public class MedicamentoControlador {
     
     // 1. Comando: cadastrar
     // POST /backend/medicamentos
+    @Transactional // Garante que o cadastro seja atômico
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void cadastrarMedicamento(@Valid @RequestBody MedicamentoFormulario formulario) {
@@ -68,22 +70,22 @@ public class MedicamentoControlador {
     }
     
     // 2. Comando: atualizarUsoPrincipal
-    // PUT /backend/medicamentos/{id}/uso-principal
-    @PutMapping("/{id}/uso-principal")
+    @Transactional // <--- CORREÇÃO CRÍTICA APLICADA AQUI
+    @PatchMapping("/{id}/uso-principal") 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void atualizarUsoPrincipal(@PathVariable Integer id, @Valid @RequestBody UsoPrincipalFormulario formulario) {
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(formulario.getResponsavelId());
         
-        servicoDominio.atualizarUsoPrincipal( // CORRIGIDO: Usando servicoDominio
+        servicoDominio.atualizarUsoPrincipal(
             medicamentoId, 
-            formulario.getNovoUsoPrincipal(), // Assumindo que você está usando UsoPrincipalFormulario corrigido
+            formulario.getNovoUsoPrincipal(),
             responsavelId
         );
     }
 
     // 3. Comando: mudarStatus (Geral)
-    // PUT /backend/medicamentos/{id}/status/{novoStatus}
+    @Transactional
     @PutMapping("/{id}/status/{novoStatus}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void mudarStatus(
@@ -95,7 +97,7 @@ public class MedicamentoControlador {
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(responsavel.getResponsavelId());
 
-        servicoDominio.mudarStatus( // CORRIGIDO: Usando servicoDominio
+        servicoDominio.mudarStatus(
             medicamentoId, 
             novoStatus, 
             responsavelId, 
@@ -104,7 +106,7 @@ public class MedicamentoControlador {
     }
     
     // 4. Comando: arquivar
-    // PUT /backend/medicamentos/{id}/arquivar
+    @Transactional
     @PutMapping("/{id}/arquivar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void arquivarMedicamento(
@@ -115,18 +117,18 @@ public class MedicamentoControlador {
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(responsavel.getResponsavelId());
 
-        servicoDominio.arquivar(medicamentoId, responsavelId, temPrescricaoAtiva); // CORRIGIDO: Usando servicoDominio
+        servicoDominio.arquivar(medicamentoId, responsavelId, temPrescricaoAtiva);
     }
     
     // 5. Comando: solicitarRevisaoContraindicacoes
-    // PUT /backend/medicamentos/{id}/revisao/solicitar
+    @Transactional
     @PutMapping("/{id}/revisao/solicitar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void solicitarRevisao(@PathVariable Integer id, @Valid @RequestBody RevisaoFormulario formulario) {
         var medicamentoId = new MedicamentoId(id);
         var responsavelId = new UsuarioResponsavelId(formulario.getResponsavelId());
 
-        servicoDominio.solicitarRevisaoContraindicacoes( // CORRIGIDO: Usando servicoDominio
+        servicoDominio.solicitarRevisaoContraindicacoes(
             medicamentoId, 
             formulario.getNovaContraindicacao(), 
             responsavelId
@@ -134,24 +136,24 @@ public class MedicamentoControlador {
     }
 
     // 6. Comando: aprovarRevisao
-    // PUT /backend/medicamentos/{id}/revisao/aprovar
+    @Transactional
     @PutMapping("/{id}/revisao/aprovar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void aprovarRevisao(@PathVariable Integer id, @Valid @RequestBody UsuarioResponsavelFormulario revisor) {
         var medicamentoId = new MedicamentoId(id);
         var revisorId = new UsuarioResponsavelId(revisor.getResponsavelId());
 
-        servicoDominio.aprovarRevisao(medicamentoId, revisorId); // CORRIGIDO: Usando servicoDominio
+        servicoDominio.aprovarRevisao(medicamentoId, revisorId);
     }
 
     // 7. Comando: rejeitarRevisao
-    // PUT /backend/medicamentos/{id}/revisao/rejeitar
+    @Transactional
     @PutMapping("/{id}/revisao/rejeitar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void rejeitarRevisao(@PathVariable Integer id, @Valid @RequestBody UsuarioResponsavelFormulario revisor) {
         var medicamentoId = new MedicamentoId(id);
         var revisorId = new UsuarioResponsavelId(revisor.getResponsavelId());
 
-        servicoDominio.rejeitarRevisao(medicamentoId, revisorId); // CORRIGIDO: Usando servicoDominio
+        servicoDominio.rejeitarRevisao(medicamentoId, revisorId);
     }
 }
