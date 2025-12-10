@@ -2,16 +2,11 @@
 
 import static org.apache.commons.lang3.Validate.notNull;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import br.com.medflow.dominio.financeiro.convenios.Convenio;
-import br.com.medflow.dominio.financeiro.convenios.ConvenioId;
-import br.com.medflow.dominio.financeiro.convenios.ConvenioRepositorio;
-import br.com.medflow.dominio.financeiro.convenios.StatusConvenio;
 
 /**
  * Implementação em memória do repositório para uso exclusivo em testes BDD.
