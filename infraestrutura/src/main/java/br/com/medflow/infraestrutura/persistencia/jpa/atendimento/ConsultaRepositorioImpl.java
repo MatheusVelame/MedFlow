@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 /**
  * ADAPTER: Implementa a porta de Escrita (Domain Repository) e a porta de Leitura (Application Repository).
- * Traduz objetos JPA (tecnologia) para objetos de Domínio/Aplicação (contrato).
  */
 @Component
 public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRepositorioAplicacao {
@@ -47,12 +46,14 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
     // Métodos de mapeamento interno (Domain <=> JPA)
     
     private Consulta toDomain(ConsultaJpa jpa) {
-        // Na reconstrução, assumimos que os IDs Paciente/Médico foram mapeados para o objeto Consulta
+        // CORREÇÃO CRÍTICA: Passa pacienteId e medicoId para o construtor de reconstrução
         return new Consulta(
             new ConsultaId(jpa.getId()),
             jpa.getDataHora(),
             jpa.getDescricao(),
             StatusConsulta.valueOf(jpa.getStatus()), 
+            jpa.getPacienteId(), // NOVO
+            jpa.getMedicoId(),   // NOVO
             List.of() // Histórico (simplificado)
         );
     }
@@ -67,7 +68,7 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
         jpa.setDescricao(consulta.getDescricao());
         jpa.setStatus(consulta.getStatus().name()); 
         
-        // CORREÇÃO CRÍTICA: Mapeamento dos IDs do Domínio para o JPA
+        // Mapeamento dos IDs do Domínio para o JPA
         jpa.setPacienteId(consulta.getPacienteId()); 
         jpa.setMedicoId(consulta.getMedicoId());   
         
