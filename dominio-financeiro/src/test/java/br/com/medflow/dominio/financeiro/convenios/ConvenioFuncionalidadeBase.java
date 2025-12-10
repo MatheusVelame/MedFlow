@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import br.com.medflow.dominio.financeiro.convenios.Convenio;
-import br.com.medflow.dominio.financeiro.convenios.ConvenioServico;
-import br.com.medflow.dominio.financeiro.convenios.UsuarioResponsavelId;
 import br.com.medflow.dominio.financeiro.evento.EventoBarramento;
 import br.com.medflow.dominio.financeiro.evento.EventoObservador;
 
@@ -63,7 +60,6 @@ public class ConvenioFuncionalidadeBase implements EventoBarramento {
 			eventos.add(evento);
 		}
 		
-		// ADICIONE ESTE MÉTODO:
 		protected void limparUsuarios() {
 		    this.usuariosId.clear();
 		}

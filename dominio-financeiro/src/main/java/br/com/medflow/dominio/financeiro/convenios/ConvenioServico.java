@@ -5,7 +5,6 @@ import static org.apache.commons.lang3.Validate.notNull;
 import java.util.List;
 import java.util.Optional;
 
-import br.com.medflow.dominio.financeiro.convenios.Convenio.HistoricoEntrada;
 import br.com.medflow.dominio.financeiro.evento.EventoBarramento;
 
 public class ConvenioServico {

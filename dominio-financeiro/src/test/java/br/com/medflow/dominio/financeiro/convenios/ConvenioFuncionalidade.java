@@ -6,11 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import br.com.medflow.dominio.financeiro.convenios.AcaoHistorico;
-import br.com.medflow.dominio.financeiro.convenios.Convenio;
-import br.com.medflow.dominio.financeiro.convenios.StatusConvenio;
-import br.com.medflow.dominio.financeiro.convenios.UsuarioResponsavelId;
-import br.com.medflow.dominio.financeiro.convenios.Convenio.HistoricoEntrada;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -369,7 +364,7 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 	public void o_historico_deve_registrar_a_ação_do_usuario(String nomeResponsavel) {
 		UsuarioResponsavelId responsavelEsperado = getUsuarioId(nomeResponsavel); 
 		
-		Convenio.HistoricoEntrada ultimoRegistro = convenioEmAcao.getHistorico()
+		HistoricoEntrada ultimoRegistro = convenioEmAcao.getHistorico()
 				.get(convenioEmAcao.getHistorico().size() - 1);
 
 		assertEquals(responsavelEsperado.getId(), ultimoRegistro.getResponsavel().getId(),
