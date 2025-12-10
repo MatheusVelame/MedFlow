@@ -2,15 +2,17 @@ package br.com.medflow.aplicacao.atendimento.consultas;
 
 import java.time.LocalDateTime;
 
+// DTO para exibição em listagens/tabelas (campos resumidos)
 public class ConsultaResumo {
-
+    
     private final Integer id;
     private final String pacienteNome;
     private final String medicoNome;
     private final LocalDateTime dataHora;
-    private final String status; // Ex: AGENDADA, REALIZADA, CANCELADA
-
-    public ConsultaResumo(Integer id, String pacienteNome, String medicoNome, LocalDateTime dataHora, String status) {
+    private final String status;
+    
+    public ConsultaResumo(Integer id, String pacienteNome, String medicoNome, 
+                            LocalDateTime dataHora, String status) {
         this.id = id;
         this.pacienteNome = pacienteNome;
         this.medicoNome = medicoNome;

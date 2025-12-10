@@ -4,6 +4,12 @@ import br.com.medflow.dominio.catalogo.medicamentos.HistoricoEntrada;
 import br.com.medflow.infraestrutura.persistencia.jpa.catalogo.HistoricoEntradaJpa;
 import br.com.medflow.dominio.catalogo.medicamentos.Medicamento;
 import br.com.medflow.infraestrutura.persistencia.jpa.catalogo.MedicamentoJpa;
+
+// NOVOS IMPORTS PARA CONSULTAS
+import br.com.medflow.aplicacao.atendimento.consultas.ConsultaDetalhes;
+import br.com.medflow.aplicacao.atendimento.consultas.ConsultaResumo;
+import br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ConsultaJpa; // Assumindo o pacote
+
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
@@ -44,5 +50,14 @@ public class JpaMapeador extends ModelMapper {
         //     .addMappings(mapper -> {
         //         mapper.map(src -> src.getId().getId(), MedicamentoJpa::setId); 
         //     });
+
+        // === 3. NOVOS MAPEAMENTOS JPA (ConsultaJpa) para DTOs de Aplicação (Queries) ===
+        // O ModelMapper mapeará automaticamente os campos com o mesmo nome (ex: id, pacienteNome)
+        
+        // Mapeamento para DTO de Detalhes
+        createTypeMap(ConsultaJpa.class, ConsultaDetalhes.class);
+        
+        // Mapeamento para DTO de Resumo
+        createTypeMap(ConsultaJpa.class, ConsultaResumo.class);
 	}
 }
