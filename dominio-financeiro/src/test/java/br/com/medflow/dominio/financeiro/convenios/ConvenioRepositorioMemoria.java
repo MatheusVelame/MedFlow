@@ -1,4 +1,4 @@
-	package br.com.medflow.dominio.financeiro.convenios;
+package br.com.medflow.dominio.financeiro.convenios;
 
 import static org.apache.commons.lang3.Validate.notNull;
 

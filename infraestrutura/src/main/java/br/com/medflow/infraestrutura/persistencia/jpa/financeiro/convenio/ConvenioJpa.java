@@ -1,4 +1,4 @@
-package br.com.medflow.infraestrutura.persistencia.jpa.financeiro;
+package br.com.medflow.infraestrutura.persistencia.jpa.financeiro.convenio;
 
 import br.com.medflow.dominio.financeiro.convenios.StatusConvenio;
 import jakarta.persistence.*;

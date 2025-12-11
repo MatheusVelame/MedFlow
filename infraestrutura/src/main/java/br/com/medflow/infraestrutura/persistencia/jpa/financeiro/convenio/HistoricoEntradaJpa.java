@@ -1,33 +1,32 @@
-package br.com.medflow.infraestrutura.persistencia.jpa.financeiro;
-
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
+package br.com.medflow.infraestrutura.persistencia.jpa.financeiro.convenio;
 
 import br.com.medflow.dominio.financeiro.convenios.AcaoHistorico;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "historico_convenio")
 public class HistoricoEntradaJpa {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AcaoHistorico acao;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private AcaoHistorico acao;
 
-    @Column(columnDefinition = "TEXT")
+	@Column(columnDefinition = "TEXT")
 	private String descricao;
 
-    @Column(name = "responsavel_id", nullable = false)
-    private String responsavelId;
+	@Column(name = "responsavel_id", nullable = false)
+	private Integer responsavelId;
 
-    @Column(name = "data_hora", nullable = false)
-    private LocalDateTime dataHora;
+	@Column(name = "data_hora", nullable = false)
+	private LocalDateTime dataHora;
 
     public HistoricoEntradaJpa() {}
-    
+
     public HistoricoEntradaJpa(Long id, AcaoHistorico acao, String descricao, Integer responsavelId, LocalDateTime dataHora) {
         this.id = id;
         this.acao = acao;
@@ -35,7 +34,6 @@ public class HistoricoEntradaJpa {
         this.responsavelId = responsavelId;
         this.dataHora = dataHora;
     }
-
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
