@@ -37,6 +37,15 @@ import br.com.medflow.aplicacao.financeiro.faturamentos.FaturamentoRepositorioAp
 import br.com.medflow.aplicacao.financeiro.faturamentos.usecase.*;
 import br.com.medflow.infraestrutura.persistencia.jpa.financeiro.*;
 
+// Imports de Convenios
+import br.com.medflow.dominio.financeiro.convenios.ConvenioServico;
+import br.com.medflow.dominio.financeiro.convenios.ConvenioRepositorio;
+import br.com.medflow.aplicacao.financeiro.convenios.ConvenioServicoAplicacao;
+import br.com.medflow.aplicacao.financeiro.convenios.ConvenioRepositorioAplicacao;
+import br.com.medflow.dominio.financeiro.evento.EventoBarramento;
+import br.com.medflow.infraestrutura.evento.EventoBarramentoImpl;
+import br.com.medflow.aplicacao.financeiro.convenios.ConvenioAuditoriaObservador;
+
 @SpringBootApplication
 public class BackendAplicacao {
     
@@ -145,6 +154,34 @@ public class BackendAplicacao {
     public CancelarFaturamentoUseCase cancelarFaturamentoUseCase(FaturamentoServico faturamentoServico) {
         return new CancelarFaturamentoUseCase(faturamentoServico);
     }
+
+	// =====================================================================
+	// Configuração de Convenios com Observer
+	// =====================================================================
+
+	// Configuração do Barramento de Eventos
+	@Bean
+	public EventoBarramento eventoBarramento() {
+		EventoBarramentoImpl barramento = new EventoBarramentoImpl();
+		
+		// Registrar observadores
+		ConvenioAuditoriaObservador observadorAuditoria = new ConvenioAuditoriaObservador();
+		barramento.adicionar(observadorAuditoria);
+		
+		return barramento;
+	}
+
+	// Configuração do Serviço de Domínio de Convenios (com EventoBarramento)
+	@Bean
+	public ConvenioServico convenioServico(ConvenioRepositorio repositorio, EventoBarramento barramento) {
+		return new ConvenioServico(repositorio, barramento);
+	}
+
+	// Configuração do Serviço de Aplicação de Convenios (Queries/Reads)
+	@Bean
+	public ConvenioServicoAplicacao convenioServicoAplicacao(ConvenioRepositorioAplicacao repositorio) {
+		return new ConvenioServicoAplicacao(repositorio);
+	}
 
 	public static void main(String[] args) throws IOException {
 		run(BackendAplicacao.class, args);

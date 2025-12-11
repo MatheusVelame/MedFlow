@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoId;
 import br.com.medflow.dominio.catalogo.medicamentos.UsuarioResponsavelId;
 
-// [Outros imports de Value Objects de outros domínios]
+// Imports de Value Objects de Convenios
+import br.com.medflow.dominio.financeiro.convenios.ConvenioId;
+//import br.com.medflow.dominio.financeiro.convenios.UsuarioResponsavelId;
 
 @Component
 public class BackendMapeador extends ModelMapper {
@@ -30,8 +32,14 @@ public class BackendMapeador extends ModelMapper {
 				return new UsuarioResponsavelId(source);
 			}
 		});
-        
-        // [Outros conversores para Value Objects de outros domínios]
+
+		// Converte Integer (vindo do Formulário) para o Value Object ConvenioId
+		addConverter(new AbstractConverter<Integer, ConvenioId>() {
+			@Override
+			protected ConvenioId convert(Integer source) {
+				return new ConvenioId(source);
+			}
+		});
 	}
 
     // Sobrescrita do método map para lidar com fontes nulas (padrão SGB)
