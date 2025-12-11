@@ -25,7 +25,6 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 			MedicamentoId novoId = new MedicamentoId(sequenciaId);
 			
 			// Usa o construtor de RECONSTRUÇÃO da AR (6 argumentos)
-			// Nota: O AR de produção tem 6 argumentos, adicionamos para a reconstrução funcionar.
 			Medicamento novo = new Medicamento(
 				novoId,	
 				medicamento.getNome(),	
@@ -44,17 +43,18 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 
 	// MÉTODOS DE LEITURA (Porta de Domínio)
 	
-    @Override
-    public Optional<Medicamento> buscarPorId(MedicamentoId id) {
-        return obter(id);
-    }
-    
 	@Override
 	public Optional<Medicamento> obter(MedicamentoId id) {
 		notNull(id, "O id do medicamento não pode ser nulo");
 		return Optional.ofNullable(medicamentos.get(id));
 	}
-
+    
+    // Método que a AR de produção exige na interface
+    @Override
+    public Optional<Medicamento> buscarPorId(MedicamentoId id) {
+        return obter(id);
+    }
+	
 	@Override
 	public Optional<Medicamento> obterPorNome(String nome) {
 		return medicamentos.values().stream()
@@ -64,9 +64,9 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 	
 	@Override
 	public List<Medicamento> pesquisar() {
-		// Retorna todos, exceto os ATIVOS (Lista Padrão)
+		// Retorna todos, exceto os ARQUIVADOS (Lista Padrão)
 		return medicamentos.values().stream()
-				.filter(m -> m.getStatus() == StatusMedicamento.ATIVO)
+				.filter(m -> m.getStatus() != StatusMedicamento.ARQUIVADO)
 				.collect(Collectors.toList());
 	}
 
@@ -78,6 +78,7 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
     
     // MÉTODOS AUXILIARES PARA TESTE
     
+    // Limpa o repositório em memória. Essencial para isolamento de testes BDD.
     public void clear() {
         medicamentos.clear();
         sequenciaId = 0;

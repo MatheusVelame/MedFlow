@@ -19,8 +19,9 @@ public class MedicamentoServico {
 
     /**
      * Comando: Cadastrar um novo medicamento.
+     * Retorna o AR recém-criado para uso na camada de aplicação/teste.
      */
-    public void cadastrar(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) {
+    public Medicamento cadastrar(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) { // MUDANÇA: Retorna Medicamento
         // 1. Lógica de validação de negócio antes da criação
         // Ex: verificar se o nome já existe (repositorio.obterPorNome(nome))
         
@@ -29,6 +30,8 @@ public class MedicamentoServico {
         
         // 3. Persistir o estado inicial
         repositorio.salvar(novoMedicamento);
+        
+        return novoMedicamento; // NOVO: Retorna a instância.
     }
     
     /**

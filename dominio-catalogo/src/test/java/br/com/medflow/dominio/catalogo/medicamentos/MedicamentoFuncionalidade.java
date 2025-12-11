@@ -27,9 +27,9 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	private String perfilAtual;
 	private String ultimaMensagem;
 	private RuntimeException excecao;
-	private boolean prescricaoAtiva = false; 
+	private boolean prescricaoAtiva = false;
 
-    @Before 
+    @Before
 	public void setup() {
 		resetContexto();
 	}
@@ -45,7 +45,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		prescricaoAtiva = false;
 		eventos.clear();
         
-        repositorio.clear(); 
+        repositorio.clear();
 	}
 
 	@Given("que o usuário {string} tem permissão de {string}")
@@ -57,7 +57,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	@Given("que o usuário {string}, funcionária da recepção, não tem permissão para alterar dados de medicamentos")
 	public void que_o_usuário_funcionária_da_recepção_não_tem_permissão_para_alterar_dados_de_medicamentos(String usuario) {
 	    usuarioAtual = usuario;
-	    perfilAtual = "Recepção"; 
+	    perfilAtual = "Recepção";
 	}
 	
 	@Given("que o usuário {string} tem permissão de revisor")
@@ -65,7 +65,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		usuarioAtual = usuario;
 		
 		if (usuario.contains("Helena") || usuario.contains("Carlos")) {
-			perfilAtual = "Administrador"; 
+			perfilAtual = "Administrador";
 		} else {
 			perfilAtual = "Recepção";
 		}
@@ -81,7 +81,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void o_usuário_funcionário_do_ti_não_tem_permissão_de_revisor(String usuario) {
 	    usuarioAtual = usuario;
 	    // Usamos um perfil que sabidamente não tem a permissão "revisar" (ex: Enfermeiro, Recepção)
-	    perfilAtual = "Enfermeiro"; 
+	    perfilAtual = "Enfermeiro";
 	}
 
 	@Given("o usuário {string}, funcionário da recepção, possui acesso a lista de medicamentos")
@@ -197,7 +197,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		try {
 			// A chamada ao solicitarRevisaoContraindicacoes lança a exceção que é capturada e a mensagem é suprimida
 			medicamentoExistente.solicitarRevisaoContraindicacoes("Valor Pendente", getUsuarioId("Dr. Carlos"));
-		} catch (Medicamento.RevisaoPendenteException e) { // Uso da inner class
+		} catch (RevisaoPendenteException e) { // CORREÇÃO APLICADA AQUI
 			repositorio.salvar(medicamentoExistente); // Salva o estado com a revisão pendente
             medicamentoExistente = obterMedicamento(nome).get(); // Busca novamente para ter a referência correta
 		}
@@ -248,7 +248,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 		} catch (IllegalArgumentException | SecurityException e) {
 			this.excecao = e;
 			ultimaMensagem = e.getMessage();
-            medicamentoEmCadastro = null; 
+            medicamentoEmCadastro = null;
 		}
 	}
 
@@ -326,9 +326,9 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 			// Capturar a exceção esperada para permitir que o THEN a verifique.
 			try {
 				medicamentoServico.solicitarRevisaoContraindicacoes(medicamentoExistente.getId(), novaContraindicacao, id);
-			} catch (Medicamento.RevisaoPendenteException e) { // Uso da inner class
+			} catch (RevisaoPendenteException e) { // CORREÇÃO APLICADA AQUI
 				this.excecao = e; // Armazena a exceção para que o THEN possa verificar
-				ultimaMensagem = "Alteração crítica no sistema"; 
+				ultimaMensagem = "Alteração crítica no sistema";
 			}
 			
 		} catch (IllegalArgumentException | SecurityException e) {
@@ -356,7 +356,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 
 	@When("o {string} tentar aprovar a alteração pendente do medicamento {string}")
 	public void o_tentar_aprovar_a_alteração_pendente_do_medicamento(String revisor, String nome) {
-		a_aprovar_a_alteração_pendente_do_medicamento(revisor, nome); 
+		a_aprovar_a_alteração_pendente_do_medicamento(revisor, nome);
 	}
 	
 	@When("a {string} tentar atualizar as informações do medicamento {string}")
@@ -414,7 +414,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 			}
 
 			if (medicamentoExistente.getStatus() == StatusMedicamento.ARQUIVADO) {
-				throw new IllegalStateException("sugerido manter o registro arquivado"); 
+				throw new IllegalStateException("sugerido manter o registro arquivado");
 			}
 			
 			throw new IllegalStateException("Exclusão permanente requer justificativa específica e aprovação.");
@@ -426,13 +426,15 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@When("o usuario {string} pesquisar pelo o medicamento {string} na lista padrão")
 	public void o_usuario_pesquisar_pelo_o_medicamento_na_lista_padrão(String usuario, String nome) {
-		var lista = medicamentoServico.pesquisarPadrao();
+		// Correção de escopo: chama o método da classe base
+		var lista = pesquisarPadrao(); 
 		medicamentoExistente = lista.stream().filter(m -> m.getNome().equals(nome)).findFirst().orElse(null);
 	}
 
 	@When("o usuário {string} ativar o filtro {string} na lista de medicamentos")
 	public void o_usuário_ativar_o_filtro_na_lista_de_medicamentos(String usuario, String filtro) {
-		var lista = medicamentoServico.pesquisarComFiltroArquivado();
+		// Correção de escopo: chama o método da classe base
+		var lista = pesquisarComFiltroArquivado(); 
 		medicamentoExistente = lista.stream().filter(m -> m.getNome().equals("Sertralina")).findFirst().orElse(null);
 	}
 	
@@ -448,7 +450,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
         Medicamento savedMedicamento = obterMedicamento(nomeMedicamento)
                 .orElseThrow(() -> new IllegalStateException("Medicamento não foi encontrado após o cadastro."));
 
-        medicamentoEmCadastro = savedMedicamento; 
+        medicamentoEmCadastro = savedMedicamento;
 
         assertNotNull(medicamentoEmCadastro);
 	}
@@ -561,7 +563,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
         // Lógica para verificar o rollback correto baseado no setup do medicamento.
         if (m.getNome().equals("Amoxicilina")) {
             // Setup de Amoxicilina (Line 173) usa "Setup Uso"
-            assertEquals("Setup Uso", m.getUsoPrincipal()); 
+            assertEquals("Setup Uso", m.getUsoPrincipal());
         } else {
              // Setup de Paracetamol (Line 131) usa "Analgésico"
             assertEquals("Analgésico", m.getUsoPrincipal());
@@ -647,7 +649,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void a_alteração_não_deve_ser_aplicada_às_contraindicações_do_medicamento(String campo) {
         Medicamento m = obterMedicamento(nomeMedicamento).orElseThrow(() -> new IllegalStateException("Medicamento não encontrado para checagem."));
 
-        assertEquals("Hipersensibilidade", m.getContraindicacoes()); 
+        assertEquals("Hipersensibilidade", m.getContraindicacoes());
 	}
 
 	@Then("o status de revisão da alteração deve permanecer como {string}")
@@ -731,7 +733,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void o_sistema_deve_exigir_uma_justificativa_específica_para_a_exclusão_permanente() {
         assertNotNull(excecao);
         assertTrue(excecao instanceof IllegalStateException);
-        assertTrue(ultimaMensagem.contains("Exclusão permanente requer justificativa específica e aprovação.")); 
+        assertTrue(ultimaMensagem.contains("Exclusão permanente requer justificativa específica e aprovação."));
 	}
 	
 	@Then("o medicamento {string} deve permanecer {string} até que a justificativa seja fornecida e aprovada por um responsável")
@@ -754,7 +756,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	
 	@Then("o medicamento {string} deve ser movido para a lista de medicamentos arquivados")
 	public void o_medicamento_deve_ser_movido_para_a_lista_de_medicamentos_arquivados(String nome) {
-		var listaArquivados = medicamentoServico.pesquisarComFiltroArquivado();
+		var listaArquivados = pesquisarComFiltroArquivado();
 		assertTrue(listaArquivados.stream().anyMatch(m -> m.getNome().equals(nome) && m.getStatus() == StatusMedicamento.ARQUIVADO));
 	}
 	
