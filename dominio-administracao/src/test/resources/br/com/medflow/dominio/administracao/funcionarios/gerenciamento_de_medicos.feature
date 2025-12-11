@@ -84,7 +84,7 @@ Feature: Gerenciamento de Médicos - AV1
 # 4. Exclusão de Dados de Médicos
 # ====================================================================#
 
-  Scenario: Exclusão de médico sem vínculos
+  Scenario: RN1 Exclusão - Sucesso - Exclusão de médico sem vínculos
     Given que existe um médico cadastrado com CRM "123456"
     And o médico não possui consultas futuras
     And o médico não possui prontuários vinculados
@@ -92,7 +92,7 @@ Feature: Gerenciamento de Médicos - AV1
     Then o sistema deve remover o médico
     And exibir mensagem de exclusão bem-sucedida
 
-  Scenario: Tentativa de exclusão de médico com consultas futuras
+  Scenario: RN1 Exclusão - Insucesso - Tentativa de exclusão de médico com consultas futuras
     Given que existe um médico cadastrado com CRM "789012"
     And o médico possui consultas agendadas
     When o administrador solicita a exclusão do médico
