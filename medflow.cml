@@ -55,11 +55,11 @@ BoundedContext Administracao implements Administracao {
 
             Repository FuncionarioRepository {
                 @Funcionario obter(@FuncionarioId_Adm id);
-                @br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico obterPorCrm(@CRM crm);
+                @Medico obterPorCrm(@CRM crm);  // ← MUDANÇA AQUI
             }
         }
 
-        Entity br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico extends Funcionario {
+        Entity Medico extends Funcionario {  // ← MUDANÇA AQUI (removeu o caminho completo)
             -CRM crm
             -EspecialidadeId_Ref especialidade
             def boolean podeSerDesativado(); 
@@ -68,8 +68,8 @@ BoundedContext Administracao implements Administracao {
         ValueObject FuncionarioId_Adm { String codigo }
         ValueObject MedicoId_Adm extends FuncionarioId_Adm
         ValueObject CRM {
-          String numero unique notEmpty // RN: CRM deve ser único
-          String uf notEmpty           // O CRM deve ter um UF (ex: 12345/PE)
+        String numero unique notEmpty
+        String uf notEmpty
         }
     }
 }
