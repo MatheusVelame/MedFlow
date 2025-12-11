@@ -111,9 +111,10 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 		Convenio convenio = mapeador.map(jpa, Convenio.class);
 		
 		// Mapeia o ID manualmente (Integer -> ConvenioId) usando reflexão
+		ConvenioId convenioId = null;
 		if (jpa.getId() != null && jpa.getId() > 0) {
+			convenioId = new ConvenioId(jpa.getId());
 			try {
-				ConvenioId convenioId = new ConvenioId(jpa.getId());
 				java.lang.reflect.Field idField = Convenio.class.getDeclaredField("id");
 				idField.setAccessible(true);
 				idField.set(convenio, convenioId);
@@ -130,14 +131,25 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 				.map(this::mapearHistoricoParaDominio)
 				.collect(java.util.stream.Collectors.toList());
 			
-			// Reconstrói o Convenio com o histórico usando o construtor que aceita histórico
+			// Reconstrói o Convenio usando valores diretamente do JPA para garantir que tudo esteja mapeado
 			return new Convenio(
-				convenio.getId(),  // O ID já foi mapeado acima
-				convenio.getNome(),
-				convenio.getCodigoIdentificacao(),
-				convenio.getStatus(),
+				convenioId,
+				jpa.getNome(),
+				jpa.getCodigoIdentificacao(),
+				jpa.getStatus(),  // Usa diretamente do JPA para garantir que não seja null
 				historicoMapeado
 			);
+		}
+		
+		// Se não há histórico, garante que o status esteja correto
+		if (convenio.getStatus() == null && jpa.getStatus() != null) {
+			try {
+				java.lang.reflect.Field statusField = Convenio.class.getDeclaredField("status");
+				statusField.setAccessible(true);
+				statusField.set(convenio, jpa.getStatus());
+			} catch (Exception e) {
+				throw new RuntimeException("Erro ao setar status no Convenio", e);
+			}
 		}
 		
 		return convenio;
@@ -146,19 +158,9 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 	// Helper method para mapear histórico de JPA para Domínio
 	private Object mapearHistoricoParaDominio(HistoricoConvenioJpa historicoJpa) {
 		try {
-			// Obtém a classe interna HistoricoEntrada
-			Class<?> historicoEntradaClass = null;
-			Class<?>[] classesInternas = Convenio.class.getDeclaredClasses();
-			for (Class<?> classeInterna : classesInternas) {
-				if (classeInterna.getSimpleName().equals("HistoricoEntrada")) {
-					historicoEntradaClass = classeInterna;
-					break;
-				}
-			}
-			
-			if (historicoEntradaClass == null) {
-				throw new RuntimeException("Classe interna HistoricoEntrada não encontrada");
-			}
+			// Obtém a classe HistoricoEntrada usando o nome completo
+			// HistoricoEntrada está no mesmo pacote que Convenio (não é classe interna)
+			Class<?> historicoEntradaClass = Class.forName("br.com.medflow.dominio.financeiro.convenios.HistoricoEntrada");
 			
 			// Cria UsuarioResponsavelId
 			UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(historicoJpa.getResponsavelId());
@@ -178,6 +180,8 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 				responsavelId,
 				historicoJpa.getDataHora()
 			);
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException("Classe HistoricoEntrada não encontrada no pacote br.com.medflow.dominio.financeiro.convenios", e);
 		} catch (Exception e) {
 			throw new RuntimeException("Erro ao mapear histórico de JPA para Domínio", e);
 		}
