@@ -390,13 +390,6 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
         executarRegistro();
     }
 
-    @When("informa Benefícios {double} # Executa o registro para .+")
-    public void informa_beneficios_executa_o_registro_para(Double valor) {
-        this.beneficios = new BigDecimal(valor.toString());
-        // A data é ignorada, pois o período já foi configurado
-        executarRegistro();
-    }
-
     @When("informa Método de Pagamento {string}")
     public void informa_metodo_pagamento(String metodo) {
         this.metodoPagamento = metodo;

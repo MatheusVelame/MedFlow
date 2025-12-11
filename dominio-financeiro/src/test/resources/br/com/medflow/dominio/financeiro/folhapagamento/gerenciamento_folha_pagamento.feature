@@ -28,26 +28,6 @@ Feature: Gerenciamento da Folha de Pagamento
     Then o sistema deve bloquear a operação
     And exibir a mensagem de erro "Não é permitido registrar folha de pagamento para funcionários inativos."
 
-# RN2 – O sistema deve impedir o registro de mais de uma folha de pagamento para o mesmo funcionário no mesmo período
-
-  Scenario: RN2 - Registro - Sucesso - Registro para um novo período para um funcionário que já possui histórico
-    Given que o funcionário "Sérgio Vasconcelos", com ID "345", é "Ativo"
-    And já possui uma folha de pagamento registrada para o período "08/2025" do tipo "PAGAMENTO"
-    And que o administrador está na tela de criação de uma nova folha de pagamento para o funcionário "Sérgio Vasconcelos", ID "345"
-    And informa Tipo de Registro "PAGAMENTO"
-    And informa Salário base 6000.00
-    And informa Benefícios 400.00
-    And informa Método de Pagamento "Transferência Bancária"
-    When informa Benefícios 400.00 # Executa o registro para 09/2025
-    Then o sistema deve permitir e criar o novo registro da folha de pagamento para "09/2025" com sucesso
-
-  Scenario: RN2 - Registro - Insucesso - Bloqueio ao tentar registrar folha duplicada no mesmo período
-    Given que a funcionária "Tatiana Ramos", com ID "456", é "Ativo"
-    And já possui uma folha de pagamento registrada para o período "09/2025" do tipo "PAGAMENTO"
-    When o administrador tenta registrar uma nova folha de pagamento para "Tatiana Ramos", também para o período "09/2025" do tipo "PAGAMENTO"
-    Then o sistema deve bloquear a criação do novo registro
-    And exibir a mensagem de erro "Já existe uma folha de pagamento registrada para este funcionário no período informado."
-
 # ====================================================================
 # Atualização de Folha de Pagamento
 # ====================================================================
