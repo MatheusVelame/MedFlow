@@ -13,6 +13,8 @@ import br.com.medflow.dominio.referencia.tiposExames.TipoExameId;
 import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorio;
 import br.com.medflow.dominio.referencia.tiposExames.StatusTipoExame;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+
 @Component
 public class TipoExameRepositorioJpaImpl 
         extends RepositorioJpaTemplate<TipoExameJpa, TipoExame> 
@@ -20,7 +22,9 @@ public class TipoExameRepositorioJpaImpl
     
     private final TipoExameJpaRepository jpaRepository;
     
-    public TipoExameRepositorioJpaImpl(TipoExameJpaRepository jpaRepository, ModelMapper mapper) {
+    public TipoExameRepositorioJpaImpl(
+            TipoExameJpaRepository jpaRepository, 
+            @Qualifier("tipoExameJpaMapeador") ModelMapper mapper) {
         super(mapper, TipoExame.class);
         this.jpaRepository = jpaRepository;
     }
@@ -82,7 +86,7 @@ public class TipoExameRepositorioJpaImpl
     @Override
     public List<TipoExame> pesquisar() {
         // Retorna todos EXCETO os INATIVOS
-        return jpaRepository.findByStatusNot(StatusTipoExame.INATIVO).stream()
+    	return jpaRepository.findByStatusNot(StatusTipoExame.INATIVO, org.springframework.data.domain.Sort.unsorted()).stream()
                 .map(jpa -> mapper.map(jpa, TipoExame.class))
                 .toList();
     }

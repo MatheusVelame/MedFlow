@@ -9,11 +9,13 @@ import org.springframework.data.repository.query.Param;
 
 import br.com.medflow.dominio.referencia.tiposExames.StatusTipoExame;
 
+import org.springframework.data.domain.Sort;
+
 public interface TipoExameJpaRepository extends JpaRepository<TipoExameJpa, Integer> {
     
     Optional<TipoExameJpa> findByCodigo(String codigo);
     
-    List<TipoExameJpa> findByStatusNot(StatusTipoExame status);
+    List<TipoExameJpa> findByStatusNot(StatusTipoExame status, Sort sort);
     
     @Query("SELECT te FROM TipoExameJpa te WHERE te.status = :status")
     List<TipoExameJpa> findByStatus(@Param("status") StatusTipoExame status);

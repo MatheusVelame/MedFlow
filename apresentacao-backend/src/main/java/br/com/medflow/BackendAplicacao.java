@@ -21,6 +21,12 @@ import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoRepositorio;
 import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoServicoAplicacao;
 import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoRepositorioAplicacao;
 
+//NOVOS IMPORTS para TiposExames
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameServico;
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorio;
+import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameServicoAplicacao;
+import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameRepositorioAplicacao;
+
 @SpringBootApplication
 public class BackendAplicacao {
     
@@ -53,6 +59,24 @@ public class BackendAplicacao {
 		return new MedicamentoServicoAplicacao(repositorio);
 	}
 
+    // [Outros Beans de outros Contextos e Eventos seriam configurados aqui]
+
+	// =====================================================================
+    // NOVAS CONFIGURAÇÕES DE BEANS PARA TIPOS DE EXAMES
+    // =====================================================================
+    
+    // Configuração do Serviço de Domínio TipoExame (Commands/Writes)
+    @Bean
+    public TipoExameServico tipoExameServico(TipoExameRepositorio repositorio) {
+        return new TipoExameServico(repositorio);
+    }
+    
+    // Configuração do Serviço de Aplicação TipoExame (Queries/Reads)
+    @Bean
+    public TipoExameServicoAplicacao tipoExameServicoAplicacao(TipoExameRepositorioAplicacao repositorio) {
+        return new TipoExameServicoAplicacao(repositorio);
+    }
+	
 	public static void main(String[] args) throws IOException {
 		run(BackendAplicacao.class, args);
 	}

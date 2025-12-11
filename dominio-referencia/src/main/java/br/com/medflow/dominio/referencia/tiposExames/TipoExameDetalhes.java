@@ -1,9 +1,4 @@
-package br.com.medflow.aplicacao.referencia.tiposExames;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import br.com.medflow.dominio.referencia.tiposExames.StatusTipoExame;
+package br.com.medflow.dominio.referencia.tiposExames;
 
 public interface TipoExameDetalhes {
 
