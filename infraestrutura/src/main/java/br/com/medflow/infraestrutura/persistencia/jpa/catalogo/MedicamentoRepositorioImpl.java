@@ -1,112 +1,207 @@
+// Localização: infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/catalogo/MedicamentoRepositorioImpl.java
+
 package br.com.medflow.infraestrutura.persistencia.jpa.catalogo;
 
-import br.com.medflow.dominio.catalogo.medicamentos.Medicamento;
-import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoId;
-import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoRepositorio;
-import br.com.medflow.dominio.catalogo.medicamentos.StatusMedicamento;
-import br.com.medflow.infraestrutura.persistencia.jpa.JpaMapeador;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoDetalhes;
+import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoDetalhes.HistoricoDetalhes;
+import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoDetalhes.RevisaoPendenteDetalhes;
+import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoRepositorioAplicacao;
+import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoResumo;
+import br.com.medflow.dominio.catalogo.medicamentos.*;
 
+import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-// Implementa o contrato da Camada de Domínio (Commands)
-@Component("medicamentoRepositorioImpl")
-public class MedicamentoRepositorioImpl implements MedicamentoRepositorio { 
+/**
+ * ADAPTER: Implementa a porta de Escrita (Domain Repository) e a porta de Leitura (Application Repository).
+ */
+@Component
+public class MedicamentoRepositorioImpl implements MedicamentoRepositorio, MedicamentoRepositorioAplicacao {
 
-	private final MedicamentoJpaRepository jpaRepository;
-	private final JpaMapeador mapeador;
+    private final MedicamentoJpaRepository jpaRepository;
+    private final HistoricoEntradaJpaRepository historicoJpaRepository; 
+    // Campo revisaoPendenteJpaRepository removido
+    
+    // Construtor ajustado (removido RevisaoPendenteJpaRepository)
+    public MedicamentoRepositorioImpl(MedicamentoJpaRepository jpaRepository,
+                                      HistoricoEntradaJpaRepository historicoJpaRepository) {
+        this.jpaRepository = jpaRepository;
+        this.historicoJpaRepository = historicoJpaRepository;
+    }
 
-	public MedicamentoRepositorioImpl(MedicamentoJpaRepository jpaRepository, JpaMapeador mapeador) {
-		this.jpaRepository = jpaRepository;
-		this.mapeador = mapeador;
-	}
+    // =====================================================================
+    // IMPLEMENTAÇÃO DO DOMAIN REPOSITORY (PORTA DE ESCRITA/CUD)
+    // =====================================================================
 
     @Override
-    @Transactional // Garante que a operação de persistência é atômica
-	public void salvar(Medicamento medicamento) { 
-        
-        MedicamentoId idMedicamento = medicamento.getId();
-        
-        // --- 1. Lógica para NOVOS OBJETOS (INSERT) ---
-        // Se não tem ID, é um POST. O Hibernate fará o INSERT.
-        if (idMedicamento == null || idMedicamento.getId() == 0) {
-             MedicamentoJpa novaJpa = mapeador.map(medicamento, MedicamentoJpa.class);
-             
-             // Configura o bidirecional para as novas entradas de histórico
-             if (novaJpa.getHistorico() != null) {
-                novaJpa.getHistorico().forEach(h -> h.setMedicamento(novaJpa));
-             }
-             jpaRepository.save(novaJpa);
-             return; // Finaliza o fluxo de INSERT
-        }
-        
-        // --- 2. Lógica para ATUALIZAÇÃO (PUT/PATCH) ---
-        
-        // Carrega a Entidade JPA existente (gerenciada pelo Persistence Context)
-        Integer idAtualizacao = idMedicamento.getId();
-        MedicamentoJpa jpaExistente = jpaRepository.findById(idAtualizacao)
-            .orElseThrow(() -> new RuntimeException("Medicamento JPA não encontrado para atualização (ID: " + idAtualizacao + ")"));
-        
-        // Mapeia o objeto de Domínio ATUALIZADO para a Entidade JPA gerenciada.
-        // O ModelMapper copia NOME, USO_PRINCIPAL, STATUS, etc., e a nova lista de HISTORICO.
-        // O ID é ignorado pelo mapeador, pois ele já está definido em jpaExistente (gerenciada).
-        mapeador.map(medicamento, jpaExistente); 
-
-        // 3. Garante que o vínculo bidirecional seja estabelecido para o novo histórico.
-        if (jpaExistente.getHistorico() != null) {
-            jpaExistente.getHistorico().forEach(h -> {
-                // Essencial para que o Hibernate preencha a FK (medicamento_id) na tabela de histórico.
-                h.setMedicamento(jpaExistente); 
-            });
-        }
-        
-		// O save() aqui faz o UPDATE/MERGE porque a Entidade jpaExistente é gerenciada e tem ID.
-		jpaRepository.save(jpaExistente);
-	}
-
-	@Override
-	public Medicamento obter(MedicamentoId id) {
-		// id.getId() retorna o primitivo int
-		Optional<MedicamentoJpa> jpaOptional = jpaRepository.findById(id.getId());	
-        
-        MedicamentoJpa jpa = jpaOptional
-            .orElseThrow(() -> new RuntimeException("Medicamento não encontrado: " + id.getId()));
-
-		// Mapeamento reverso (JPA -> Domínio)
-		return mapeador.map(jpa, Medicamento.class);
-	}
+    public Optional<Medicamento> buscarPorId(MedicamentoId id) {
+        return jpaRepository.findById(id.getId()) 
+                .map(this::toDomain); 
+    }
     
-	@Override
-    public List<Medicamento> pesquisar() {	
-        List<MedicamentoJpa> jpas = jpaRepository.findByStatusNot(StatusMedicamento.ARQUIVADO);
-            
-        return jpas.stream()
-            .map(jpa -> mapeador.map(jpa, Medicamento.class))
-            .collect(Collectors.toList());
+    @Override
+    public Optional<Medicamento> obter(MedicamentoId id) { return buscarPorId(id); }
+    @Override
+    public List<Medicamento> pesquisar() { return jpaRepository.findAll().stream().map(this::toDomain).collect(Collectors.toList()); }
+    @Override
+    public List<Medicamento> pesquisarComFiltroArquivado() { return jpaRepository.findByStatus(StatusMedicamento.ARQUIVADO).stream().map(this::toDomain).collect(Collectors.toList()); }
+    @Override
+    public Optional<Medicamento> obterPorNome(String nome) { return Optional.empty(); }
+    
+    @Override
+    public void salvar(Medicamento medicamento) {
+        MedicamentoJpa jpa = toJpa(medicamento);
+        jpaRepository.save(jpa);
     }
-
-	@Override
-    public List<Medicamento> pesquisarComFiltroArquivado() {	
-        List<MedicamentoJpa> jpas = jpaRepository.findAll();
+    
+    // Mapeamento Domain <=> JPA
+    
+    private Medicamento toDomain(MedicamentoJpa jpa) {
         
-        return jpas.stream()
-            .map(jpa -> mapeador.map(jpa, Medicamento.class))
+        RevisaoPendente revisaoPendente = jpa.getRevisaoPendente() != null 
+            ? toDomain(jpa.getRevisaoPendente()) : null;
+        
+        List<HistoricoEntrada> historico = historicoJpaRepository.findByMedicamentoId(jpa.getId()).stream()
+            .map(this::toDomain)
             .collect(Collectors.toList());
+
+        return new Medicamento(
+            new MedicamentoId(jpa.getId()),
+            jpa.getNome(),
+            jpa.getUsoPrincipal(),
+            jpa.getContraindicacoes(),
+            jpa.getStatus(), 
+            historico,
+            revisaoPendente
+        );
     }
-
-	@Override
-	public Optional<Medicamento> obterPorNome(String nome) {	
-
-		Optional<MedicamentoJpa> jpaOptional = jpaRepository.findByNomeIgnoreCase(nome);
-
-        if (jpaOptional.isEmpty()) {
-            return Optional.empty();
+    
+    private HistoricoEntrada toDomain(HistoricoEntradaJpa jpa) {
+        return new HistoricoEntrada(
+            jpa.getAcao(),
+            jpa.getDescricao(),
+            new UsuarioResponsavelId(jpa.getResponsavelId()),
+            jpa.getDataHora()
+        );
+    }
+    
+    private RevisaoPendente toDomain(RevisaoPendenteJpa jpa) {
+        return new RevisaoPendente(
+            jpa.getNovoValor(),
+            new UsuarioResponsavelId(jpa.getSolicitanteId()),
+            jpa.getStatus(),
+            jpa.getRevisorId() != null ? new UsuarioResponsavelId(jpa.getRevisorId()) : null
+        );
+    }
+    
+    private MedicamentoJpa toJpa(Medicamento medicamento) {
+        MedicamentoJpa jpa = new MedicamentoJpa();
+        
+        if (medicamento.getId() != null) {
+            jpa.setId(medicamento.getId().getId()); 
         }
+        jpa.setNome(medicamento.getNome());
+        jpa.setUsoPrincipal(medicamento.getUsoPrincipal());
+        jpa.setContraindicacoes(medicamento.getContraindicacoes());
+        jpa.setStatus(medicamento.getStatus()); 
         
-		// Mapeamento reverso (JPA -> Domínio)
-		return Optional.of(mapeador.map(jpaOptional.get(), Medicamento.class));
-	}
+        // Mapeia Revisão Pendente
+        medicamento.getRevisaoPendente().ifPresent(rp -> jpa.setRevisaoPendente(toJpa(rp)));
+        
+        return jpa;
+    }
+    
+    private RevisaoPendenteJpa toJpa(RevisaoPendente revisaoPendente) {
+        RevisaoPendenteJpa jpa = new RevisaoPendenteJpa();
+        jpa.setNovoValor(revisaoPendente.getNovoValor());
+        jpa.setStatus(revisaoPendente.getStatus());
+        jpa.setSolicitanteId(revisaoPendente.getSolicitanteId().getId()); 
+        revisaoPendente.getRevisorId().ifPresent(id -> jpa.setRevisorId(id.getId()));
+        return jpa;
+    }
+
+    // =====================================================================
+    // IMPLEMENTAÇÃO DO APPLICATION REPOSITORY (PORTA DE LEITURA/QUERY)
+    // =====================================================================
+
+    @Override
+    public List<MedicamentoResumo> pesquisarResumos() {
+        return jpaRepository.findAll().stream()
+                .map(this::toResumoDto) 
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<MedicamentoDetalhes> obterDetalhesPorId(Integer id) {
+        return jpaRepository.findById(id)
+                .map(this::toDetalhesDto); 
+    }
+
+    @Override
+    public List<MedicamentoResumo> findByStatus(StatusMedicamento status) {
+        return jpaRepository.findByStatus(status).stream()
+                .map(this::toResumoDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MedicamentoResumo> pesquisarMedicamentosComRevisaoPendente() {
+        return jpaRepository.findByRevisaoPendenteStatus().stream()
+                .map(this::toResumoDto)
+                .collect(Collectors.toList());
+    }
+    
+    // Mapeamento JPA -> DTO
+    
+    private MedicamentoResumo toResumoDto(MedicamentoJpa jpa) {
+        boolean temRevisaoPendente = jpa.getRevisaoPendente() != null && jpa.getRevisaoPendente().getStatus() == StatusRevisao.PENDENTE;
+        
+        return new MedicamentoResumo(
+            jpa.getId(), 
+            jpa.getNome(), 
+            jpa.getUsoPrincipal(), 
+            jpa.getStatus(), 
+            temRevisaoPendente
+        );
+    }
+
+    private MedicamentoDetalhes toDetalhesDto(MedicamentoJpa jpa) {
+        // Busca e mapeia o histórico completo
+        List<HistoricoDetalhes> historico = historicoJpaRepository.findByMedicamentoId(jpa.getId()).stream()
+            .map(this::toHistoricoDetalhesDto)
+            .collect(Collectors.toList());
+            
+        RevisaoPendenteDetalhes revisaoDetalhes = jpa.getRevisaoPendente() != null 
+            ? toRevisaoDetalhesDto(jpa.getRevisaoPendente()) : null;
+            
+        return new MedicamentoDetalhes(
+            jpa.getId(), 
+            jpa.getNome(), 
+            jpa.getUsoPrincipal(),
+            jpa.getContraindicacoes(), 
+            jpa.getStatus(),
+            revisaoDetalhes,
+            historico
+        );
+    }
+    
+    private HistoricoDetalhes toHistoricoDetalhesDto(HistoricoEntradaJpa jpa) {
+        return new HistoricoDetalhes(
+            jpa.getAcao().name(),
+            jpa.getDescricao(),
+            jpa.getResponsavelId(),
+            jpa.getDataHora()
+        );
+    }
+    
+    private RevisaoPendenteDetalhes toRevisaoDetalhesDto(RevisaoPendenteJpa jpa) {
+        return new RevisaoPendenteDetalhes(
+            jpa.getNovoValor(),
+            jpa.getStatus(),
+            jpa.getSolicitanteId(),
+            jpa.getRevisorId()
+        );
+    }
 }

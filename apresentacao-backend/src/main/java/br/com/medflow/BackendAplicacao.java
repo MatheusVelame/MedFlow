@@ -9,20 +9,37 @@ import java.io.IOException;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-// Imports de Medicamentos (Originais)
-import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoServico;
-import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoRepositorio;
-import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoServicoAplicacao;
-import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoRepositorioAplicacao;
-
-// NOVOS IMPORTS para Consultas
+// Imports de Consultas (Módulo 1)
 import br.com.medflow.dominio.atendimento.consultas.ConsultaServico;
 import br.com.medflow.dominio.atendimento.consultas.ConsultaRepositorio;
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaServicoAplicacao;
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaRepositorioAplicacao;
 
+// Imports de Medicamentos (Módulo 2)
+import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoServico;
+import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoRepositorio;
+import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoServicoAplicacao;
+import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoRepositorioAplicacao;
+
 @SpringBootApplication
 public class BackendAplicacao {
+    
+    // =====================================================================
+    // CONFIGURAÇÕES DE BEANS PARA CONSULTAS
+    // =====================================================================
+    @Bean
+    public ConsultaServico consultaServico(ConsultaRepositorio repositorio) {
+        return new ConsultaServico(repositorio);
+    }
+    
+    @Bean
+    public ConsultaServicoAplicacao consultaServicoAplicacao(ConsultaRepositorioAplicacao repositorio) {
+        return new ConsultaServicoAplicacao(repositorio);
+    }
+    
+    // =====================================================================
+    // NOVAS CONFIGURAÇÕES DE BEANS PARA MEDICAMENTOS
+    // =====================================================================
     
     // Configuração do Serviço de Domínio Medicamento (Commands/Writes)
 	@Bean
@@ -35,22 +52,6 @@ public class BackendAplicacao {
 	public MedicamentoServicoAplicacao medicamentoServicoAplicacao(MedicamentoRepositorioAplicacao repositorio) {
 		return new MedicamentoServicoAplicacao(repositorio);
 	}
-
-    // =====================================================================
-    // NOVAS CONFIGURAÇÕES DE BEANS PARA CONSULTAS
-    // =====================================================================
-    
-    // Configuração do Serviço de Domínio Consulta (Commands/Writes)
-    @Bean
-    public ConsultaServico consultaServico(ConsultaRepositorio repositorio) {
-        return new ConsultaServico(repositorio);
-    }
-    
-    // Configuração do Serviço de Aplicação Consulta (Queries/Reads)
-    @Bean
-    public ConsultaServicoAplicacao consultaServicoAplicacao(ConsultaRepositorioAplicacao repositorio) {
-        return new ConsultaServicoAplicacao(repositorio);
-    }
 
 	public static void main(String[] args) throws IOException {
 		run(BackendAplicacao.class, args);

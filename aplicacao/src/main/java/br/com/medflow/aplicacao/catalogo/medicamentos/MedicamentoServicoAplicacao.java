@@ -1,3 +1,5 @@
+// Localização: aplicacao/src/main/java/br/com/medflow/aplicacao/catalogo/medicamentos/MedicamentoServicoAplicacao.java
+
 package br.com.medflow.aplicacao.catalogo.medicamentos;
 
 import static org.apache.commons.lang3.Validate.notNull;
@@ -5,6 +7,10 @@ import static org.apache.commons.lang3.Validate.notNull;
 import java.util.List;
 import br.com.medflow.dominio.catalogo.medicamentos.StatusMedicamento;
 
+/**
+ * Serviço de Aplicação (Use Case Handler) para Medicamentos,
+ * focado em operações de LEITURA (Queries).
+ */
 public class MedicamentoServicoAplicacao {
 
 	private final MedicamentoRepositorioAplicacao repositorio;

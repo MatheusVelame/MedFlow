@@ -1,4 +1,6 @@
--- Tabela para Revisão Pendente
+-- Localização: infraestrutura/src/main/resources/db/migration/V3__CATALOGO.sql
+
+-- Tabela para Revisão Pendente (necessária para Medicamento)
 CREATE TABLE revisoes_pendentes (
     id SERIAL PRIMARY KEY,
     

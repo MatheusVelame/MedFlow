@@ -1,3 +1,5 @@
+// Localização: dominio-catalogo/src/test/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoRepositorioMemoria.java
+
 package br.com.medflow.dominio.catalogo.medicamentos;
 
 import static org.apache.commons.lang3.Validate.notNull;
@@ -7,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 	private Map<MedicamentoId, Medicamento> medicamentos = new HashMap<>();
@@ -16,30 +19,40 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 	public void salvar(Medicamento medicamento) {
 		notNull(medicamento, "O medicamento não pode ser nulo");
 		
+		// Lógica para gerar ID para medicamentos novos (simulando o banco)
 		if (medicamento.getId() == null) {
 			sequenciaId++;
 			MedicamentoId novoId = new MedicamentoId(sequenciaId);
 			
+			// Usa o construtor de RECONSTRUÇÃO da AR (6 argumentos)
+			// Nota: O AR de produção tem 6 argumentos, adicionamos para a reconstrução funcionar.
 			Medicamento novo = new Medicamento(
-				novoId, 
-				medicamento.getNome(), 
-				medicamento.getUsoPrincipal(), 
-				medicamento.getContraindicacoes(), 
+				novoId,	
+				medicamento.getNome(),	
+				medicamento.getUsoPrincipal(),	
+				medicamento.getContraindicacoes(),	
 				medicamento.getStatus(),
 				medicamento.getHistorico(),
 				medicamento.getRevisaoPendente().orElse(null)
 			);
 			medicamentos.put(novoId, novo);
 		} else {
+			// Apenas atualiza o mapa com a versão modificada do Aggregate Root
 			medicamentos.put(medicamento.getId(), medicamento);
 		}
 	}
 
+	// MÉTODOS DE LEITURA (Porta de Domínio)
+	
+    @Override
+    public Optional<Medicamento> buscarPorId(MedicamentoId id) {
+        return obter(id);
+    }
+    
 	@Override
-	public Medicamento obter(MedicamentoId id) {
+	public Optional<Medicamento> obter(MedicamentoId id) {
 		notNull(id, "O id do medicamento não pode ser nulo");
-		var medicamento = medicamentos.get(id);
-		return Optional.ofNullable(medicamento).get();
+		return Optional.ofNullable(medicamentos.get(id));
 	}
 
 	@Override
@@ -51,10 +64,10 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 	
 	@Override
 	public List<Medicamento> pesquisar() {
-		// Retorna todos, exceto os ARQUIVADOS (Lista Padrão)
+		// Retorna todos, exceto os ATIVOS (Lista Padrão)
 		return medicamentos.values().stream()
-				.filter(m -> m.getStatus() != StatusMedicamento.ARQUIVADO)
-				.toList();
+				.filter(m -> m.getStatus() == StatusMedicamento.ATIVO)
+				.collect(Collectors.toList());
 	}
 
 	@Override
@@ -63,7 +76,8 @@ public class MedicamentoRepositorioMemoria implements MedicamentoRepositorio {
 		return new ArrayList<>(medicamentos.values());
 	}
     
-    // Limpa o repositório em memória. Essencial para isolamento de testes BDD.
+    // MÉTODOS AUXILIARES PARA TESTE
+    
     public void clear() {
         medicamentos.clear();
         sequenciaId = 0;

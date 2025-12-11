@@ -1,3 +1,5 @@
+// Localização: apresentacao-backend/src/main/java/br/com/medflow/apresentacao/catalogo/medicamentos/MedicamentoControlador.java
+
 package br.com.medflow.apresentacao.catalogo.medicamentos;
 
 import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoServicoAplicacao;
@@ -11,7 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.transaction.annotation.Transactional; // NOVO IMPORT
+import org.springframework.transaction.annotation.Transactional; 
 import java.util.List;
 
 @RestController
@@ -29,7 +31,7 @@ public class MedicamentoControlador {
     }
 
     // =====================================================================
-    // QUERIES (Leitura)
+    // QUERIES (Leitura - R do CRUD)
     // =====================================================================
     
     // GET /backend/medicamentos
@@ -48,14 +50,21 @@ public class MedicamentoControlador {
             return ResponseEntity.notFound().build();
         }
     }
+    
+    // GET /backend/medicamentos/revisao-pendente
+    @GetMapping("/revisao-pendente")
+    public List<MedicamentoResumo> pesquisarMedicamentosComRevisaoPendente() {
+        return servicoConsulta.pesquisarMedicamentosComRevisaoPendente();
+    }
+
 
     // =====================================================================
-    // COMMANDS (Escrita/Ação) - MÉTODOS DO MEDICAMENTOSERVICO
+    // COMMANDS (Escrita/Ação - CUD do CRUD)
     // =====================================================================
     
     // 1. Comando: cadastrar
     // POST /backend/medicamentos
-    @Transactional // Garante que o cadastro seja atômico
+    @Transactional 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void cadastrarMedicamento(@Valid @RequestBody MedicamentoFormulario formulario) {
@@ -70,7 +79,7 @@ public class MedicamentoControlador {
     }
     
     // 2. Comando: atualizarUsoPrincipal
-    @Transactional // <--- CORREÇÃO CRÍTICA APLICADA AQUI
+    @Transactional 
     @PatchMapping("/{id}/uso-principal") 
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void atualizarUsoPrincipal(@PathVariable Integer id, @Valid @RequestBody UsoPrincipalFormulario formulario) {
@@ -85,6 +94,7 @@ public class MedicamentoControlador {
     }
 
     // 3. Comando: mudarStatus (Geral)
+    // PUT /backend/medicamentos/{id}/status/{novoStatus}?temPrescricaoAtiva=false
     @Transactional
     @PutMapping("/{id}/status/{novoStatus}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -105,7 +115,8 @@ public class MedicamentoControlador {
         );
     }
     
-    // 4. Comando: arquivar
+    // 4. Comando: arquivar (Simplificação)
+    // PUT /backend/medicamentos/{id}/arquivar?temPrescricaoAtiva=false
     @Transactional
     @PutMapping("/{id}/arquivar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -121,6 +132,7 @@ public class MedicamentoControlador {
     }
     
     // 5. Comando: solicitarRevisaoContraindicacoes
+    // PUT /backend/medicamentos/{id}/revisao/solicitar
     @Transactional
     @PutMapping("/{id}/revisao/solicitar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -136,6 +148,7 @@ public class MedicamentoControlador {
     }
 
     // 6. Comando: aprovarRevisao
+    // PUT /backend/medicamentos/{id}/revisao/aprovar
     @Transactional
     @PutMapping("/{id}/revisao/aprovar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -147,6 +160,7 @@ public class MedicamentoControlador {
     }
 
     // 7. Comando: rejeitarRevisao
+    // PUT /backend/medicamentos/{id}/revisao/rejeitar
     @Transactional
     @PutMapping("/{id}/revisao/rejeitar")
     @ResponseStatus(HttpStatus.NO_CONTENT)

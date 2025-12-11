@@ -1,1 +1,0 @@
-package br.com.medflow.aplicacao.catalogo.medicamentos;

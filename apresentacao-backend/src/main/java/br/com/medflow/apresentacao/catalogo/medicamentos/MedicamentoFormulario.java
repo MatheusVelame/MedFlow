@@ -1,7 +1,10 @@
+// Localização: apresentacao-backend/src/main/java/br/com/medflow/apresentacao/catalogo/medicamentos/MedicamentoFormulario.java
+
 package br.com.medflow.apresentacao.catalogo.medicamentos;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 public class MedicamentoFormulario {
 
@@ -13,12 +16,11 @@ public class MedicamentoFormulario {
 
     private String contraindicacoes;
     
-    @NotNull(message = "O ID do responsável é obrigatório para a auditoria.")
+    @NotNull(message = "O ID do responsável é obrigatório.")
+    @Positive(message = "O ID do responsável deve ser positivo.")
     private Integer responsavelId;
 
-    public MedicamentoFormulario() {}
-
-    // Construtor completo e Getters/Setters omitidos para brevidade (mas devem ser incluídos)
+    // Getters e Setters
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
     public String getUsoPrincipal() { return usoPrincipal; }

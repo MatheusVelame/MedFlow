@@ -1,19 +1,21 @@
+// Localização: apresentacao-backend/src/main/java/br/com/medflow/apresentacao/catalogo/medicamentos/RevisaoFormulario.java
+
 package br.com.medflow.apresentacao.catalogo.medicamentos;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
-// Usado para solicitar uma Revisão Crítica de Contraindicações
 public class RevisaoFormulario {
     
-    @NotBlank(message = "O novo valor da contraindicação é obrigatório.")
+    @NotBlank(message = "A nova contraindicação é obrigatória.")
     private String novaContraindicacao;
     
     @NotNull(message = "O ID do responsável é obrigatório.")
+    @Positive(message = "O ID do responsável deve ser positivo.")
     private Integer responsavelId;
 
-    public RevisaoFormulario() {}
-
+    // Getters e Setters
     public String getNovaContraindicacao() { return novaContraindicacao; }
     public void setNovaContraindicacao(String novaContraindicacao) { this.novaContraindicacao = novaContraindicacao; }
     public Integer getResponsavelId() { return responsavelId; }
