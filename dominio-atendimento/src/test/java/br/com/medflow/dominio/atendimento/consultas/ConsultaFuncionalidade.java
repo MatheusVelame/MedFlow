@@ -17,6 +17,8 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import br.com.medflow.dominio.atendimento.consultas.UsuarioResponsavelId;
+
 
 public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
 
@@ -112,6 +114,10 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
         
         // Usa a versão corrigida de cadastrarConsulta
         cadastrarConsulta("Dr. Eduardo", "Ana Silva", dataHoraConsulta);
+        
+        // NOVO: Asserção de histórico para validação da criação
+        assertEquals(1, contarEntradasHistorico(), "Deve haver 1 entrada no histórico após a criação.");
+        assertTrue(historicoContemAcao(AcaoHistorico.CRIACAO), "A primeira entrada deve ser CRIACAO.");
         
         notificacaoServico.clear(); 
     }
@@ -280,7 +286,10 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
         dataHoraAtual = LocalDateTime.of(2025, 12, 10, 10, 0);
         LocalDateTime agendamento = LocalDateTime.of(2025, 12, 20, 14, 0);
         cadastrarConsulta("Dr. Eduardo", "Ana Silva", agendamento);
-        consultaAtual.mudarStatus(StatusConsulta.CANCELADA); // Usa o método de produção
+        
+        // NOVO: Usa a nova assinatura com ID de responsável simulado (1)
+        consultaAtual.mudarStatus(StatusConsulta.CANCELADA, new UsuarioResponsavelId(1)); 
+        
         notificacaoServico.clear();
     }
     
@@ -536,6 +545,8 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
         assertNull(excecao);
         assertNotNull(consultaAtual);
         assertEquals(StatusConsulta.AGENDADA, consultaAtual.getStatus());
+        // NOVO: Validação do registro de criação
+        assertTrue(historicoContemAcao(AcaoHistorico.CRIACAO), "A consulta deve ter uma entrada de CRIACAO no histórico.");
     }
 
     @Then("o sistema deve atualizar a agenda do {string}, marcando {string} como ocupado")
@@ -595,7 +606,7 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
     @Then("o sistema deve informar que não é possível agendar consultas para datas passadas")
     public void o_sistema_deve_informar_que_não_é_possível_agendar_consultas_para_datas_passadas() {
         assertNotNull(excecao);
-        assertTrue(ultimaMensagem.contains("datas passadas"));
+        assertTrue(ultimaMensagem.contains("Não é possível agendar consultas para datas passadas."));
     }
 
     @Then("o sistema deve informar que o {string} não atende {string}")
@@ -639,12 +650,14 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
     
     @Then("o histórico da consulta deve conter uma entrada registrando a alteração")
     public void o_histórico_da_consulta_deve_conter_uma_entrada_registrando_a_alteração() {
-        assertTrue(true); // Mocking successful history entry
+        // FIX: Valida ATUALIZACAO_DATA_HORA, que é a ação de domínio correta para remarcação
+        assertTrue(historicoContemAcao(AcaoHistorico.ATUALIZACAO_DATA_HORA), "O histórico deve conter uma entrada de alteração de DATA/HORA.");
     }
     
     @Then("o histórico de remarcações deve ser consultável no prontuário do paciente e na agenda do médico")
     public void o_histórico_de_remarcações_deve_ser_consultável_no_prontuário_do_paciente_e_na_agenda_do_médico() {
-        assertTrue(true); // Mocking successful external persistence/read
+        // Valida que a criação (1) + remarcação (1) estão presentes
+        assertTrue(contarEntradasHistorico() >= 2, "O histórico deve ter pelo menos duas entradas (criação + remarcação).");
     }
     
     @Then("o sitstema deve informar que já existe uma consulta marcada para o dia e o horário escolhido")
@@ -661,7 +674,8 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
 
     @Then("o histórico não deve ser alterado")
     public void o_histórico_não_deve_ser_alterado() {
-        assertTrue(true); // Mocking no persistence logic
+        // Verifica que apenas a entrada de CRIACAO existe após a falha.
+        assertEquals(1, contarEntradasHistorico(), "O histórico não deve ter sido alterado (apenas a criação).");
     }
     
     @Then("o sistema deve registrar a remarcação com sucesso")
@@ -692,7 +706,9 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
 
     @Then("o Status e o Histórico da consulta não devem ser atualizados")
     public void o_status_e_o_histórico_da_consulta_não_devem_ser_atualizados() {
-        assertTrue(true); // Mocking no persistence logic
+        // Verifica que o status é o original e que apenas a CRIACAO existe.
+        assertEquals(StatusConsulta.AGENDADA, consultaAtual.getStatus(), "O status deve ser AGENDADA (não cancelada).");
+        assertEquals(1, contarEntradasHistorico(), "O histórico não deve ter sido alterado (apenas a criação).");
     }
     
     @Then("o paciente {string} deve receber uma notificação de alteração por e-mail")
@@ -764,14 +780,15 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
     
     @Then("o sistema deve registrar o motivo {string} no histórico da consulta")
     public void o_sistema_deve_registrar_o_motivo_no_histórico_da_consulta(String motivo) {
-        assertTrue(true); // Mocking successful history entry
+        // Valida se o evento de mudança de status (cancelamento) foi registrado no histórico via Iterator
+        assertTrue(historicoContemAcao(AcaoHistorico.ATUALIZACAO_STATUS), "O histórico deve registrar a mudança de status (cancelamento).");
     }
     
     // FIX 5: Implementação do passo ausente, que usa a forma com parênteses.
     @Then("o histórico deve indicar o responsável pelo cancelamento \\({string})")
     public void o_histórico_deve_indicar_o_responsável_pelo_cancelamento(String responsavel) {
-        // Mocking successful external persistence/read
-        assertTrue(true); 
+        // Valida se o evento de mudança de status (cancelamento) foi registrado no histórico via Iterator
+        assertTrue(historicoContemAcao(AcaoHistorico.ATUALIZACAO_STATUS), "O histórico deve registrar a mudança de status (cancelamento)."); 
     }
     
     @Then("o Status da consulta deve ser alterada para {string}")
@@ -816,7 +833,7 @@ public class ConsultaFuncionalidade extends ConsultaFuncionalidadeBase {
     @Then("o sistema deve registrar o cancelamento")
     public void o_sistema_deve_registrar_o_cancelamento() {
         // FIX 4: Se o cenário for de penalidade (que lança exceção), o cancelamento é bloqueado e a exceção deve ser validada.
-        if (excecao != null && ultimaMensagem.contains("Penalidade:")) {
+        if (excecao != null && ultimaMensagem != null && ultimaMensagem.contains("Penalidade:")) {
             assertNotNull(excecao);
             // Se a penalidade foi aplicada, o status deve permanecer AGENDADA (não CANCELADA, pois o cancelamento falhou)
             assertEquals(StatusConsulta.AGENDADA, consultaAtual.getStatus()); 
