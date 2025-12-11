@@ -1,0 +1,20 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Prescricao' Aggregate" <<Rectangle>> {
+	class Prescricao <<(A,#fffab8) Aggregate Root>> {
+		String dosagem
+		String posologia
+		PrescricaoId_Pront id
+		MedicamentoId_Cat medicamento
+		ProntuarioId_Pront prontuario
+	}
+	class PrescricaoId_Pront <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+}
+Prescricao --> PrescricaoId_Pront : id
+
+
+@enduml

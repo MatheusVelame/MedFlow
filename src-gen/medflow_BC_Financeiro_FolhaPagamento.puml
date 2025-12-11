@@ -1,0 +1,38 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'FolhaPagamento' Aggregate" <<Rectangle>> {
+	class FolhaPagamento <<(A,#fffab8) Aggregate Root>> {
+		String tipoRegistro
+		FolhaPagamentoId_Fin id
+		FuncionarioId_Adm funcionario
+		PeriodoReferencia periodo
+		Valor_Fin salarioBase
+		Valor_Fin beneficios
+		MetodoPagamento metodoPagamento
+		StatusFolha status
+		void atualizarValores(Valor_Fin novoSalarioBase, Valor_Fin novosBeneficios)
+		void alterarStatus(StatusFolha novoStatus)
+		boolean podeSerRemovido()
+	}
+	class FolhaPagamentoId_Fin <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class PeriodoReferencia <<(V,DarkSeaGreen) Value Object>> {
+		String mesAno
+	}
+	class StatusFolha <<(V,DarkSeaGreen) Value Object>> {
+		String status
+	}
+	class MetodoPagamento <<(V,DarkSeaGreen) Value Object>> {
+		String metodo
+	}
+}
+FolhaPagamento --> FolhaPagamentoId_Fin : id
+FolhaPagamento --> StatusFolha : status
+FolhaPagamento --> MetodoPagamento : metodoPagamento
+FolhaPagamento --> PeriodoReferencia : periodo
+
+
+@enduml

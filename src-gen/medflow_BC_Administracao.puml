@@ -1,0 +1,55 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Paciente' Aggregate" <<Rectangle>> {
+	class Paciente <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		Date dataNascimento
+		Boolean ativo
+		PacienteId_Adm id
+		Cpf_Adm cpf
+		boolean podeSerRemovido()
+	}
+	class PacienteId_Adm <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class Cpf_Adm <<(V,DarkSeaGreen) Value Object>> {
+		String numero
+	}
+}
+package "'Funcionario' Aggregate" <<Rectangle>> {
+	class Funcionario <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String funcao
+		String contato
+		String status
+		FuncionarioId_Adm id
+	}
+	class br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico <<(E,DarkSeaGreen) Entity>> {
+		CRM crm
+		EspecialidadeId_Ref especialidade
+		boolean podeSerDesativado()
+	}
+	class FuncionarioId_Adm <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class MedicoId_Adm <<(V,DarkSeaGreen) Value Object>> {
+	}
+	class CRM <<(V,DarkSeaGreen) Value Object>> {
+		String numero
+		String uf
+	}
+}
+Paciente --> Cpf_Adm : cpf
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico --> CRM : crm
+Paciente --> PacienteId_Adm : id
+Funcionario --> FuncionarioId_Adm : id
+br.com.medflow.dominio.administracao.funcionarios.RunCucumberTest.Medico --|> Funcionario
+MedicoId_Adm --|> FuncionarioId_Adm
+legend left
+  This bounded context implements the subdomain 'Administracao'.
+end legend
+
+
+@enduml
