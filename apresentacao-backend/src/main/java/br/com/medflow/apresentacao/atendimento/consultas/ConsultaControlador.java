@@ -64,6 +64,7 @@ public class ConsultaControlador {
     
     // 1. Comando: agendar (C)
     // POST /backend/consultas
+    // CORRIGIDO: Adicionado o argumento usuarioId para o servicoDominio
     @Transactional // Garante que a operação seja atômica
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -73,12 +74,14 @@ public class ConsultaControlador {
             formulario.getDataHora(),
             formulario.getDescricao(),
             formulario.getPacienteId(),
-            formulario.getMedicoId()
+            formulario.getMedicoId(),
+            formulario.getUsuarioId() // ARGUMENTO FALTANTE AGORA ADICIONADO
         );
     }
     
     // 2. Comando: mudarStatus (U)
     // PUT /backend/consultas/{id}/status
+    // CORRIGIDO: Adicionado o argumento usuarioId para o servicoDominio
     @Transactional
     @PutMapping("/{id}/status") 
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -87,7 +90,8 @@ public class ConsultaControlador {
         
         servicoDominio.mudarStatus(
             consultaId, 
-            formulario.getNovoStatus()
+            formulario.getNovoStatus(),
+            formulario.getUsuarioId() // ARGUMENTO FALTANTE AGORA ADICIONADO
         );
     }
 }
