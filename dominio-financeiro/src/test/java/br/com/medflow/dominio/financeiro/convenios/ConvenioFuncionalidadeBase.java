@@ -20,17 +20,18 @@ public class ConvenioFuncionalidadeBase implements EventoBarramento {
 		
 		protected List<Object> eventos;
 
-		public ConvenioFuncionalidadeBase() {
-			this.repositorio = new ConvenioRepositorioMemoria();
-			this.convenioServico = new ConvenioServico(repositorio);
-			this.eventos = new ArrayList<>();
-			
-			permissoes.put("Administrador", List.of("cadastrar", "alterar", "excluir"));
-			permissoes.put("Administrador Sênior", List.of("cadastrar", "alterar", "excluir"));
-			permissoes.put("Médico", List.of("alterar")); 
-			permissoes.put("Enfermeiro", List.of());
-			permissoes.put("Recepção", List.of("consultar"));
-		}
+	public ConvenioFuncionalidadeBase() {
+		this.repositorio = new ConvenioRepositorioMemoria();
+		this.eventos = new ArrayList<>();
+		// Passar this como EventoBarramento para capturar eventos nos testes
+		this.convenioServico = new ConvenioServico(repositorio, this);
+		
+		permissoes.put("Administrador", List.of("cadastrar", "alterar", "excluir"));
+		permissoes.put("Administrador Sênior", List.of("cadastrar", "alterar", "excluir"));
+		permissoes.put("Médico", List.of("alterar")); 
+		permissoes.put("Enfermeiro", List.of());
+		permissoes.put("Recepção", List.of("consultar"));
+	}
 		
 		protected Optional<Convenio> obterConvenioNome(String nome) {
 			return repositorio.obterPorNome(nome);
