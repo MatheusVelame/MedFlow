@@ -25,7 +25,7 @@ public class ConvenioJpa {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "convenio_id", nullable = false)
-    private List<HistoricoEntradaJpa> historico = new ArrayList<>();
+    private List<HistoricoConvenioJpa> historico = new ArrayList<>();
 
     public ConvenioJpa() {}
 
@@ -34,7 +34,7 @@ public class ConvenioJpa {
             String nome,
             String codigoIdentificacao,
             StatusConvenio status,
-            List<HistoricoEntradaJpa> historico
+            List<HistoricoConvenioJpa> historico
     ) {
         this.id = id;
         this.nome = nome;
@@ -59,6 +59,6 @@ public class ConvenioJpa {
     public StatusConvenio getStatus() { return status; }
     public void setStatus(StatusConvenio status) { this.status = status; }
 
-    public List<HistoricoEntradaJpa> getHistorico() { return historico; }
-    public void setHistorico(List<HistoricoEntradaJpa> historico) { this.historico = historico; }
+    public List<HistoricoConvenioJpa> getHistorico() { return historico; }
+    public void setHistorico(List<HistoricoConvenioJpa> historico) { this.historico = historico; }
 }

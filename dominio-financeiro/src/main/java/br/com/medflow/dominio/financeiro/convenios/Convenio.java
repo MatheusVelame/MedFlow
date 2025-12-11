@@ -14,6 +14,13 @@ public class Convenio {
     private StatusConvenio status;
     private List<HistoricoEntrada> historico = new ArrayList<>();
 
+    /**
+     * Construtor padrão exigido pelo ModelMapper para mapeamento JPA -> Domínio.
+     */
+    public Convenio() {
+        this.historico = new ArrayList<>();
+    }
+
     public Convenio(String nome, String codigoIdentificacao, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela criação não pode ser nulo.");
         setNome(nome);

@@ -2,7 +2,6 @@ package br.com.medflow.infraestrutura.evento;
 
 import br.com.medflow.dominio.financeiro.evento.EventoBarramento;
 import br.com.medflow.dominio.financeiro.evento.EventoObservador;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -10,8 +9,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Implementação do barramento de eventos para o módulo financeiro.
  * Gerencia a lista de observadores e distribui eventos para eles.
+ * O bean é criado pelo método @Bean no BackendAplicacao.
  */
-@Component
 public class EventoBarramentoImpl implements EventoBarramento {
 
 	private final List<EventoObservador<Object>> observadores = new CopyOnWriteArrayList<>();

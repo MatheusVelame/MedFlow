@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "historico_convenio")
-public class HistoricoEntradaJpa {
+public class HistoricoConvenioJpa {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,9 +25,9 @@ public class HistoricoEntradaJpa {
 	@Column(name = "data_hora", nullable = false)
 	private LocalDateTime dataHora;
 
-    public HistoricoEntradaJpa() {}
+    public HistoricoConvenioJpa() {}
 
-    public HistoricoEntradaJpa(Long id, AcaoHistorico acao, String descricao, Integer responsavelId, LocalDateTime dataHora) {
+    public HistoricoConvenioJpa(Long id, AcaoHistorico acao, String descricao, Integer responsavelId, LocalDateTime dataHora) {
         this.id = id;
         this.acao = acao;
         this.descricao = descricao;
@@ -46,3 +46,4 @@ public class HistoricoEntradaJpa {
     public LocalDateTime getDataHora() { return dataHora; }
     public void setDataHora(LocalDateTime dataHora) { this.dataHora = dataHora; }
 }
+
