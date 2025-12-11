@@ -20,35 +20,14 @@ public class FuncionarioRepositorioMemoria implements FuncionarioRepositorio {
 			sequenciaId++;
 			FuncionarioId novoId = new FuncionarioId(sequenciaId);
 
-			// Tratamento especial para Medico
-			if (funcionario instanceof Medico) {
-				Medico medicoOriginal = (Medico) funcionario;
-				Medico novo = new Medico(
-						novoId,
-						medicoOriginal.getNome(),
-						medicoOriginal.getFuncao(),
-						medicoOriginal.getContato(),
-						medicoOriginal.getStatus().name(),
-						new ArrayList<>(medicoOriginal.getHistorico()),
-						medicoOriginal.getCrm(),
-						medicoOriginal.getEspecialidade()
-				);
-				funcionarios.put(novoId, novo);
-				funcionario.setId(novoId);
-			} else {
-				// Funcionário comum
-				Funcionario novo = new Funcionario(
-						novoId,
-						funcionario.getNome(),
-						funcionario.getFuncao(),
-						funcionario.getContato(),
-						funcionario.getStatus(),
-						funcionario.getHistorico()
-				);
-				funcionarios.put(novoId, novo);
-				funcionario.setId(novoId);
-			}
+			// Define o ID no objeto original
+			funcionario.setId(novoId);
+
+			// Salva a referência do objeto original (não cria cópia)
+			// Isso permite que alterações de estado sejam refletidas
+			funcionarios.put(novoId, funcionario);
 		} else {
+			// Atualização: salva a referência do objeto
 			funcionarios.put(funcionario.getId(), funcionario);
 		}
 	}
@@ -70,9 +49,9 @@ public class FuncionarioRepositorioMemoria implements FuncionarioRepositorio {
 				.findFirst();
 	}
 
-	// Mantido o método que não lida com CPF
+	// Mantido para compatibilidade
 	public Optional<Funcionario> obterPorCpf(String cpf) {
-		return Optional.empty(); // Retorna Optional.empty() ou implementa lógica, mas o contrato da interface FuncionarioRepositorio não tem esse método na versão original.
+		return Optional.empty();
 	}
 
 	@Override

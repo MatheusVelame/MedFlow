@@ -7,7 +7,7 @@ import io.cucumber.java.en.Then;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map; // Import necessário
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -48,6 +48,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
         resultadosBusca = null;
         eventos.clear();
         repositorio.clear();
+        funcionariosId.clear();
     }
 
     // ====================================================================
@@ -218,12 +219,14 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
         repositorio.salvar(folha);
     }
 
-    // CORREÇÃO BDD: Mapeamento de volta para 'que o'
     @Given("que o histórico de pagamentos contém registro de {string} com ID {int}")
     public void que_historico_contem_registro_com_id(String nome, Integer id) {
         // CORREÇÃO DE SETUP: Garante que o ID do contexto seja o ID fixo do cenário (e o status seja true)
         this.funcionarioId = id;
         setFuncionarioAtivo(id, true);
+
+        // CORREÇÃO: Adiciona nome ao mapa para que getNomeFuncionario funcione
+        funcionariosId.put(nome, id);
 
         UsuarioResponsavelId responsavel = getUsuarioId("Setup");
         var folha = new FolhaPagamento(
@@ -280,11 +283,13 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
         que_existe_registro_folha(nome, "09/2025");
     }
 
-    // Mapeamento de volta para 'que o'
     @Given("que o histórico de pagamentos contém registro de {string} para período {string}")
     public void que_historico_contem_para_periodo(String nome, String periodo) {
         int funcId = getFuncionarioId(nome);
         setFuncionarioAtivo(funcId, true);
+
+        // CORREÇÃO: Garante que o mapa funcionariosId está atualizado
+        funcionariosId.putIfAbsent(nome, funcId);
 
         UsuarioResponsavelId responsavel = getUsuarioId("Setup");
         var folha = new FolhaPagamento(
@@ -312,6 +317,9 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
     public void que_historico_contem_com_status(String nome, String status) {
         int funcId = getFuncionarioId(nome);
         setFuncionarioAtivo(funcId, true);
+
+        // CORREÇÃO: Garante que o mapa funcionariosId está atualizado
+        funcionariosId.putIfAbsent(nome, funcId);
 
         UsuarioResponsavelId responsavel = getUsuarioId("Setup");
         var folha = new FolhaPagamento(
@@ -382,11 +390,10 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
         executarRegistro();
     }
 
-    // CORREÇÃO BDD: Mapeia o passo da linha 33/34 com o comentário embutido
-    @When("informa Benefícios {double} # Executa o registro para {int}\\/{int}")
-    public void informa_beneficios_executa_o_registro_para(Double valor, Integer mes, Integer ano) {
+    @When("informa Benefícios {double} # Executa o registro para .+")
+    public void informa_beneficios_executa_o_registro_para(Double valor) {
         this.beneficios = new BigDecimal(valor.toString());
-        // A data é ignorada, pois o período já foi configurado, mas o método principal é chamado.
+        // A data é ignorada, pois o período já foi configurado
         executarRegistro();
     }
 
@@ -398,7 +405,10 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
     @When("o administrador tenta registrar uma nova folha de pagamento para {string}")
     public void o_administrador_tenta_registrar(String nome) {
         this.nomeFuncionario = nome;
-        this.funcionarioId = getFuncionarioId(nome);
+        // CORREÇÃO: Não sobrescrever funcionarioId se já foi configurado no @Given
+        if (this.funcionarioId == null) {
+            this.funcionarioId = getFuncionarioId(nome);
+        }
         executarRegistro();
     }
 
@@ -625,11 +635,14 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
 
     @Then("a lista de resultados deve exibir apenas o registro de {string}")
     public void a_lista_deve_exibir_apenas(String nome) {
-        assertNotNull(resultadosBusca);
-        assertEquals(1, resultadosBusca.size());
-        // Asserção extra para o cenário de busca por nome/ID para garantir que o setup funcionou
-        String nomeEsperado = nome.contains("André Gomes") ? "André Gomes" : "Sofia Lima";
-        assertEquals(nomeEsperado, getNomeFuncionario(resultadosBusca.get(0).getFuncionarioId()));
+        assertNotNull(resultadosBusca, "Lista de resultados não deveria ser nula");
+        assertFalse(resultadosBusca.isEmpty(), "Lista de resultados está vazia para: " + nome);
+        assertEquals(1, resultadosBusca.size(), "Deveria haver exatamente 1 resultado");
+
+        // Verifica se o nome do funcionário corresponde ao esperado
+        String nomeEncontrado = getNomeFuncionario(resultadosBusca.get(0).getFuncionarioId());
+        assertEquals(nome, nomeEncontrado,
+                "Nome esperado: '" + nome + "' mas encontrado: '" + nomeEncontrado + "'");
     }
 
     @Then("o sistema deve exibir uma lista vazia")
@@ -732,7 +745,6 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                     novoStatus,
                     responsavel
             );
-            // CORREÇÃO MANTIDA: Forçar a atualização da variável de instância
             this.folhaEmAcao = folhaPagamentoServico.obter(this.folhaEmAcao.getId());
             this.ultimaMensagem = "Status alterado com sucesso!";
         } catch (RuntimeException e) {
