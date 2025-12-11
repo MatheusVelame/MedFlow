@@ -10,7 +10,12 @@ import br.com.medflow.infraestrutura.persistencia.jpa.catalogo.MedicamentoJpa;
 // NOVOS IMPORTS PARA CONSULTAS
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaDetalhes;
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaResumo;
-import br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ConsultaJpa; 
+import br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ConsultaJpa;
+
+// NOVOS IMPORTS PARA PRONTUÁRIO
+import br.com.medflow.aplicacao.prontuario.ProntuarioDetalhes;
+import br.com.medflow.aplicacao.prontuario.ProntuarioResumo;
+import br.com.medflow.infraestrutura.persistencia.jpa.prontuario.ProntuarioJpa; 
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
@@ -51,5 +56,12 @@ public class JpaMapeador extends ModelMapper {
         
         // Mapeamento para DTO de Resumo
         createTypeMap(ConsultaJpa.class, ConsultaResumo.class);
+        
+        // === 4. NOVOS MAPEAMENTOS JPA (ProntuarioJpa) para DTOs de Aplicação (Queries) ===
+        // Mapeamento para DTO de Detalhes
+        createTypeMap(ProntuarioJpa.class, ProntuarioDetalhes.class);
+        
+        // Mapeamento para DTO de Resumo
+        createTypeMap(ProntuarioJpa.class, ProntuarioResumo.class);
 	}
 }
