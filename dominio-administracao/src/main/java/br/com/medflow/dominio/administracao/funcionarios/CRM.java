@@ -10,20 +10,13 @@ public final class CRM {
     private final String numero;
     private final String uf;
 
-    // RNs: Validação do formato e notEmpty no construtor (DDD Tático)
     public CRM(String valorCompleto) {
         notNull(valorCompleto, "O CRM não pode ser nulo.");
 
-        // CORREÇÃO: Normaliza caracteres de traço Unicode comuns para o hífen ASCII ('-')
-        // para prevenir falhas de leitura de caracteres invisíveis/especiais do .feature.
         String crmNormalizado = valorCompleto.replaceAll("[\\u2010\\u2011\\u2012\\u2013\\u2014\\u2015\\u2053\\u2212]", "-");
 
-        // CORREÇÃO: Limpeza máxima da string para garantir que a leitura do .feature não falhe por caracteres invisíveis.
-        // Remove qualquer caractere que não seja letra, dígito ou hífen.
-        // A sanitização agora é aplicada à string normalizada.
         String crmSanitizado = crmNormalizado.replaceAll("[^a-zA-Z0-9-]", "");
 
-        // A validação agora usa a string sanitizada.
         isTrue(crmSanitizado.contains("-"), "O CRM deve estar no formato número-UF (ex: 12345-PE).");
 
         String[] partes = crmSanitizado.split("-");
@@ -50,7 +43,6 @@ public final class CRM {
         // Implementação do equals para garantir que VOs são comparados por valor
         if (this == o) return true;
 
-        // CORREÇÃO DE COMPILAÇÃO: Garante o 'return' explícito.
         if (o == null || getClass() != o.getClass()) return false;
 
         CRM crm = (CRM) o;

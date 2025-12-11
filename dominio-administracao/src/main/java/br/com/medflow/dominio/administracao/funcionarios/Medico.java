@@ -54,4 +54,14 @@ public class Medico extends Funcionario {
 
         public int getId() { return id; }
     }
+
+    public void validarRemocao(boolean possuiConsultasFuturas, boolean possuiProntuarios) {
+        if (possuiConsultasFuturas) {
+            throw new IllegalStateException("Médicos com consultas futuras não podem ser removidos.");
+        }
+
+        if (possuiProntuarios) {
+            throw new IllegalStateException("Médicos com prontuários vinculados não podem ser removidos.");
+        }
+    }
 }

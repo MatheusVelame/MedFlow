@@ -19,7 +19,8 @@ public class MedicoFuncionalidade extends FuncionarioFuncionalidadeBase {
     private Medico medicoParaSalvar;
     private Medico medicoEmEdicao;
     private List<Medico> listaConsulta = new ArrayList<>();
-
+    private boolean possuiConsultasFuturas = false;
+    private boolean possuiProntuarios = false;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final UsuarioResponsavelId RESPONSAVEL = new UsuarioResponsavelId("ADMIN-LISA");
     private final String contatoPadrao = "81999990000";
@@ -326,5 +327,100 @@ public class MedicoFuncionalidade extends FuncionarioFuncionalidadeBase {
             this.nome = nome; this.id = id; this.crm = crm; this.dataNasc = dataNasc; this.contato = contato;
             this.email = email; this.especialidade = especialidade;
         }
+    }
+
+    // ==================================================================
+// STEPS DE EXCLUSÃO - ADICIONE NO FINAL DA CLASSE
+// ==================================================================
+
+    @Given("que existe um médico cadastrado com CRM {string}")
+    public void que_existe_um_medico_cadastrado_com_crm(String crm) {
+        try {
+            // Adicionar formato correto de CRM (número-UF)
+            String crmFormatado = crm.contains("-") ? crm : crm + "-PE";
+            CRM crmVO = new CRM(crmFormatado);
+
+            Medico medico = new Medico(
+                    null,
+                    "Dr. João Silva",
+                    "MEDICO",
+                    contatoPadrao,
+                    crmVO,
+                    new Medico.EspecialidadeId(1),
+                    RESPONSAVEL
+            );
+            repositorio.salvar(medico);
+            this.medicoEmEdicao = medico;
+        } catch (RuntimeException e) {
+            fail("Falha ao criar médico para teste: " + e.getMessage());
+        }
+    }
+
+    @Given("o médico não possui consultas futuras")
+    public void o_medico_nao_possui_consultas_futuras() {
+        possuiConsultasFuturas = false;
+    }
+
+    @Given("o médico não possui prontuários vinculados")
+    public void o_medico_nao_possui_prontuarios_vinculados() {
+        possuiProntuarios = false;
+    }
+
+    @Given("o médico possui consultas agendadas")
+    public void o_medico_possui_consultas_agendadas() {
+        possuiConsultasFuturas = true;
+    }
+
+    @When("o administrador solicita a exclusão do médico")
+    public void o_administrador_solicita_a_exclusao_do_medico() {
+        try {
+            // Validar remoção
+            medicoEmEdicao.validarRemocao(possuiConsultasFuturas, possuiProntuarios);
+
+            // Adicionar ao histórico
+            medicoEmEdicao.adicionarEntradaHistorico(
+                    AcaoHistorico.EXCLUSAO,
+                    "Médico removido do sistema.",
+                    RESPONSAVEL
+            );
+
+            // Remover do repositório
+            repositorio.remover(medicoEmEdicao.getId());
+
+            this.excecaoCapturada = null;
+        } catch (RuntimeException e) {
+            this.excecaoCapturada = e;
+        }
+    }
+
+    @Then("o sistema deve remover o médico")
+    public void o_sistema_deve_remover_o_medico() {
+        assertNull(excecaoCapturada, "A remoção falhou: " +
+                (excecaoCapturada != null ? excecaoCapturada.getMessage() : ""));
+
+        // Verifica se foi removido
+        try {
+            repositorio.obter(medicoEmEdicao.getId());
+            fail("O médico ainda existe após remoção.");
+        } catch (IllegalArgumentException e) {
+            // Esperado - foi removido
+        }
+    }
+
+    @Then("exibir mensagem de exclusão bem-sucedida")
+    public void exibir_mensagem_de_exclusao_bem_sucedida() {
+        assertNull(excecaoCapturada, "Não deveria haver exceção no sucesso da exclusão.");
+    }
+
+    @Then("o sistema deve impedir a exclusão")
+    public void o_sistema_deve_impedir_a_exclusao() {
+        assertNotNull(excecaoCapturada, "A exclusão deveria ter falhado.");
+    }
+
+    @Then("exibir mensagem informando que médicos com consultas futuras não podem ser removidos")
+    public void exibir_mensagem_medicos_com_consultas_nao_podem_ser_removidos() {
+        assertNotNull(excecaoCapturada);
+        assertTrue(excecaoCapturada.getMessage().toLowerCase().contains("consultas"),
+                "Mensagem esperada sobre consultas. Mensagem real: " + excecaoCapturada.getMessage());
     }
 }
