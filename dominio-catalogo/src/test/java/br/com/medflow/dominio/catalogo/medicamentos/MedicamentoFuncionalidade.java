@@ -1,3 +1,4 @@
+// Localização: matheusvelame/medflow/MedFlow-realese-medcamentos/dominio-catalogo/src/test/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoFuncionalidade.java
 package br.com.medflow.dominio.catalogo.medicamentos;
 
 import static br.com.medflow.dominio.catalogo.medicamentos.AcaoHistorico.ARQUIVAMENTO;
@@ -134,6 +135,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void o_medicamento_já_está_registrado_no_sistema(String nome) {
 		nomeMedicamento = nome;
 		UsuarioResponsavelId id = getUsuarioId("SetupCadastro");
+		// O cadastrar agora tem a regra de unicidade implementada.
 		medicamentoServico.cadastrar(nome, "Setup Uso", null, id);
         // Busca o objeto ID-ful do repositório
         medicamentoExistente = obterMedicamento(nome).get();
@@ -256,6 +258,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 	public void o_usuario_tentar_cadastrar_um_novo_medicamento_com_o_nome(String usuario, String nome) {
 		try {
 			UsuarioResponsavelId id = getUsuarioId(usuario);
+			// Esta chamada agora deve lançar IllegalArgumentException se o nome for duplicado.
 			medicamentoEmCadastro = medicamentoServico.cadastrar(nome, "Uso Genérico", null, id);
 		} catch (IllegalArgumentException e) {
 			this.excecao = e;
@@ -504,6 +507,7 @@ public class MedicamentoFuncionalidade extends MedicamentoFuncionalidadeBase {
 
 	@Then("o sistema deve informar que o nome do medicamento já está em uso")
 	public void o_sistema_deve_informar_que_o_nome_do_medicamento_já_está_em_uso() {
+		// Este passo agora deve passar porque MedicamentoServico lança a exceção com a mensagem correta.
 		assertTrue(ultimaMensagem.contains("já está registrado no sistema"));
 	}
 

@@ -1,4 +1,4 @@
-// Localização: dominio-catalogo/src/test/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoFuncionalidadeBase.java
+// Localização: dominio-catalogo/src/test/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoFuncionalidadeBase.java (Atualizado)
 
 package br.com.medflow.dominio.catalogo.medicamentos;
 
@@ -57,7 +57,8 @@ public class MedicamentoFuncionalidadeBase {
     
 	protected boolean temPermissao(String perfil, String acao) {
 		// Lógica de permissão simulada
-        if (perfil.equals("Administrador") || perfil.equals("Farmacêutico")) {
+        // FIX: Incluir "Administrador Sênior" para ter todas as permissões
+        if (perfil.equals("Administrador") || perfil.equals("Farmacêutico") || perfil.equals("Administrador Sênior")) {
 			return true;
 		}
 		if (perfil.equals("Recepção") && acao.equals("arquivar")) {

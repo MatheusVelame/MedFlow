@@ -1,4 +1,4 @@
-// Localização: dominio-catalogo/src/main/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoServico.java
+// Localização: dominio-catalogo/src/main/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoServico.java (Atualizado)
 
 package br.com.medflow.dominio.catalogo.medicamentos;
 
@@ -21,9 +21,11 @@ public class MedicamentoServico {
      * Comando: Cadastrar um novo medicamento.
      * Retorna o AR recém-criado para uso na camada de aplicação/teste.
      */
-    public Medicamento cadastrar(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) { // MUDANÇA: Retorna Medicamento
-        // 1. Lógica de validação de negócio antes da criação
-        // Ex: verificar se o nome já existe (repositorio.obterPorNome(nome))
+    public Medicamento cadastrar(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) { 
+        // FIX: 1. Implementação da regra de unicidade do nome
+        if (repositorio.obterPorNome(nome).isPresent()) { 
+            throw new IllegalArgumentException("O medicamento '" + nome + "' já está registrado no sistema."); 
+        }
         
         // 2. Criar a Aggregate Root
         var novoMedicamento = new Medicamento(nome, usoPrincipal, contraindicacoes, responsavelId);
@@ -31,7 +33,7 @@ public class MedicamentoServico {
         // 3. Persistir o estado inicial
         repositorio.salvar(novoMedicamento);
         
-        return novoMedicamento; // NOVO: Retorna a instância.
+        return novoMedicamento; 
     }
     
     /**

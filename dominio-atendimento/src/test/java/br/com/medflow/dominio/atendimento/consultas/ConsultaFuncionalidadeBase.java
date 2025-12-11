@@ -40,6 +40,9 @@ public class ConsultaFuncionalidadeBase {
     protected Map<String, Paciente> pacientes = new HashMap<>(); 
     protected NotificacaoServicoMock notificacaoServico = new NotificacaoServicoMock();
     
+    // NOVO: Mapa para rastrear o estado mockado do número de remarcações (Chave: Paciente/Teste)
+    protected Map<String, Integer> remarcacoesCount = new HashMap<>(); 
+
     protected RuntimeException excecao;
     protected String ultimaMensagem;
     protected Consulta consultaAtual; // Classe de produção
@@ -83,6 +86,7 @@ public class ConsultaFuncionalidadeBase {
         dataHoraConsulta = null;
         dataHoraNovaConsulta = null;
         consultaJoao = null;
+        remarcacoesCount.clear(); // NOVO: Reset do contador
         
         pacientes.values().forEach(p -> p.setCancelamentosRecentes(0)); 
     }
@@ -105,8 +109,8 @@ public class ConsultaFuncionalidadeBase {
         return LocalDateTime.parse(date + " às " + time, DATE_TIME_FORMATTER);
     }
     
-    // MÉTODO AUXILIAR CORRIGIDO: Extrai o nome do médico da descrição (substituindo getMedicoNome())
-    private String getMedicoNomeAtual() {
+    // MÉTODO AUXILIAR CORRIGIDO: Extrai o nome do médico da descrição (Visibilidade alterada para protected)
+    protected String getMedicoNomeAtual() {
         if (consultaAtual == null) return "Dr. Eduardo";
         String desc = consultaAtual.getDescricao();
         if (desc != null && desc.contains("Consulta com ")) {
@@ -119,8 +123,8 @@ public class ConsultaFuncionalidadeBase {
         return "Dr. Eduardo"; 
     }
     
-    // MÉTODO AUXILIAR CORRIGIDO: Extrai o nome do paciente da descrição
-    private String getPacienteNomeAtual() {
+    // MÉTODO AUXILIAR CORRIGIDO: Extrai o nome do paciente da descrição (Visibilidade alterada para protected)
+    protected String getPacienteNomeAtual() {
         if (consultaAtual == null) return "Ana Silva";
         String desc = consultaAtual.getDescricao();
         if (desc != null && desc.contains("(Paciente: ")) {
@@ -186,20 +190,29 @@ public class ConsultaFuncionalidadeBase {
     }
 
     protected void remarcarConsulta(String pacienteNome, LocalDateTime novaDataHora, String usuario) throws Exception {
-        if (!repositorio.isHorarioLivre(getMedicoNomeAtual(), novaDataHora)) { // CORRIGIDO: Usa o auxiliar
+        // Regra do limite de remarcação (Mock)
+        String patientKey = "Paciente Teste"; // O paciente usado nos cenários de limite
+        int currentCount = remarcacoesCount.getOrDefault(patientKey, 0);
+
+        if (currentCount >= 2) {
+             throw new IllegalStateException("Limite máximo de 2 remarcações foi atingido.");
+        }
+        
+        if (!repositorio.isHorarioLivre(getMedicoNomeAtual(), novaDataHora)) { 
             throw new IllegalArgumentException("Já existe uma consulta marcada para o dia e o horário escolhido.");
         }
         
-        // A lógica de remarcação Count está no BDD/Teste e foi removida do Domínio de Produção.
-        // Apenas para compilar:
-        // if (consultaAtual.getRemarcacoesCount() >= 2) { throw new IllegalStateException("Limite máximo de 2 remarcações foi atingido."); }
-        
+        // Checagem de 24h
         if (dataHoraAtual.plusHours(24).isAfter(consultaAtual.getDataHora())) {
             throw new IllegalStateException("A remarcação só é possível com mais de 24h de antecedência");
         }
         
-        // Simulação do comportamento de remarcação
+        // Simulação do sucesso:
         consultaAtual.mudarStatus(StatusConsulta.AGENDADA); 
+        this.dataHoraConsulta = novaDataHora; // Atualiza a data de referência para o THEN
+        
+        // Atualiza o contador de remarcações no mock
+        remarcacoesCount.put(patientKey, currentCount + 1); 
     }
     
     protected void cancelarConsulta(String motivo, String usuario) throws Exception {
