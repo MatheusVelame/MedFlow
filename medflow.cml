@@ -259,7 +259,7 @@ BoundedContext Financeiro implements Financeiro {
             Date data
             String justificativa nullable
         }
-    }
+    } // ← FECHA Aggregate Faturamento
 
     Aggregate Convenio {
         Entity Convenio {
@@ -275,5 +275,49 @@ BoundedContext Financeiro implements Financeiro {
         }
 
         ValueObject ConvenioId_Fin { String codigo }
+    } // ← FECHA Aggregate Convenio
+
+    Aggregate FolhaPagamento {
+        Entity FolhaPagamento {
+            aggregateRoot
+            -FolhaPagamentoId_Fin id
+            -FuncionarioId_Adm funcionario
+            
+            -PeriodoReferencia periodo
+            
+            -Valor_Fin salarioBase
+            -Valor_Fin beneficios
+            String tipoRegistro
+            -MetodoPagamento metodoPagamento
+            
+            -StatusFolha status 
+
+            def void atualizarValores(@Valor_Fin novoSalarioBase, @Valor_Fin novosBeneficios); 
+            def void alterarStatus(@StatusFolha novoStatus); 
+            def boolean podeSerRemovido(); 
+
+            Repository FolhaPagamentoRepository {
+                @FolhaPagamento obter(@FolhaPagamentoId_Fin id);
+                @FolhaPagamento obterPorFuncionarioEPeriodo(@FuncionarioId_Adm funcionario, @PeriodoReferencia periodo);
+            }
+        }
+        
+        ValueObject FolhaPagamentoId_Fin { String codigo }
+        ValueObject PeriodoReferencia { String mesAno }
+        ValueObject StatusFolha { String status }
+        ValueObject MetodoPagamento { String metodo }
+        
+        // MOVIDOS PARA DENTRO DO AGGREGATE
+        ValueObject SalarioBruto { Double valor }
+        ValueObject DescontoImposto { Double valor }
+        ValueObject SalarioLiquido { Double valor }
+        
+        Service CalculoSalarioServico {
+            @SalarioBruto calcularBase(@FuncionarioId_Adm funcionarioId); 
+        }
+
+        Service CalculoImpostoServico {
+            @DescontoImposto calcularImpostoRenda(@SalarioBruto salarioBruto);
+        }
     }
 }

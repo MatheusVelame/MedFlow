@@ -28,6 +28,21 @@ package "'FolhaPagamento' Aggregate" <<Rectangle>> {
 	class MetodoPagamento <<(V,DarkSeaGreen) Value Object>> {
 		String metodo
 	}
+	class SalarioBruto <<(V,DarkSeaGreen) Value Object>> {
+		Double valor
+	}
+	class DescontoImposto <<(V,DarkSeaGreen) Value Object>> {
+		Double valor
+	}
+	class SalarioLiquido <<(V,DarkSeaGreen) Value Object>> {
+		Double valor
+	}
+	class CalculoSalarioServico <<(S,DarkSeaGreen) Service>> {
+		SalarioBruto calcularBase(FuncionarioId_Adm funcionarioId)
+	}
+	class CalculoImpostoServico <<(S,DarkSeaGreen) Service>> {
+		DescontoImposto calcularImpostoRenda(SalarioBruto salarioBruto)
+	}
 }
 FolhaPagamento --> FolhaPagamentoId_Fin : id
 FolhaPagamento --> StatusFolha : status
