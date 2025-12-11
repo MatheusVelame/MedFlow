@@ -305,11 +305,12 @@ public class ConvenioFuncionalidade extends ConvenioFuncionalidadeBase {
 
 	@Then("o histórico de remoções deve ser registrado")
 	public void o_historico_de_remocoes_deve_ser_registrado() {
-		boolean historicoRemocaoEncontrado = eventos.stream().anyMatch(evento -> evento instanceof HistoricoEntrada
-				&& ((HistoricoEntrada) evento).getAcao() == AcaoHistorico.EXCLUSAO);
+		// Verifica se o evento de exclusão (ConvenioExcluidoEvent) foi postado no barramento
+		boolean eventoExclusaoEncontrado = eventos.stream()
+				.anyMatch(evento -> evento instanceof ConvenioExcluidoEvent);
 
-		assertTrue(historicoRemocaoEncontrado,
-				"Evento de remoção (HistoricoEntrada com AcaoHistorico.EXCLUSAO) não registrado no barramento de auditoria.");
+		assertTrue(eventoExclusaoEncontrado,
+				"Evento de remoção (ConvenioExcluidoEvent) não registrado no barramento de auditoria.");
 	}
 
 	@Then("o sistema deve impedir a exclusão")
