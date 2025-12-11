@@ -1,0 +1,19 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Convenio' Aggregate" <<Rectangle>> {
+	class Convenio <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String codigo
+		String status
+		ConvenioId_Fin id
+	}
+	class ConvenioId_Fin <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+}
+Convenio --> ConvenioId_Fin : id
+
+
+@enduml

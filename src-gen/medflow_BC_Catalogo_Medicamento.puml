@@ -1,0 +1,28 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Medicamento' Aggregate" <<Rectangle>> {
+	class Medicamento <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String usoPrincipal
+		String[0..1] contraindicacoes
+		String status
+		String statusRevisao
+		MedicamentoId_Cat id
+	}
+	class MedicamentoRevisadoEvento <<(E,#ff9f4b) Domain Event>> {
+		MedicamentoId_Cat id
+	}
+	class MedicamentoId_Cat <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class MedicamentoServico <<(S,DarkSeaGreen) Service>> {
+		void revisarEspecialista(MedicamentoId_Cat id, String justificativa)
+	}
+}
+Medicamento --> MedicamentoId_Cat : id
+MedicamentoRevisadoEvento --> MedicamentoId_Cat : id
+
+
+@enduml

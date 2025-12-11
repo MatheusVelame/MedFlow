@@ -1,0 +1,47 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Faturamento' Aggregate" <<Rectangle>> {
+	class Faturamento <<(A,#fffab8) Aggregate Root>> {
+		String tipoProcedimento
+		String status
+		FaturamentoId_Fin id
+		PacienteId_Adm paciente
+		Valor_Fin valor
+		List<HistoricoFaturamento> historico
+		boolean podeSerExcluido()
+	}
+	class FaturamentoId_Fin <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class Valor_Fin <<(V,DarkSeaGreen) Value Object>> {
+		Double quantia
+	}
+	class HistoricoFaturamento <<(E,DarkSeaGreen) Entity>> {
+		String acao
+		Date data
+		String[0..1] justificativa
+	}
+}
+package "'Convenio' Aggregate" <<Rectangle>> {
+	class Convenio <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String codigo
+		String status
+		ConvenioId_Fin id
+	}
+	class ConvenioId_Fin <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+}
+Convenio --> ConvenioId_Fin : id
+Faturamento --> Valor_Fin : valor
+Faturamento --> FaturamentoId_Fin : id
+Faturamento "1" *--> "*" HistoricoFaturamento : historico
+legend left
+  This bounded context implements the subdomain 'Financeiro'.
+end legend
+
+
+@enduml

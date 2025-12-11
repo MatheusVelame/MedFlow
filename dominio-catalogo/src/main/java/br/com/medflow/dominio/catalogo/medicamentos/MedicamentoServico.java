@@ -1,86 +1,106 @@
+// Localização: dominio-catalogo/src/main/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoServico.java (Atualizado)
+
 package br.com.medflow.dominio.catalogo.medicamentos;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
-import java.util.List;
-import java.util.Optional;
-
+/**
+ * Serviço de Domínio que orquestra as regras de negócio de alto nível (CUD).
+ */
 public class MedicamentoServico {
-	private final MedicamentoRepositorio repositorio;
+    
+    private final MedicamentoRepositorio repositorio;
+    // Em um cenário real, injetaríamos serviços externos ou de referência aqui.
 
-	public MedicamentoServico(MedicamentoRepositorio repositorio) {
-		notNull(repositorio, "O repositório de medicamentos não pode ser nulo");
-		this.repositorio = repositorio;
-	}
+    public MedicamentoServico(MedicamentoRepositorio repositorio) {
+        notNull(repositorio, "O repositório de medicamento não pode ser nulo.");
+        this.repositorio = repositorio;
+    }
 
-	public Medicamento cadastrar(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) {
-		// Regra de Negócio: O nome do medicamento deve ser único no sistema
-		var existente = repositorio.obterPorNome(nome);
-		if (existente.isPresent()) {
-			throw new IllegalArgumentException("O medicamento '" + nome + "' já está registrado no sistema.");
-		}
-		
-		var novo = new Medicamento(nome, usoPrincipal, contraindicacoes, responsavelId);
-		repositorio.salvar(novo);
-		return novo;
-	}
-	
-	public Medicamento obter(MedicamentoId id) {
-		return repositorio.obter(id);
-	}
-	
-	public void atualizarUsoPrincipal(MedicamentoId id, String novoUsoPrincipal, UsuarioResponsavelId responsavelId) {
-		var medicamento = obter(id);
-		medicamento.atualizarUsoPrincipal(novoUsoPrincipal, responsavelId);
-		repositorio.salvar(medicamento);
-	}
-	
-	public void mudarStatus(MedicamentoId id, StatusMedicamento novoStatus, UsuarioResponsavelId responsavelId, boolean temPrescricaoAtiva) {
-		var medicamento = obter(id);
-		
-		if (temPrescricaoAtiva) {
-			throw new IllegalStateException("Não é permitido alterar o status devido a prescrições ativas.");
-		}
-		
-		medicamento.mudarStatus(novoStatus, responsavelId);
-		repositorio.salvar(medicamento);
-	}
-	
-	public void arquivar(MedicamentoId id, UsuarioResponsavelId responsavelId, boolean temPrescricaoAtiva) {
-		var medicamento = obter(id);
-		
-		medicamento.arquivar(temPrescricaoAtiva, responsavelId);
-		repositorio.salvar(medicamento);
-	}
-	
-	public void solicitarRevisaoContraindicacoes(MedicamentoId id, String novaContraindicacao, UsuarioResponsavelId responsavelId) {
-		var medicamento = obter(id);
-		medicamento.solicitarRevisaoContraindicacoes(novaContraindicacao, responsavelId);
-		repositorio.salvar(medicamento);
-	}
+    /**
+     * Comando: Cadastrar um novo medicamento.
+     * Retorna o AR recém-criado para uso na camada de aplicação/teste.
+     */
+    public Medicamento cadastrar(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) { 
+        // FIX: 1. Implementação da regra de unicidade do nome
+        if (repositorio.obterPorNome(nome).isPresent()) { 
+            throw new IllegalArgumentException("O medicamento '" + nome + "' já está registrado no sistema."); 
+        }
+        
+        // 2. Criar a Aggregate Root
+        var novoMedicamento = new Medicamento(nome, usoPrincipal, contraindicacoes, responsavelId);
+        
+        // 3. Persistir o estado inicial
+        repositorio.salvar(novoMedicamento);
+        
+        return novoMedicamento; 
+    }
+    
+    /**
+     * Comando: Atualizar o uso principal (exige que a AR execute o comportamento).
+     */
+    public void atualizarUsoPrincipal(MedicamentoId id, String novoUsoPrincipal, UsuarioResponsavelId responsavelId) {
+        Medicamento medicamento = repositorio.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Medicamento não encontrado."));
+                
+        medicamento.atualizarUsoPrincipal(novoUsoPrincipal, responsavelId);
+        
+        repositorio.salvar(medicamento);
+    }
 
-	public void aprovarRevisao(MedicamentoId id, UsuarioResponsavelId revisorId) {
-		var medicamento = obter(id);
-		medicamento.aprovarRevisao(revisorId);
-		repositorio.salvar(medicamento);
-	}
+    /**
+     * Comando: Mudar o status (inclui arquivamento).
+     */
+    public void mudarStatus(MedicamentoId id, StatusMedicamento novoStatus, UsuarioResponsavelId responsavelId, boolean temPrescricaoAtiva) {
+        Medicamento medicamento = repositorio.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Medicamento não encontrado."));
+        
+        if (novoStatus == StatusMedicamento.ARQUIVADO) {
+            medicamento.arquivar(temPrescricaoAtiva, responsavelId);
+        } else {
+            medicamento.mudarStatus(novoStatus, responsavelId);
+        }
+        
+        repositorio.salvar(medicamento);
+    }
+    
+    /**
+     * Comando: Solicitar revisão de contraindicações (lança RevisaoPendenteException).
+     */
+    public void solicitarRevisaoContraindicacoes(MedicamentoId id, String novaContraindicacao, UsuarioResponsavelId responsavelId) {
+        Medicamento medicamento = repositorio.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Medicamento não encontrado."));
+        
+        medicamento.solicitarRevisaoContraindicacoes(novaContraindicacao, responsavelId);
+        
+        repositorio.salvar(medicamento); // Salva o estado PENDENTE
+    }
+    
+    /**
+     * Comando: Aprovar revisão pendente.
+     */
+    public void aprovarRevisao(MedicamentoId id, UsuarioResponsavelId revisorId) {
+        Medicamento medicamento = repositorio.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Medicamento não encontrado."));
+        
+        medicamento.aprovarRevisao(revisorId);
+        
+        repositorio.salvar(medicamento);
+    }
+    
+    /**
+     * Comando: Rejeitar revisão pendente.
+     */
+    public void rejeitarRevisao(MedicamentoId id, UsuarioResponsavelId revisorId) {
+        Medicamento medicamento = repositorio.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Medicamento não encontrado."));
+        
+        medicamento.rejeitarRevisao(revisorId);
+        
+        repositorio.salvar(medicamento);
+    }
 
-	public void rejeitarRevisao(MedicamentoId id, UsuarioResponsavelId revisorId) {
-		var medicamento = obter(id);
-		medicamento.rejeitarRevisao(revisorId);
-		repositorio.salvar(medicamento);
-	}
-	
-	public Optional<Medicamento> pesquisar(String nome) {
-		return repositorio.obterPorNome(nome);
-	}
-
-	public List<Medicamento> pesquisarComFiltroArquivado() {
-		return repositorio.pesquisarComFiltroArquivado();
-	}
-
-	public List<Medicamento> pesquisarPadrao() {
-		return repositorio.pesquisar();
-	}
-	
+    public void arquivar(MedicamentoId id, UsuarioResponsavelId responsavelId, boolean temPrescricaoAtiva) {
+        mudarStatus(id, StatusMedicamento.ARQUIVADO, responsavelId, temPrescricaoAtiva);
+    }
 }

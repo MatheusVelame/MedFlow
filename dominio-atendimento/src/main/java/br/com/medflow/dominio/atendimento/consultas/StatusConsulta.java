@@ -4,5 +4,6 @@ package br.com.medflow.dominio.atendimento.consultas;
 public enum StatusConsulta {
     AGENDADA,
     CANCELADA,
+    EM_ANDAMENTO,
     REALIZADA;
 }

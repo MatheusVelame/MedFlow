@@ -1,0 +1,25 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Paciente' Aggregate" <<Rectangle>> {
+	class Paciente <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		Date dataNascimento
+		Boolean ativo
+		PacienteId_Adm id
+		Cpf_Adm cpf
+		boolean podeSerRemovido()
+	}
+	class PacienteId_Adm <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class Cpf_Adm <<(V,DarkSeaGreen) Value Object>> {
+		String numero
+	}
+}
+Paciente --> Cpf_Adm : cpf
+Paciente --> PacienteId_Adm : id
+
+
+@enduml

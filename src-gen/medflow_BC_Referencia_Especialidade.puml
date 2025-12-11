@@ -1,0 +1,18 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Especialidade' Aggregate" <<Rectangle>> {
+	class Especialidade <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String status
+		EspecialidadeId_Ref id
+	}
+	class EspecialidadeId_Ref <<(V,DarkSeaGreen) Value Object>> {
+		int id
+	}
+}
+Especialidade --> EspecialidadeId_Ref : id
+
+
+@enduml

@@ -129,7 +129,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             func = funcOpt.get();
         }
 
-        try {	
+        try {
             if (func.getStatus() != statusEnum) {
                 func.mudarStatus(statusEnum, responsavel, false);
                 repositorio.salvar(func);
@@ -283,7 +283,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
     }
 
     @When("altera a função sem reatribuição")
-    public void altera_a_funcao_sem_reatribuicao() {
+    public void altera_a_função_sem_reatribuicao() {
         this.funcaoFuncionario = "Coordenador";
         this.temViculosAtivosFuncao = true;
         executarConfirmacaoAtualizacao();
@@ -351,14 +351,14 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
             if (this.excecao != null) return;
 
             String nomeFinal = (this.nomeFuncionario != null) ?
-                               this.nomeFuncionario : funcionarioOriginal.getNome();
+                    this.nomeFuncionario : funcionarioOriginal.getNome();
 
             String funcaoFinal = (this.funcaoFuncionario != null) ?
-                                   this.funcaoFuncionario : funcionarioOriginal.getFuncao();
+                    this.funcaoFuncionario : funcionarioOriginal.getFuncao();
 
             String contatoFinal = (this.contatoFuncionario != null) ?
-                                     this.contatoFuncionario : funcionarioOriginal.getContato();
-            
+                    this.contatoFuncionario : funcionarioOriginal.getContato();
+
             if (this.nomeFuncionario == NOME_PADRAO) {
                 nomeFinal = funcionarioOriginal.getNome();
             }
@@ -396,8 +396,8 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
                     this.temAtividadesFuturas);
 
             this.ultimaMensagem = statusEnum == StatusFuncionario.INATIVO ?
-                                  "Funcionário inativado com sucesso." :
-                                  "Status do funcionário alterado com sucesso!";
+                    "Funcionário inativado com sucesso." :
+                    "Status do funcionário alterado com sucesso!";
 
         } catch (RuntimeException e) {
             this.excecao = e;
@@ -429,13 +429,18 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         String statusReal = optFunc.get().getStatus().name();
 
         assertTrue(statusReal.equalsIgnoreCase(statusEsperado),
-                           String.format("Status esperado: <%s> (case-insensitive), Status real: <%s>",
-                                         statusEsperado, statusReal));
+                String.format("Status esperado: <%s> (case-insensitive), Status real: <%s>",
+                        statusEsperado, statusReal));
     }
 
     @Then("o sistema deve salvar a alteração")
     public void o_sistema_deve_salvar_as_alteracoes_do_funcionario() {
         assertNull(excecao, "A atualização do funcionário falhou com exceção.");
+    }
+
+    @Then("o sistema deve salvar as alterações")
+    public void o_sistema_deve_salvar_as_alterações() {
+        o_sistema_deve_salvar_as_alteracoes_do_funcionario();
     }
 
     @Then("o sistema deve impedir a alteração")
@@ -463,7 +468,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
         Funcionario atualizado = repositorio.obter(funcionarioEmAcao.getId());
 
         assertTrue(atualizado.getHistorico().size() > historicoBaseline,
-                           "O histórico deveria ter aumentado em 1 registro (log de atualização), indicando que os antigos foram preservados.");
+                "O histórico deveria ter aumentado em 1 registro (log de atualização), indicando que os antigos foram preservados.");
     }
 
     @Then("o sistema deve permitir a inativação")
@@ -477,7 +482,7 @@ public class FuncionarioFuncionalidade extends FuncionarioFuncionalidadeBase {
 
         Funcionario atualizado = repositorio.obter(this.funcionarioEmAcao.getId());
         assertEquals(StatusFuncionario.ATIVO.name(), atualizado.getStatus().name(),
-                             "O status do funcionário foi alterado indevidamente.");
+                "O status do funcionário foi alterado indevidamente.");
     }
 
     @Then("deve exibir a mensagem {string}")

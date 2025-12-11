@@ -1,35 +1,39 @@
 package br.com.medflow.dominio.administracao.funcionarios;
 
-import static org.apache.commons.lang3.Validate.isTrue;
+import static org.apache.commons.lang3.Validate.notEmpty;
 import java.util.Objects;
 
 public class FuncionarioId {
-	private final int id;
+	private final String id;
 
-	public FuncionarioId(int id) {
-		isTrue(id > 0, "O id deve ser positivo");
+	public FuncionarioId(String id) {
+		notEmpty(id, "O id do funcionário não pode ser vazio");
 		this.id = id;
 	}
 
-	public int getId() { return id; }
+	// Construtor auxiliar para aceitar int (mantém compatibilidade)
+	public FuncionarioId(int idNumerico) {
+		this.id = String.valueOf(idNumerico);
+	}
+
+	public String getId() { return id; }
 
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) return true;
-        
 		if (obj == null || getClass() != obj.getClass()) return false;
-        
+		// CORREÇÃO: Usar apenas a referência local FuncionarioId
 		FuncionarioId other = (FuncionarioId) obj;
-		return id == other.id;
+		return Objects.equals(id, other.id);
 	}
 
 	@Override
-	public int hashCode() { 
-        return Objects.hash(id); 
-    }
-    
+	public int hashCode() {
+		return Objects.hash(id);
+	}
+
 	@Override
-	public String toString() { 
-        return Integer.toString(id); 
-    }
+	public String toString() {
+		return id;
+	}
 }

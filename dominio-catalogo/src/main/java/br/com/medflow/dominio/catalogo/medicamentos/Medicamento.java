@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects; // <-- NOVO IMPORT
 
 public class Medicamento {
 	private MedicamentoId id;
@@ -18,6 +19,13 @@ public class Medicamento {
 
 	private List<HistoricoEntrada> historico = new ArrayList<>();
 	private RevisaoPendente revisaoPendente;
+
+    /**
+     * Construtor padrão exigido pelo ModelMapper para mapeamento JPA -> Domínio.
+     */
+    public Medicamento() {
+        this.historico = new ArrayList<>();
+    }
 
 	public Medicamento(String nome, String usoPrincipal, String contraindicacoes, UsuarioResponsavelId responsavelId) {
 		this.id = null;
@@ -44,7 +52,8 @@ public class Medicamento {
 	public void atualizarUsoPrincipal(String novoUsoPrincipal, UsuarioResponsavelId responsavelId) {
 		notBlank(novoUsoPrincipal, "O uso principal não pode estar em branco.");
 
-		if (this.usoPrincipal.equals(novoUsoPrincipal)) {
+		// CORREÇÃO: Usa Objects.equals() para comparação segura contra null
+		if (Objects.equals(this.usoPrincipal, novoUsoPrincipal)) {
 			return;
 		}
 
@@ -108,7 +117,8 @@ public class Medicamento {
 		this.nome = nome;
 	}
 	
-	private void setUsoPrincipal(String usoPrincipal) {
+	// Adicione este setter para auxiliar o ModelMapper na reconstrução (Recomendado)
+	public void setUsoPrincipal(String usoPrincipal) {
 		notBlank(usoPrincipal, "O uso principal do medicamento é obrigatório.");
 		this.usoPrincipal = usoPrincipal;
 	}
@@ -143,53 +153,4 @@ public class Medicamento {
 	public List<HistoricoEntrada> getHistorico() { return List.copyOf(historico); }
 	public MedicamentoId getId() { return id; }
 
-	public static class RevisaoPendenteException extends IllegalStateException {
-		private static final long serialVersionUID = 1L;
-		public RevisaoPendenteException(String s) { super(s); }
-	}
-}
-
-class RevisaoPendente {
-    private final String novoValor;
-    private final UsuarioResponsavelId solicitante;
-    private StatusRevisao status;
-	private UsuarioResponsavelId revisor;
-	
-    public RevisaoPendente(String novoValor, UsuarioResponsavelId solicitante) {
-        this.novoValor = novoValor;
-        this.solicitante = solicitante;
-        this.status = StatusRevisao.PENDENTE;
-    }
-
-	public void aprovar(UsuarioResponsavelId revisorId) {
-		this.status = StatusRevisao.APROVADA;
-		this.revisor = revisorId;
-	}
-
-	public void rejeitar(UsuarioResponsavelId revisorId) {
-		this.status = StatusRevisao.REPROVADA;
-		this.revisor = revisorId;
-	}
-
-	public String getNovoValor() { return novoValor; }
-    public StatusRevisao getStatus() { return status; }
-	public UsuarioResponsavelId getSolicitante() { return solicitante; }
-	public UsuarioResponsavelId getRevisor() { return revisor; }
-}
-
-class HistoricoEntrada {
-	private final AcaoHistorico acao;
-	private final String descricao;
-	private final UsuarioResponsavelId responsavel;
-	private final LocalDateTime dataHora;
-
-	public HistoricoEntrada(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavel, LocalDateTime dataHora) {
-		this.acao = acao;
-		this.descricao = descricao;
-		this.responsavel = responsavel;
-		this.dataHora = dataHora;
-	}
-	
-	public AcaoHistorico getAcao() { return acao; }
-	public UsuarioResponsavelId getResponsavel() { return responsavel; }
 }

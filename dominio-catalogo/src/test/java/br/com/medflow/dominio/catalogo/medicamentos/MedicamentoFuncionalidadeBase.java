@@ -1,6 +1,6 @@
-package br.com.medflow.dominio.catalogo.medicamentos;
+// Localização: dominio-catalogo/src/test/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoFuncionalidadeBase.java (Atualizado)
 
-import static org.apache.commons.lang3.Validate.notNull;
+package br.com.medflow.dominio.catalogo.medicamentos;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,58 +8,65 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import br.com.medflow.dominio.evento.EventoBarramento;
-import br.com.medflow.dominio.evento.EventoObservador;
+// Mocks de Suporte
+
+class EventosMock {
+    // Usado pela funcionalidade de teste para limpar o estado de eventos
+    public List<Object> eventos = new ArrayList<>();
+    public void clear() { eventos.clear(); }
+}
+
+public class MedicamentoFuncionalidadeBase {
+    
+    protected MedicamentoServico medicamentoServico; 
+    protected MedicamentoRepositorioMemoria repositorio = new MedicamentoRepositorioMemoria();
+    protected EventosMock eventos = new EventosMock(); // CAMPO "eventos" definido aqui.
+    
+	protected Map<String, Integer> usuarios = new HashMap<>();
 	
-
-public class MedicamentoFuncionalidadeBase implements EventoBarramento {
-	// Variáveis de domínio/ambiente
-	protected MedicamentoServico medicamentoServico;
-	protected MedicamentoRepositorioMemoria repositorio;
-	
-	// Mocks de Usuários e Permissões
-	private Map<String, UsuarioResponsavelId> usuariosId = new HashMap<>(); 
-	private Map<String, List<String>> permissoes = new HashMap<>(); 
-
-	// Eventos capturados
-	protected List<Object> eventos;
-
 	public MedicamentoFuncionalidadeBase() {
-		this.repositorio = new MedicamentoRepositorioMemoria();
-		this.medicamentoServico = new MedicamentoServico(repositorio);
-		this.eventos = new ArrayList<>();
-		
-		// Simulação do sistema de permissões
-		permissoes.put("Administrador", List.of("cadastrar", "atualizar", "arquivar", "revisar"));
-		permissoes.put("Administrador Sênior", List.of("cadastrar", "atualizar", "arquivar", "revisar", "excluir_permanente"));
-		permissoes.put("Médico", List.of("atualizar")); 
-		permissoes.put("Enfermeiro", List.of());
-		permissoes.put("Recepção", List.of("consultar"));
+        // Inicializa o serviço de domínio
+        this.medicamentoServico = new MedicamentoServico(repositorio);
+        
+		// Popula IDs simulados para os usuários do teste
+		usuarios.put("Admin", 1);
+		usuarios.put("Dr. Carlos", 2);
+		usuarios.put("Dra. Helena", 3);
+		usuarios.put("Recepção", 4);
+		usuarios.put("Enfermeiro", 5);
+		usuarios.put("SetupCadastro", 99);
+	}
+	
+	protected UsuarioResponsavelId getUsuarioId(String nome) {
+		return new UsuarioResponsavelId(usuarios.getOrDefault(nome, 999));
 	}
 	
 	protected Optional<Medicamento> obterMedicamento(String nome) {
 		return repositorio.obterPorNome(nome);
 	}
 
-	protected UsuarioResponsavelId getUsuarioId(String nome) {
-		// Simula a obtenção de um ID único para cada nome de usuário
-		return usuariosId.computeIfAbsent(nome, k -> new UsuarioResponsavelId(usuariosId.size() + 1));
-	}
-	
+    // MÉTODOS PROXY (Resolvem o erro 'undefined for the type MedicamentoServico')
+    
+    public List<Medicamento> pesquisarPadrao() {
+        return repositorio.pesquisar();
+    }
+    
+    public List<Medicamento> pesquisarComFiltroArquivado() {
+        return repositorio.pesquisarComFiltroArquivado();
+    }
+    
 	protected boolean temPermissao(String perfil, String acao) {
-		// Verifica se o perfil configurado tem a permissão para a ação
-		return permissoes.getOrDefault(perfil, List.of()).contains(acao);
-	}
-	
-	// Implementação mock do EventoBarramento
-	@Override
-	public <E> void adicionar(EventoObservador<E> observador) { 
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public <E> void postar(E evento) {
-		notNull(evento, "O evento não pode ser nulo");
-		eventos.add(evento);
+		// Lógica de permissão simulada
+        // FIX: Incluir "Administrador Sênior" para ter todas as permissões
+        if (perfil.equals("Administrador") || perfil.equals("Farmacêutico") || perfil.equals("Administrador Sênior")) {
+			return true;
+		}
+		if (perfil.equals("Recepção") && acao.equals("arquivar")) {
+			return true; 
+		}
+		if (perfil.equals("Farmacêutico") && acao.equals("revisar")) {
+			return true;
+		}
+		return false;
 	}
 }
