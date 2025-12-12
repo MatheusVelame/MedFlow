@@ -8,6 +8,10 @@ import org.springframework.stereotype.Component;
 import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoId;
 import br.com.medflow.dominio.catalogo.medicamentos.UsuarioResponsavelId;
 
+// Imports de Value Objects de funcionários
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
+// Não importar UsuarioResponsavelId de funcionários para evitar conflito - usar nome completo
+
 // [Outros imports de Value Objects de outros domínios]
 
 @Component
@@ -23,11 +27,27 @@ public class BackendMapeador extends ModelMapper {
 			}
 		});
 
-        // Converte Integer (vindo do Formulário) para o Value Object UsuarioResponsavelId
+        // Converte Integer (vindo do Formulário) para o Value Object UsuarioResponsavelId (medicamentos)
 		addConverter(new AbstractConverter<Integer, UsuarioResponsavelId>() {
 			@Override
 			protected UsuarioResponsavelId convert(Integer source) {
 				return new UsuarioResponsavelId(source);
+			}
+		});
+        
+        // Converte Integer (vindo do Formulário) para o Value Object FuncionarioId
+		addConverter(new AbstractConverter<Integer, FuncionarioId>() {
+			@Override
+			protected FuncionarioId convert(Integer source) {
+				return new FuncionarioId(source); 
+			}
+		});
+
+        // Converte Integer (vindo do Formulário) para o Value Object UsuarioResponsavelId (funcionários)
+		addConverter(new AbstractConverter<Integer, br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId>() {
+			@Override
+			protected br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId convert(Integer source) {
+				return new br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId(source);
 			}
 		});
         

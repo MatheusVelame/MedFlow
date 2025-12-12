@@ -1,0 +1,107 @@
+package br.com.medflow.infraestrutura.persistencia.jpa.administracao;
+
+import br.com.medflow.dominio.administracao.funcionarios.Funcionario;
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioRepositorio;
+import br.com.medflow.infraestrutura.persistencia.jpa.JpaMapeador;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+// Implementa o contrato da Camada de Domínio (Commands)
+@Component("funcionarioRepositorioImpl")
+public class FuncionarioRepositorioImpl implements FuncionarioRepositorio { 
+
+	private final FuncionarioJpaRepository jpaRepository;
+	private final JpaMapeador mapeador;
+
+	public FuncionarioRepositorioImpl(FuncionarioJpaRepository jpaRepository, JpaMapeador mapeador) {
+		this.jpaRepository = jpaRepository;
+		this.mapeador = mapeador;
+	}
+
+    @Override
+    @Transactional // Garante que a operação de persistência é atômica
+	public void salvar(Funcionario funcionario) { 
+        
+        FuncionarioId idFuncionario = funcionario.getId();
+        
+        // --- 1. Lógica para NOVOS OBJETOS (INSERT) ---
+        // Se não tem ID, é um POST. O Hibernate fará o INSERT.
+        if (idFuncionario == null || idFuncionario.getId() == 0) {
+             FuncionarioJpa novaJpa = mapeador.map(funcionario, FuncionarioJpa.class);
+             
+             // Configura o bidirecional para as novas entradas de histórico
+             if (novaJpa.getHistorico() != null) {
+                novaJpa.getHistorico().forEach(h -> h.setFuncionario(novaJpa));
+             }
+             jpaRepository.save(novaJpa);
+             return; // Finaliza o fluxo de INSERT
+        }
+        
+        // --- 2. Lógica para ATUALIZAÇÃO (PUT/PATCH) ---
+        
+        // Carrega a Entidade JPA existente (gerenciada pelo Persistence Context)
+        Integer idAtualizacao = idFuncionario.getId();
+        FuncionarioJpa jpaExistente = jpaRepository.findById(idAtualizacao)
+            .orElseThrow(() -> new RuntimeException("Funcionário JPA não encontrado para atualização (ID: " + idAtualizacao + ")"));
+        
+        // Mapeia o objeto de Domínio ATUALIZADO para a Entidade JPA gerenciada.
+        // O ModelMapper copia NOME, FUNCAO, CONTATO, STATUS, etc., e a nova lista de HISTORICO.
+        // O ID é ignorado pelo mapeador, pois ele já está definido em jpaExistente (gerenciada).
+        mapeador.map(funcionario, jpaExistente); 
+
+        // 3. Garante que o vínculo bidirecional seja estabelecido para o novo histórico.
+        if (jpaExistente.getHistorico() != null) {
+            jpaExistente.getHistorico().forEach(h -> {
+                // Essencial para que o Hibernate preencha a FK (funcionario_id) na tabela de histórico.
+                h.setFuncionario(jpaExistente); 
+            });
+        }
+        
+		// O save() aqui faz o UPDATE/MERGE porque a Entidade jpaExistente é gerenciada e tem ID.
+		jpaRepository.save(jpaExistente);
+	}
+
+	@Override
+	public Funcionario obter(FuncionarioId id) {
+		// id.getId() retorna o primitivo int
+		Optional<FuncionarioJpa> jpaOptional = jpaRepository.findById(id.getId());	
+        
+        FuncionarioJpa jpa = jpaOptional
+            .orElseThrow(() -> new RuntimeException("Funcionário não encontrado: " + id.getId()));
+
+		// Mapeamento reverso (JPA -> Domínio)
+		return mapeador.map(jpa, Funcionario.class);
+	}
+    
+	@Override
+    public List<Funcionario> pesquisar() {	
+        List<FuncionarioJpa> jpas = jpaRepository.findAll();
+            
+        return jpas.stream()
+            .map(jpa -> mapeador.map(jpa, Funcionario.class))
+            .collect(Collectors.toList());
+    }
+
+	@Override
+	public Optional<Funcionario> obterPorNomeEContato(String nome, String contato) {	
+
+		Optional<FuncionarioJpa> jpaOptional = jpaRepository.findByNomeIgnoreCaseAndContatoIgnoreCase(nome, contato);
+
+        if (jpaOptional.isEmpty()) {
+            return Optional.empty();
+        }
+        
+		// Mapeamento reverso (JPA -> Domínio)
+		return Optional.of(mapeador.map(jpaOptional.get(), Funcionario.class));
+	}
+
+	@Override
+	public void remover(FuncionarioId id) {
+		jpaRepository.deleteById(id.getId());
+	}
+}
