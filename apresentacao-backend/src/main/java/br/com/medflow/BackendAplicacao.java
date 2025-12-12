@@ -52,6 +52,12 @@ import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorio;
 import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameServicoAplicacao;
 import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameRepositorioAplicacao;
 
+// Imports de FolhaPagamento
+import br.com.medflow.dominio.financeiro.folhapagamento.FolhaPagamentoServico;
+import br.com.medflow.dominio.financeiro.folhapagamento.FolhaPagamentoRepositorio;
+import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoServicoAplicacao;
+import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoRepositorioAplicacao;
+
 
 @SpringBootApplication
 public class BackendAplicacao {
@@ -209,7 +215,24 @@ public class BackendAplicacao {
     public TipoExameServicoAplicacao tipoExameServicoAplicacao(TipoExameRepositorioAplicacao repositorio) {
         return new TipoExameServicoAplicacao(repositorio);
     }
-	
+
+	// =====================================================================
+    // CONFIGURAÇÕES DE BEANS PARA FOLHA DE PAGAMENTO
+    // =====================================================================
+    
+    // Configuração do Serviço de Domínio FolhaPagamento (Commands/Writes)
+    @Bean
+    public FolhaPagamentoServico folhaPagamentoServico(FolhaPagamentoRepositorio repositorio) {
+        return new FolhaPagamentoServico(repositorio);
+    }
+    
+    // Configuração do Serviço de Aplicação FolhaPagamento (Queries/Reads)
+    @Bean
+    public FolhaPagamentoServicoAplicacao folhaPagamentoServicoAplicacao(
+            FolhaPagamentoServico servicoDominio,
+            FolhaPagamentoRepositorioAplicacao repositorioAplicacao) {
+        return new FolhaPagamentoServicoAplicacao(servicoDominio, repositorioAplicacao);
+    }
 
 	public static void main(String[] args) throws IOException {
 		run(BackendAplicacao.class, args);
