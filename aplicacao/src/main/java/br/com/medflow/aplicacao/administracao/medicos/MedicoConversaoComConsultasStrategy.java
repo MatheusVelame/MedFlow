@@ -1,21 +1,16 @@
-// Localização: aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoConversaoComConsultasStrategy.java
-
 package br.com.medflow.aplicacao.administracao.medicos;
 
 import br.com.medflow.dominio.administracao.funcionarios.Medico;
 import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
-import java.util.Collections;
+import org.springframework.stereotype.Component;
+
 import java.util.stream.Collectors;
 
 /**
  * PADRÃO STRATEGY - Implementação Concreta:
  * Estratégia de conversão que inclui dados de consultas do médico.
- *
- * Esta estratégia busca informações adicionais como:
- * - Número de consultas hoje
- * - Próxima consulta agendada
- * - Disponibilidade de horários
  */
+@Component
 public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrategy {
 
     private final ConsultaDataSource consultaDataSource;
@@ -34,7 +29,6 @@ public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrat
 
     @Override
     public MedicoResumo converterParaResumo(Medico medico) {
-        // Busca dados adicionais de consultas
         Integer consultasHoje = consultaDataSource.contarConsultasHoje(medico.getId());
         String proximaConsulta = consultaDataSource.obterProximaConsulta(medico.getId());
         String nomeEspecialidade = especialidadeDataSource.obterNomeEspecialidade(
@@ -56,7 +50,6 @@ public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrat
 
     @Override
     public MedicoDetalhes converterParaDetalhes(Medico medico) {
-        // Converte histórico
         var historicoConvertido = medico.getHistorico().stream()
                 .map(h -> new MedicoDetalhes.HistoricoDetalhes(
                         h.getAcao().name(),
@@ -66,7 +59,6 @@ public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrat
                 ))
                 .collect(Collectors.toList());
 
-        // Busca horários de disponibilidade
         var horariosDisponiveis = disponibilidadeDataSource
                 .obterHorariosDisponibilidade(medico.getId())
                 .stream()
@@ -81,7 +73,6 @@ public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrat
                 medico.getEspecialidade().getId()
         );
 
-        // TODO: Data de nascimento virá da entidade quando implementada
         return new MedicoDetalhes(
                 medico.getId().getId(),
                 medico.getNome(),
@@ -91,14 +82,13 @@ public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrat
                 historicoConvertido,
                 medico.getCrm().toString(),
                 nomeEspecialidade,
-                null, // dataNascimento - implementar quando adicionar no domínio
+                null, // dataNascimento
                 horariosDisponiveis
         );
     }
 
     /**
      * Interface para acesso a dados de consultas.
-     * Será implementada pela camada de infraestrutura.
      */
     public interface ConsultaDataSource {
         Integer contarConsultasHoje(FuncionarioId medicoId);
@@ -106,18 +96,15 @@ public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrat
     }
 
     /**
-     * Interface para acesso a dados de disponibilidade de horários.
-     * Será implementada pela camada de infraestrutura.
+     * Interface para acesso a dados de disponibilidade.
      */
     public interface DisponibilidadeDataSource {
         java.util.List<HorarioInfo> obterHorariosDisponibilidade(FuncionarioId medicoId);
-
         record HorarioInfo(String diaSemana, String horaInicio, String horaFim) {}
     }
 
     /**
      * Interface para acesso a dados de especialidades.
-     * Será implementada pela camada de infraestrutura.
      */
     public interface EspecialidadeDataSource {
         String obterNomeEspecialidade(int especialidadeId);

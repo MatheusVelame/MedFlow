@@ -1,3 +1,5 @@
+// Localização: infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/administracao/EspecialidadeDataSourceImpl.java
+
 package br.com.medflow.infraestrutura.persistencia.jpa.administracao;
 
 import br.com.medflow.aplicacao.administracao.medicos.MedicoConversaoComConsultasStrategy;
@@ -6,6 +8,10 @@ import br.com.medflow.infraestrutura.persistencia.jpa.referencia.EspecialidadeJp
 import br.com.medflow.infraestrutura.persistencia.jpa.referencia.EspecialidadeJpaRepository;
 import org.springframework.stereotype.Component;
 
+/**
+ * Implementação do EspecialidadeDataSource.
+ * Busca dados reais do banco.
+ */
 @Component
 public class EspecialidadeDataSourceImpl
         implements MedicoConversaoComConsultasStrategy.EspecialidadeDataSource {

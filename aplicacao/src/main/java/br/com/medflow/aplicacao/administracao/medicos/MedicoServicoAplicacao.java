@@ -1,5 +1,3 @@
-// Localização: aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoServicoAplicacao.java
-
 package br.com.medflow.aplicacao.administracao.medicos;
 
 import static org.apache.commons.lang3.Validate.notEmpty;
@@ -9,6 +7,10 @@ import br.com.medflow.dominio.administracao.funcionarios.Medico;
 import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
 import br.com.medflow.dominio.administracao.funcionarios.StatusFuncionario;
 import br.com.medflow.dominio.administracao.funcionarios.CRM;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,24 +20,16 @@ import java.util.stream.Collectors;
  * PADRÃO STRATEGY APLICADO:
  * Este serviço usa uma estratégia de conversão injetada para transformar
  * entidades de domínio (Medico) em DTOs (MedicoResumo/MedicoDetalhes).
- *
- * A estratégia pode ser trocada em tempo de execução, permitindo:
- * - Versão completa com dados de consultas
- * - Versão simplificada sem consultas (mais rápida)
- * - Versões customizadas para diferentes contextos
  */
+@Service
 public class MedicoServicoAplicacao {
 
     private final MedicoRepositorioAplicacao repositorio;
     private final MedicoConversaoStrategy strategy;
 
-    /**
-     * Construtor que recebe o repositório e a estratégia de conversão.
-     * @param repositorio Repositório para acesso aos dados de médicos
-     * @param strategy Estratégia de conversão a ser aplicada
-     */
+    @Autowired
     public MedicoServicoAplicacao(
-            MedicoRepositorioAplicacao repositorio,
+            @Qualifier("medicoRepositorioAplicacaoImpl") MedicoRepositorioAplicacao repositorio,
             MedicoConversaoStrategy strategy) {
 
         notNull(repositorio, "O repositório de médicos não pode ser nulo");
@@ -46,10 +40,10 @@ public class MedicoServicoAplicacao {
     }
 
     /**
-     * Pesquisa e retorna resumos de todos os médicos.
-     * Usa Strategy para converter cada entidade no DTO apropriado.
+     * Lista todos os médicos (retorna resumos).
+     * Usado pelo endpoint: GET /api/medicos
      */
-    public List<MedicoResumo> pesquisarResumos() {
+    public List<MedicoResumo> listarTodos() {
         List<Medico> medicos = repositorio.pesquisarTodos();
 
         return medicos.stream()
@@ -58,41 +52,46 @@ public class MedicoServicoAplicacao {
     }
 
     /**
-     * Obtém detalhes completos de um médico específico por ID.
-     * @param id O ID do médico
-     * @return Detalhes completos incluindo histórico e disponibilidade
+     * Obtém detalhes de um médico por ID.
+     * Usado pelo endpoint: GET /api/medicos/{id}
      */
-    public MedicoDetalhes obterDetalhes(String id) {
-        notEmpty(id, "O ID não pode ser vazio");
+    public MedicoDetalhes obterPorId(Integer id) {
+        notNull(id, "O ID não pode ser nulo");
 
-        FuncionarioId medicoId = new FuncionarioId(id);
+        FuncionarioId medicoId = new FuncionarioId(id.toString());
         Medico medico = repositorio.obterPorId(medicoId)
-                .orElseThrow(() -> new RuntimeException("Médico não encontrado com ID: " + id));
+                .orElse(null);
+
+        if (medico == null) {
+            return null;
+        }
 
         return strategy.converterParaDetalhes(medico);
     }
 
     /**
-     * Obtém detalhes de um médico específico por CRM.
-     * @param crmCompleto CRM no formato "número-UF" (ex: "12345-PE")
-     * @return Detalhes completos do médico
+     * Obtém detalhes de um médico por CRM.
+     * Usado pelo endpoint: GET /api/medicos/crm/{crm}
      */
-    public MedicoDetalhes obterDetalhesPorCrm(String crmCompleto) {
+    public MedicoDetalhes obterPorCrm(String crmCompleto) {
         notEmpty(crmCompleto, "O CRM não pode ser vazio");
 
         CRM crm = new CRM(crmCompleto);
         Medico medico = repositorio.obterPorCrm(crm)
-                .orElseThrow(() -> new RuntimeException("Médico não encontrado com CRM: " + crmCompleto));
+                .orElse(null);
+
+        if (medico == null) {
+            return null;
+        }
 
         return strategy.converterParaDetalhes(medico);
     }
 
     /**
-     * Pesquisa médicos por status.
-     * @param status Status a filtrar (ATIVO ou INATIVO)
-     * @return Lista de resumos filtrada
+     * Lista médicos por status.
+     * Usado pelo endpoint: GET /api/medicos/status/{status}
      */
-    public List<MedicoResumo> pesquisarPorStatus(StatusFuncionario status) {
+    public List<MedicoResumo> listarPorStatus(StatusFuncionario status) {
         notNull(status, "O status não pode ser nulo");
 
         List<Medico> medicos = repositorio.pesquisarPorStatus(status);
@@ -103,20 +102,12 @@ public class MedicoServicoAplicacao {
     }
 
     /**
-     * Pesquisa médicos ativos.
-     * Atalho conveniente para pesquisarPorStatus(ATIVO).
-     * @return Lista de resumos de médicos ativos
+     * Lista médicos por especialidade.
+     * Usado pelo endpoint: GET /api/medicos/especialidade/{id}
      */
-    public List<MedicoResumo> pesquisarAtivos() {
-        return pesquisarPorStatus(StatusFuncionario.ATIVO);
-    }
+    public List<MedicoResumo> listarPorEspecialidade(Integer especialidadeId) {
+        notNull(especialidadeId, "O ID da especialidade não pode ser nulo");
 
-    /**
-     * Pesquisa médicos por especialidade.
-     * @param especialidadeId ID da especialidade
-     * @return Lista de resumos filtrada
-     */
-    public List<MedicoResumo> pesquisarPorEspecialidade(int especialidadeId) {
         List<Medico> medicos = repositorio.pesquisarPorEspecialidade(especialidadeId);
 
         return medicos.stream()
@@ -125,26 +116,8 @@ public class MedicoServicoAplicacao {
     }
 
     /**
-     * Pesquisa médicos por nome (busca parcial).
-     * @param nome Nome ou parte do nome a buscar
-     * @return Lista de resumos filtrada
-     */
-    public List<MedicoResumo> pesquisarPorNome(String nome) {
-        notEmpty(nome, "O nome não pode ser vazio");
-
-        List<Medico> medicos = repositorio.pesquisarPorNome(nome);
-
-        return medicos.stream()
-                .map(strategy::converterParaResumo)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Busca geral que procura em nome, CRM ou especialidade.
-     * Útil para implementar campo de busca único no frontend.
-     *
-     * @param termoBusca Termo para buscar
-     * @return Lista de resumos que correspondem à busca
+     * Busca geral por nome, CRM ou especialidade.
+     * Usado pelo endpoint: GET /api/medicos/buscar?termo=X
      */
     public List<MedicoResumo> buscarGeral(String termoBusca) {
         notEmpty(termoBusca, "O termo de busca não pode ser vazio");
@@ -157,17 +130,35 @@ public class MedicoServicoAplicacao {
     }
 
     /**
-     * Pesquisa médicos ativos com especialidade específica.
-     * Combinação útil para seleção em formulários.
-     *
-     * @param especialidadeId ID da especialidade
-     * @return Lista de médicos ativos da especialidade
+     * Lista apenas médicos ativos.
      */
-    public List<MedicoResumo> pesquisarAtivosPorEspecialidade(int especialidadeId) {
+    public List<MedicoResumo> listarAtivos() {
+        return listarPorStatus(StatusFuncionario.ATIVO);
+    }
+
+    /**
+     * Lista médicos ativos por especialidade.
+     */
+    public List<MedicoResumo> listarAtivosPorEspecialidade(Integer especialidadeId) {
+        notNull(especialidadeId, "O ID da especialidade não pode ser nulo");
+
         List<Medico> medicos = repositorio.pesquisarPorEspecialidade(especialidadeId);
 
         return medicos.stream()
                 .filter(m -> m.getStatus() == StatusFuncionario.ATIVO)
+                .map(strategy::converterParaResumo)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Busca médicos por nome parcial.
+     */
+    public List<MedicoResumo> buscarPorNome(String nome) {
+        notEmpty(nome, "O nome não pode ser vazio");
+
+        List<Medico> medicos = repositorio.pesquisarPorNome(nome);
+
+        return medicos.stream()
                 .map(strategy::converterParaResumo)
                 .collect(Collectors.toList());
     }
