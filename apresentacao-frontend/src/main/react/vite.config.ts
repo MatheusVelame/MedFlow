@@ -8,6 +8,16 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8090,
+    // --- BLOCO DE PROXY ADICIONADO ---
+    proxy: {
+      // Redireciona todas as requisições que começam com /backend para o servidor Spring Boot
+      '/backend': {
+        target: 'http://localhost:8080', // Porta onde seu Spring Boot está rodando
+        changeOrigin: true, // Necessário para evitar problemas de CORS
+        secure: false,      // Usar 'false' se estiver rodando o backend em HTTP (padrão)
+      },
+    },
+    // --- FIM DO BLOCO ADICIONADO ---
   },
   plugins: [
     react(),
@@ -16,6 +26,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: {
+      // Já está configurado, mas mantemos
       "@": path.resolve(__dirname, "./src"),
     },
   },
