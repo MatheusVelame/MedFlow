@@ -224,30 +224,6 @@ export default function Medicamentos() {
                                             </DropdownMenuItem>
                                         )}
                                         
-                                        {/* AÇÕES DE REVISÃO (APROVAR / REJEITAR) */}
-                                        {/* CORREÇÃO 6: Exibir ações de revisão se o campo possuiRevisaoPendente for verdadeiro */}
-                                        {medicamento.possuiRevisaoPendente && (
-                                            <>
-                                                <DropdownMenuSeparator /> 
-                                                <DropdownMenuLabel>Ações de Revisão</DropdownMenuLabel>
-
-                                                {/* AÇÃO: Aprovar Revisão */}
-                                                <DropdownMenuItem 
-                                                    onClick={() => handleAcaoSimples(medicamento, aprovarMutation)}
-                                                    disabled={aprovarMutation.isPending}
-                                                >
-                                                    <CheckCircle className="mr-2 h-4 w-4" /> Aprovar Revisão
-                                                </DropdownMenuItem>
-                                                
-                                                {/* AÇÃO: Rejeitar Revisão */}
-                                                <DropdownMenuItem 
-                                                    onClick={() => handleAcaoSimples(medicamento, rejeitarMutation)}
-                                                    disabled={rejeitarMutation.isPending}
-                                                >
-                                                    <XCircle className="mr-2 h-4 w-4" /> Rejeitar Revisão
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
