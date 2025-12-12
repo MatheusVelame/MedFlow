@@ -1,6 +1,7 @@
 package br.com.medflow.apresentacao.prontuario;
 
 import br.com.medflow.aplicacao.prontuario.ProntuarioServicoAplicacao;
+import br.com.medflow.aplicacao.prontuario.ProntuarioResumo;
 import br.com.medflow.aplicacao.prontuario.HistoricoItemResponse;
 import br.com.medflow.aplicacao.prontuario.dto.request.AdicionarHistoricoRequest;
 import br.com.medflow.aplicacao.prontuario.dto.response.ProntuarioResponse;
@@ -28,18 +29,36 @@ import java.util.List;
 @RequestMapping("/backend/prontuarios")
 public class ProntuarioControlador {
     
+    private final ProntuarioServicoAplicacao servicoAplicacao;
     private final AdicionarHistoricoClinicoUseCase adicionarHistoricoUseCase;
     private final ObterProntuarioQuery obterProntuarioQuery;
     private final ListarHistoricoQuery listarHistoricoQuery;
     
     public ProntuarioControlador(
+        ProntuarioServicoAplicacao servicoAplicacao,
         AdicionarHistoricoClinicoUseCase adicionarHistoricoUseCase,
         ObterProntuarioQuery obterProntuarioQuery,
         ListarHistoricoQuery listarHistoricoQuery
     ) {
+        this.servicoAplicacao = servicoAplicacao;
         this.adicionarHistoricoUseCase = adicionarHistoricoUseCase;
         this.obterProntuarioQuery = obterProntuarioQuery;
         this.listarHistoricoQuery = listarHistoricoQuery;
+    }
+    
+    @Operation(
+        summary = "Listar todos os prontuários",
+        description = "Retorna uma lista com todos os prontuários cadastrados no sistema"
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Lista de prontuários retornada com sucesso",
+        content = @Content(schema = @Schema(implementation = ProntuarioResumo.class))
+    )
+    @GetMapping
+    public ResponseEntity<List<ProntuarioResumo>> listarProntuarios() {
+        List<ProntuarioResumo> prontuarios = servicoAplicacao.pesquisarResumos();
+        return ResponseEntity.ok(prontuarios);
     }
     
     @Operation(

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExameForm } from "@/components/ExameForm";
 import { TipoExameForm } from "@/components/TipoExameForm";
 import {
   AlertDialog,
@@ -29,17 +28,10 @@ import {
   TipoExameResumo 
 } from "@/api/useTiposExamesApi";
 
-const mockExames: any[] = [];
-const mockEspecialidades: any[] = [];
-
 export default function Exames() {
   const { isGestor } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
-  
-  // Estado local para Solicitações (Mock)
-  const [isExameFormOpen, setIsExameFormOpen] = useState(false);
-  const [exames, setExames] = useState(mockExames);
   
   // ========================================================================
   // INTEGRAÇÃO COM A API (TIPOS DE EXAME)
@@ -63,15 +55,6 @@ export default function Exames() {
   // ========================================================================
   // HANDLERS
   // ========================================================================
-
-  const handleSaveExame = (data: any) => {
-    const newExame = {
-      ...data,
-      id: String(Math.max(...exames.map(e => parseInt(e.id))) + 1),
-      status: "pendente" as const
-    };
-    setExames([...exames, newExame]);
-  };
 
   // LÓGICA DE SALVAR UNIFICADA (CRIAR E EDITAR)
   const handleSaveTipoExame = (data: any) => {
@@ -203,22 +186,10 @@ export default function Exames() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Exames</h1>
-          <p className="text-muted-foreground">Solicitações, resultados e tipos de exames</p>
+          <h1 className="text-3xl font-bold text-foreground">Tipos de Exames</h1>
+          <p className="text-muted-foreground">Gerencie os tipos de exames disponíveis na clínica</p>
         </div>
-        {!isGestor && (
-          <Button className="bg-gradient-primary text-white hover:opacity-90" onClick={() => setIsExameFormOpen(true)}>
-            <TestTube className="w-4 h-4 mr-2" />
-            Nova Solicitação
-          </Button>
-        )}
       </div>
-
-      <ExameForm
-        open={isExameFormOpen}
-        onOpenChange={setIsExameFormOpen}
-        onSave={handleSaveExame}
-      />
 
       <TipoExameForm
         open={isTipoExameFormOpen}
@@ -226,7 +197,7 @@ export default function Exames() {
         onSave={handleSaveTipoExame}
         initialData={editingTipoExame}
         existingCodes={tiposExame.map((t: any) => t.codigo)}
-        especialidades={mockEspecialidades}
+        especialidades={[]}
         isLoading={isCadastrando || isEditando} 
       />
 
@@ -244,59 +215,10 @@ export default function Exames() {
         {/* Cards adicionais podem ser inseridos aqui se necessário */}
       </div>
 
-      <Tabs defaultValue="solicitacoes" className="space-y-4">
+      <Tabs defaultValue="tipos" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="solicitacoes">Solicitações</TabsTrigger>
           <TabsTrigger value="tipos">Tipos de Exames</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="solicitacoes" className="space-y-4">
-             <Tabs defaultValue="todos" onValueChange={setFilterStatus}>
-                <div className="flex items-center justify-between">
-                    <TabsList>
-                        <TabsTrigger value="todos">Todos</TabsTrigger>
-                        <TabsTrigger value="resultado">Resultados</TabsTrigger>
-                        <TabsTrigger value="pendente">Pendentes</TabsTrigger>
-                        <TabsTrigger value="aguardando">Aguardando</TabsTrigger>
-                    </TabsList>
-                    <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input placeholder="Buscar exames..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10"/>
-                    </div>
-                </div>
-                <TabsContent value={filterStatus} className="space-y-4">
-                    <div className="grid gap-4">
-                        {filteredExames.map((exame) => (
-                        <Card key={exame.id} className="shadow-card hover:shadow-medical transition-all duration-300">
-                            <CardContent className="p-6">
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1 space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-primary/10 rounded-lg">{getStatusIcon(exame.status)}</div>
-                                    <div>
-                                    <h3 className="text-lg font-semibold text-foreground">{exame.tipo}{getPrioridadeBadge(exame.prioridade)}</h3>
-                                    <p className="text-sm text-muted-foreground">{exame.paciente}</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-4 text-sm">
-                                    <div><span className="text-muted-foreground">Solicitante: </span><span className="text-foreground font-medium">{exame.solicitante}</span></div>
-                                    <div><span className="text-muted-foreground">Laboratório: </span><span className="text-foreground font-medium">{exame.laboratorio}</span></div>
-                                    <div><span className="text-muted-foreground">Data: </span><span className="text-foreground font-medium">{new Date(exame.dataSolicitacao).toLocaleDateString('pt-BR')}</span></div>
-                                </div>
-                                <div className="flex items-center gap-2">{getStatusBadge(exame.status)}</div>
-                                </div>
-                                <div className="flex gap-2">
-                                {exame.status === "resultado" && (<Button variant="outline" size="sm"><Download className="w-4 h-4 mr-2" />Baixar</Button>)}
-                                {exame.status !== "resultado" && (<Button variant="outline" size="sm" onClick={() => handleUploadResult(exame.id)}><Upload className="w-4 h-4 mr-2" />Anexar</Button>)}
-                                </div>
-                            </div>
-                            </CardContent>
-                        </Card>
-                        ))}
-                    </div>
-                </TabsContent>
-            </Tabs>
-        </TabsContent>
 
         <TabsContent value="tipos" className="space-y-4">
           <Card>

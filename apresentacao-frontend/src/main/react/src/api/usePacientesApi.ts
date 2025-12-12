@@ -10,15 +10,15 @@ axios.defaults.baseURL = '';
 // TIPAGENS (ALINHADAS COM SEUS DTOs REAIS)
 // =====================================================================
 
-// O que o backend retorna (PacienteResumoDTO)
+// O que o backend retorna (PacienteResumo ou PacienteDetalhes)
 export interface PacienteApi {
   id: number;
-  nomeCompleto: string;
+  nome: string; // Backend retorna "nome" de getNome()
   cpf: string;
-  dataNascimento: string;
+  dataNascimento?: string | null; // Pode não estar presente em PacienteResumo
   telefone: string;
-  email: string;
-  status: string;
+  email?: string | null; // Pode não estar presente em PacienteResumo
+  status?: string | null; // Pode não estar presente em PacienteResumo
   dataUltimaConsulta?: string | null;
 }
 
@@ -59,12 +59,12 @@ const API_BASE_URL = "/api/pacientes"; // Proxy redireciona para http://localhos
 function mapApiToView(p: PacienteApi): PacienteView {
   return {
     id: p.id,
-    name: p.nomeCompleto,
+    name: p.nome, // Backend retorna "nome", não "nomeCompleto"
     cpf: p.cpf,
-    birthDate: p.dataNascimento,
+    birthDate: p.dataNascimento ?? "",
     phone: p.telefone,
-    email: p.email,
-    status: p.status,
+    email: p.email ?? "",
+    status: p.status ?? "ATIVO",
     lastVisit: p.dataUltimaConsulta ?? "-", // caso venha null
   };
 }

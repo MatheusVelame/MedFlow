@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Edit, Trash2, CreditCard } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,105 +16,72 @@ import {
 import { ConvenioForm } from "@/components/ConvenioForm";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Convenio {
-  id: number;
-  nome: string;
-  cnpj: string;
-  telefone: string;
-  email: string;
-  valorConsulta: number;
-  ativo: boolean;
-  pacientesVinculados: number;
-}
-
-const initialConvenios: Convenio[] = [
-  { 
-    id: 1, 
-    nome: "Unimed", 
-    cnpj: "12.345.678/0001-90", 
-    telefone: "(11) 3000-0000",
-    email: "atendimento@unimed.com.br",
-    valorConsulta: 150.00,
-    ativo: true, 
-    pacientesVinculados: 45 
-  },
-  { 
-    id: 2, 
-    nome: "Bradesco Saúde", 
-    cnpj: "23.456.789/0001-01", 
-    telefone: "(11) 3001-0000",
-    email: "saude@bradesco.com.br",
-    valorConsulta: 180.00,
-    ativo: true, 
-    pacientesVinculados: 32 
-  },
-  { 
-    id: 3, 
-    nome: "Amil", 
-    cnpj: "34.567.890/0001-12", 
-    telefone: "(11) 3002-0000",
-    email: "contato@amil.com.br",
-    valorConsulta: 200.00,
-    ativo: true, 
-    pacientesVinculados: 28 
-  },
-  { 
-    id: 4, 
-    nome: "SulAmérica", 
-    cnpj: "45.678.901/0001-23", 
-    telefone: "(11) 3003-0000",
-    email: "saude@sulamerica.com.br",
-    valorConsulta: 170.00,
-    ativo: true, 
-    pacientesVinculados: 21 
-  },
-];
+import {
+  useListarConvenios,
+  useCadastrarConvenio,
+  useAlterarNomeConvenio,
+  useExcluirConvenio,
+  type ConvenioResumo
+} from "@/api/useConveniosApi";
 
 export default function Convenios() {
-  const { isGestor } = useAuth();
-  const [convenios, setConvenios] = useState<Convenio[]>(initialConvenios);
+  const { isGestor, user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingConvenio, setEditingConvenio] = useState<Convenio | null>(null);
-  const [convenioToDelete, setConvenioToDelete] = useState<number | null>(null);
+  const [editingConvenio, setEditingConvenio] = useState<ConvenioResumo | null>(null);
+  const [convenioToDelete, setConvenioToDelete] = useState<ConvenioResumo | null>(null);
+
+  // Queries e Mutations
+  const { data: convenios = [], isLoading, error } = useListarConvenios();
+  const cadastrarMutation = useCadastrarConvenio();
+  const alterarNomeMutation = useAlterarNomeConvenio();
+  const excluirMutation = useExcluirConvenio();
 
   const handleSave = (data: any) => {
+    const responsavelId = parseInt(user?.id || "1");
+    
     if (editingConvenio) {
-      setConvenios(convenios.map(c => 
-        c.id === editingConvenio.id ? { ...c, ...data } : c
-      ));
-      toast({
-        title: "Convênio atualizado",
-        description: "As informações foram atualizadas com sucesso.",
+      alterarNomeMutation.mutate({
+        id: editingConvenio.id,
+        payload: {
+          novoNome: data.nome,
+          responsavelId: responsavelId
+        }
+      }, {
+        onSuccess: () => {
+          setEditingConvenio(null);
+          setIsFormOpen(false);
+        }
       });
     } else {
-      const newConvenio = {
-        id: Math.max(...convenios.map(c => c.id)) + 1,
-        ...data,
-        pacientesVinculados: 0,
-      };
-      setConvenios([...convenios, newConvenio]);
-      toast({
-        title: "Convênio cadastrado",
-        description: "Novo convênio foi adicionado com sucesso.",
+      cadastrarMutation.mutate({
+        nome: data.nome,
+        codigoIdentificacao: data.cnpj || data.codigoIdentificacao,
+        responsavelId: responsavelId
+      }, {
+        onSuccess: () => {
+          setIsFormOpen(false);
+        }
       });
     }
-    setIsFormOpen(false);
-    setEditingConvenio(null);
   };
 
-  const handleEdit = (convenio: Convenio) => {
+  const handleEdit = (convenio: ConvenioResumo) => {
     setEditingConvenio(convenio);
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    setConvenios(convenios.filter(c => c.id !== id));
-    setConvenioToDelete(null);
-    toast({
-      title: "Convênio removido",
-      description: "O convênio foi removido com sucesso.",
-    });
+  const handleDelete = () => {
+    if (convenioToDelete) {
+      const responsavelId = parseInt(user?.id || "1");
+      excluirMutation.mutate({
+        codigoIdentificacao: convenioToDelete.codigoIdentificacao,
+        payload: { responsavelId: responsavelId }
+      }, {
+        onSuccess: () => {
+          setConvenioToDelete(null);
+        }
+      });
+    }
   };
 
   return (
@@ -132,74 +99,74 @@ export default function Convenios() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {convenios.map((convenio) => (
-          <Card key={convenio.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <CreditCard className="h-5 w-5 text-primary" />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 text-destructive">
+          Erro ao carregar convênios. Tente novamente.
+        </div>
+      ) : convenios.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Nenhum convênio cadastrado.
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {convenios.map((convenio) => (
+            <Card key={convenio.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{convenio.nome}</CardTitle>
+                      <Badge variant={convenio.status === "ATIVO" ? "default" : "secondary"} className="mt-1">
+                        {convenio.status === "ATIVO" ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{convenio.nome}</CardTitle>
-                    <Badge variant={convenio.ativo ? "default" : "secondary"} className="mt-1">
-                      {convenio.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Código:</span>
+                    <span className="font-medium">{convenio.codigoIdentificacao}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">ID:</span>
+                    <span className="font-medium">{convenio.id}</span>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">CNPJ:</span>
-                  <span className="font-medium">{convenio.cnpj}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Telefone:</span>
-                  <span className="font-medium">{convenio.telefone}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Email:</span>
-                  <span className="font-medium text-xs">{convenio.email}</span>
-                </div>
-                <div className="flex justify-between text-sm pt-2 border-t">
-                  <span className="text-muted-foreground">Valor Consulta:</span>
-                  <span className="font-bold text-primary">
-                    {convenio.valorConsulta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Pacientes:</span>
-                  <Badge variant="outline">{convenio.pacientesVinculados}</Badge>
-                </div>
-              </div>
 
-              {isGestor && (
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleEdit(convenio)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setConvenioToDelete(convenio.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                {isGestor && (
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleEdit(convenio)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setConvenioToDelete(convenio)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <ConvenioForm
         open={isFormOpen}
@@ -218,7 +185,7 @@ export default function Convenios() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => convenioToDelete && handleDelete(convenioToDelete)}>
+            <AlertDialogAction onClick={handleDelete}>
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>

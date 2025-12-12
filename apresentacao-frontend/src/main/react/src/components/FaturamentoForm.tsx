@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,7 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useListarPacientes } from "@/api/usePacientesApi";
 
 // Tabela de preços padrão dos procedimentos
 const tabelaPrecos: Record<string, number> = {
@@ -51,13 +52,16 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Mock de pacientes para o select
-const mockPacientes = [
-  { id: "P001", nome: "Maria Silva" },
-  { id: "P002", nome: "Carlos Santos" },
-  { id: "P003", nome: "Ana Oliveira" },
-  { id: "P004", nome: "João Costa" },
-];
+// Mapeamento de métodos de pagamento para valores do backend
+const metodoPagamentoMap: Record<string, string> = {
+  "Dinheiro": "DINHEIRO",
+  "Cartão de Débito": "CARTAO_DEBITO",
+  "Cartão de Crédito": "CARTAO_CREDITO",
+  "PIX": "PIX",
+  "Convênio Unimed": "CONVENIO_UNIMED",
+  "Convênio Amil": "CONVENIO_AMIL",
+  "Convênio Bradesco Saúde": "CONVENIO_BRADESCO",
+};
 
 interface FaturamentoFormProps {
   onSubmit: (data: FormValues) => void;
@@ -68,6 +72,9 @@ interface FaturamentoFormProps {
 export function FaturamentoForm({ onSubmit, initialData, onCancel }: FaturamentoFormProps) {
   const [valorDiferente, setValorDiferente] = useState(false);
   const [valorPadrao, setValorPadrao] = useState<number | null>(null);
+  
+  // Buscar pacientes da API
+  const { data: pacientes = [], isLoading: isLoadingPacientes } = useListarPacientes();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -83,10 +90,18 @@ export function FaturamentoForm({ onSubmit, initialData, onCancel }: Faturamento
     },
   });
 
+  // Atualizar valores quando initialData mudar
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
   const handlePacienteSelecionado = (pacienteId: string) => {
-    const paciente = mockPacientes.find(p => p.id === pacienteId);
+    const pacienteIdNum = parseInt(pacienteId);
+    const paciente = pacientes.find(p => p.id === pacienteIdNum);
     if (paciente) {
-      form.setValue("pacienteNome", paciente.nome);
+      form.setValue("pacienteNome", paciente.name);
     }
   };
 
@@ -115,10 +130,19 @@ export function FaturamentoForm({ onSubmit, initialData, onCancel }: Faturamento
       return;
     }
 
-    onSubmit(data);
+    // Mapear método de pagamento para o formato do backend
+    const metodoPagamentoBackend = metodoPagamentoMap[data.metodoPagamento] || data.metodoPagamento.toUpperCase().replace(/\s+/g, "_");
+    
+    // Converter tipo de procedimento para maiúsculas
+    const tipoProcedimentoBackend = data.procedimentoTipo.toUpperCase() as "CONSULTA" | "EXAME";
+    
+    onSubmit({
+      ...data,
+      metodoPagamento: metodoPagamentoBackend,
+      procedimentoTipo: tipoProcedimentoBackend,
+    });
     
     if (!initialData) {
-      toast.success("Faturamento registrado com sucesso!");
       // Reset completo do formulário e estados apenas se for novo
       form.reset({
         pacienteId: "",
@@ -142,32 +166,52 @@ export function FaturamentoForm({ onSubmit, initialData, onCancel }: Faturamento
           <FormField
             control={form.control}
             name="pacienteId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Paciente *</FormLabel>
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    handlePacienteSelecionado(value);
-                  }}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o paciente" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {mockPacientes.map((paciente) => (
-                      <SelectItem key={paciente.id} value={paciente.id}>
-                        {paciente.id} - {paciente.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              const pacienteSelecionado = field.value 
+                ? pacientes.find(p => String(p.id) === field.value)
+                : null;
+              
+              return (
+                <FormItem>
+                  <FormLabel>Paciente *</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handlePacienteSelecionado(value);
+                    }}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o paciente">
+                          {pacienteSelecionado 
+                            ? pacienteSelecionado.name
+                            : "Selecione o paciente"}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {isLoadingPacientes ? (
+                        <div className="flex items-center justify-center p-4">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        </div>
+                      ) : pacientes.length === 0 ? (
+                        <div className="p-4 text-sm text-muted-foreground text-center">
+                          Nenhum paciente cadastrado
+                        </div>
+                      ) : (
+                        pacientes.map((paciente) => (
+                          <SelectItem key={paciente.id} value={String(paciente.id)}>
+                            {paciente.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
 
           <FormField

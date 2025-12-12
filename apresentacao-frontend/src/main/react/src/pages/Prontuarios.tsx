@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FileText, Search, Eye, Plus, Download, Clock } from "lucide-react";
+import { useState, useMemo } from "react";
+import { FileText, Search, Eye, Plus, Download, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,71 +7,82 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EvolucaoForm } from "@/components/EvolucaoForm";
 import { useAuth } from "@/contexts/AuthContext";
-
-const mockProntuarios = [
-  {
-    id: "1",
-    paciente: "Maria Silva Santos",
-    cpf: "123.456.789-00",
-    ultimaConsulta: "2024-01-10",
-    totalConsultas: 8,
-    status: "active",
-    especialidade: "Cardiologia"
-  },
-  {
-    id: "2",
-    paciente: "João Pedro Oliveira",
-    cpf: "987.654.321-00",
-    ultimaConsulta: "2024-01-08",
-    totalConsultas: 3,
-    status: "active",
-    especialidade: "Ortopedia"
-  },
-  {
-    id: "3",
-    paciente: "Ana Costa Ferreira",
-    cpf: "456.789.123-00",
-    ultimaConsulta: "2023-12-20",
-    totalConsultas: 15,
-    status: "inactive",
-    especialidade: "Pediatria"
-  }
-];
-
-const mockEvolucoes = [
-  {
-    id: "1",
-    data: "2024-01-10",
-    medico: "Dr. Carlos Mendes",
-    especialidade: "Cardiologia",
-    queixa: "Dor no peito",
-    diagnostico: "Angina estável",
-    conduta: "Medicação e acompanhamento"
-  },
-  {
-    id: "2",
-    data: "2023-12-15",
-    medico: "Dr. Carlos Mendes",
-    especialidade: "Cardiologia",
-    queixa: "Fadiga e palpitações",
-    diagnostico: "Arritmia cardíaca",
-    conduta: "Holter 24h e retorno em 15 dias"
-  }
-];
+import { 
+  useListarProntuarios, 
+  useObterProntuario, 
+  useListarHistoricoClinico,
+  useAdicionarHistoricoClinico,
+  type ProntuarioResumo,
+  type HistoricoItem
+} from "@/api/useProntuariosApi";
+import { useListarPacientes } from "@/api/usePacientesApi";
 
 export default function Prontuarios() {
   const { isGestor } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProntuario, setSelectedProntuario] = useState<string | null>(null);
   const [isEvolucaoFormOpen, setIsEvolucaoFormOpen] = useState(false);
+  const [prontuarioIdParaEvolucao, setProntuarioIdParaEvolucao] = useState<string | null>(null);
+
+  // Queries
+  const { data: prontuarios = [], isLoading: isLoadingProntuarios, error: errorProntuarios } = useListarProntuarios();
+  const { data: pacientes = [] } = useListarPacientes();
+  const { data: prontuarioDetalhes, isLoading: isLoadingDetalhes } = useObterProntuario(selectedProntuario);
+  const { data: historicoClinico = [], isLoading: isLoadingHistorico } = useListarHistoricoClinico(selectedProntuario);
+  
+  // Mutation
+  const adicionarHistoricoMutation = useAdicionarHistoricoClinico();
+
+  // Mapear pacientes para lookup rápido
+  const pacientesMap = useMemo(() => {
+    const map = new Map<number, { nome: string; cpf: string }>();
+    pacientes.forEach(p => {
+      map.set(p.id, { nome: p.name, cpf: p.cpf });
+    });
+    return map;
+  }, [pacientes]);
 
   const handleSaveEvolucao = (data: any) => {
-    console.log("Nova evolução:", data);
+    if (!prontuarioIdParaEvolucao) return;
+    
+    adicionarHistoricoMutation.mutate({
+      prontuarioId: prontuarioIdParaEvolucao,
+      payload: {
+        sintomas: data.queixa || data.sintomas,
+        diagnostico: data.diagnostico,
+        conduta: data.conduta,
+        profissionalResponsavel: data.medico || data.profissionalResponsavel,
+        anexosReferenciados: []
+      }
+    });
+    setIsEvolucaoFormOpen(false);
+    setProntuarioIdParaEvolucao(null);
   };
 
-  const filteredProntuarios = mockProntuarios.filter(p =>
-    p.paciente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.cpf.includes(searchTerm)
+  const handleOpenEvolucaoForm = () => {
+    if (selectedProntuario) {
+      setProntuarioIdParaEvolucao(selectedProntuario);
+    }
+    setIsEvolucaoFormOpen(true);
+  };
+
+  // Enriquecer prontuários com dados do paciente
+  const prontuariosEnriquecidos = useMemo(() => {
+    return prontuarios.map(prontuario => {
+      const pacienteIdNum = parseInt(prontuario.pacienteId);
+      const paciente = pacientesMap.get(pacienteIdNum);
+      return {
+        ...prontuario,
+        pacienteNome: paciente?.nome || "Paciente não encontrado",
+        pacienteCpf: paciente?.cpf || "",
+      };
+    });
+  }, [prontuarios, pacientesMap]);
+
+  const filteredProntuarios = prontuariosEnriquecidos.filter(p =>
+    p.pacienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.pacienteCpf.includes(searchTerm) ||
+    p.pacienteId.includes(searchTerm)
   );
 
   return (
@@ -82,7 +93,11 @@ export default function Prontuarios() {
           <p className="text-muted-foreground">Histórico médico completo dos pacientes</p>
         </div>
         {!isGestor && (
-          <Button className="bg-gradient-primary text-white hover:opacity-90" onClick={() => setIsEvolucaoFormOpen(true)}>
+          <Button 
+            className="bg-gradient-primary text-white hover:opacity-90" 
+            onClick={handleOpenEvolucaoForm}
+            disabled={!selectedProntuario}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nova Evolução
           </Button>
@@ -91,8 +106,12 @@ export default function Prontuarios() {
 
       <EvolucaoForm
         open={isEvolucaoFormOpen}
-        onOpenChange={setIsEvolucaoFormOpen}
+        onOpenChange={(open) => {
+          setIsEvolucaoFormOpen(open);
+          if (!open) setProntuarioIdParaEvolucao(null);
+        }}
         onSave={handleSaveEvolucao}
+        prontuarioId={prontuarioIdParaEvolucao}
       />
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -104,8 +123,12 @@ export default function Prontuarios() {
             <FileText className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">342</div>
-            <p className="text-xs text-muted-foreground">+12 este mês</p>
+            <div className="text-2xl font-bold text-foreground">
+              {isLoadingProntuarios ? <Loader2 className="w-6 h-6 animate-spin" /> : prontuarios.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isLoadingProntuarios ? "Carregando..." : "Total de prontuários"}
+            </p>
           </CardContent>
         </Card>
 
@@ -117,8 +140,12 @@ export default function Prontuarios() {
             <Clock className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">28</div>
-            <p className="text-xs text-muted-foreground">Em 6 especialidades</p>
+            <div className="text-2xl font-bold text-foreground">
+              {isLoadingHistorico ? <Loader2 className="w-6 h-6 animate-spin" /> : historicoClinico.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {selectedProntuario ? "Histórico do prontuário selecionado" : "Selecione um prontuário"}
+            </p>
           </CardContent>
         </Card>
 
@@ -130,8 +157,12 @@ export default function Prontuarios() {
             <FileText className="w-4 h-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">298</div>
-            <p className="text-xs text-muted-foreground">87% do total</p>
+            <div className="text-2xl font-bold text-foreground">
+              {isLoadingProntuarios ? <Loader2 className="w-6 h-6 animate-spin" /> : prontuarios.filter(p => p.status === "ATIVO").length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isLoadingProntuarios ? "Carregando..." : `${Math.round((prontuarios.filter(p => p.status === "ATIVO").length / Math.max(prontuarios.length, 1)) * 100)}% do total`}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -153,100 +184,137 @@ export default function Prontuarios() {
             />
           </div>
 
-          <div className="grid gap-4">
-            {filteredProntuarios.map((prontuario) => (
-              <Card
-                key={prontuario.id}
-                className="shadow-card hover:shadow-medical transition-all duration-300 cursor-pointer"
-                onClick={() => setSelectedProntuario(prontuario.id)}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold text-foreground">
-                          {prontuario.paciente}
-                        </h3>
-                        <Badge variant={prontuario.status === "active" ? "default" : "secondary"}>
-                          {prontuario.status === "active" ? "Ativo" : "Inativo"}
-                        </Badge>
+          {isLoadingProntuarios ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : errorProntuarios ? (
+            <div className="text-center py-12 text-destructive">
+              Erro ao carregar prontuários. Tente novamente.
+            </div>
+          ) : filteredProntuarios.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {searchTerm ? "Nenhum prontuário encontrado com os filtros aplicados." : "Nenhum prontuário cadastrado."}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredProntuarios.map((prontuario) => (
+                <Card
+                  key={prontuario.id}
+                  className={`shadow-card hover:shadow-medical transition-all duration-300 cursor-pointer ${
+                    selectedProntuario === prontuario.id ? "ring-2 ring-primary" : ""
+                  }`}
+                  onClick={() => setSelectedProntuario(prontuario.id)}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {prontuario.pacienteNome}
+                          </h3>
+                          <Badge variant={prontuario.status === "ATIVO" ? "default" : "secondary"}>
+                            {prontuario.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">CPF: </span>
+                            <span className="text-foreground font-medium">{prontuario.pacienteCpf || "N/A"}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Data Criação: </span>
+                            <span className="text-foreground font-medium">
+                              {new Date(prontuario.dataHoraCriacao).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Responsável: </span>
+                            <span className="text-foreground font-medium">{prontuario.profissionalResponsavel}</span>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">CPF: </span>
-                          <span className="text-foreground font-medium">{prontuario.cpf}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Especialidade: </span>
-                          <span className="text-foreground font-medium">{prontuario.especialidade}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Última Consulta: </span>
-                          <span className="text-foreground font-medium">
-                            {new Date(prontuario.ultimaConsulta).toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Total de Consultas: </span>
-                          <span className="text-foreground font-medium">{prontuario.totalConsultas}</span>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="detalhes" className="space-y-4">
-          {selectedProntuario ? (
+          {isLoadingDetalhes || isLoadingHistorico ? (
+            <Card className="shadow-card">
+              <CardContent className="p-12 text-center">
+                <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Carregando detalhes...</p>
+              </CardContent>
+            </Card>
+          ) : selectedProntuario && prontuarioDetalhes ? (
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle>Evolução Clínica</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Prontuário: {prontuarioDetalhes.id} | Paciente: {(() => {
+                    const pacienteIdNum = parseInt(prontuarioDetalhes.pacienteId);
+                    const paciente = pacientesMap.get(pacienteIdNum);
+                    return paciente?.nome || "Paciente não encontrado";
+                  })()}
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                {mockEvolucoes.map((evolucao) => (
-                  <div
-                    key={evolucao.id}
-                    className="p-4 border border-border rounded-lg space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-foreground">{evolucao.medico}</p>
-                        <p className="text-sm text-muted-foreground">{evolucao.especialidade}</p>
-                      </div>
-                      <Badge variant="outline">
-                        {new Date(evolucao.data).toLocaleDateString('pt-BR')}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="font-medium text-foreground">Queixa: </span>
-                        <span className="text-muted-foreground">{evolucao.queixa}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-foreground">Diagnóstico: </span>
-                        <span className="text-muted-foreground">{evolucao.diagnostico}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-foreground">Conduta: </span>
-                        <span className="text-muted-foreground">{evolucao.conduta}</span>
-                      </div>
-                    </div>
+                {historicoClinico.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum histórico clínico registrado para este prontuário.
                   </div>
-                ))}
+                ) : (
+                  historicoClinico.map((evolucao) => (
+                    <div
+                      key={evolucao.id}
+                      className="p-4 border border-border rounded-lg space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-foreground">{evolucao.profissionalResponsavel}</p>
+                        </div>
+                        <Badge variant="outline">
+                          {new Date(evolucao.dataHoraRegistro).toLocaleDateString('pt-BR')}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="font-medium text-foreground">Sintomas: </span>
+                          <span className="text-muted-foreground">{evolucao.sintomas}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-foreground">Diagnóstico: </span>
+                          <span className="text-muted-foreground">{evolucao.diagnostico}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-foreground">Conduta: </span>
+                          <span className="text-muted-foreground">{evolucao.conduta}</span>
+                        </div>
+                        {evolucao.anexosReferenciados && evolucao.anexosReferenciados.length > 0 && (
+                          <div>
+                            <span className="font-medium text-foreground">Anexos: </span>
+                            <span className="text-muted-foreground">{evolucao.anexosReferenciados.join(", ")}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </CardContent>
             </Card>
           ) : (

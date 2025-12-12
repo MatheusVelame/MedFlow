@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, FileText, Clock, Plus, UserCheck, Edit, Trash2 } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, CreditCard, FileText, Clock, Plus, UserCheck, Edit, Trash2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -18,172 +18,119 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-
-const mockTransacoes = [
-  {
-    id: "1",
-    tipo: "receita",
-    descricao: "Consulta - Maria Silva Santos",
-    valor: 250.00,
-    formaPagamento: "PIX",
-    data: "2024-01-10",
-    status: "pago"
-  },
-  {
-    id: "2",
-    tipo: "receita",
-    descricao: "Consulta - João Pedro Oliveira",
-    valor: 180.00,
-    formaPagamento: "Cartão de Crédito",
-    data: "2024-01-10",
-    status: "pago"
-  },
-  {
-    id: "3",
-    tipo: "receita",
-    descricao: "Exame - Ana Costa Ferreira",
-    valor: 350.00,
-    formaPagamento: "Convênio",
-    data: "2024-01-09",
-    status: "pendente"
-  },
-  {
-    id: "4",
-    tipo: "despesa",
-    descricao: "Material Médico",
-    valor: 1200.00,
-    formaPagamento: "Boleto",
-    data: "2024-01-08",
-    status: "pago"
-  }
-];
-
-const mockConvenios = [
-  { nome: "Unimed", pendente: 15420.00, recebido: 48750.00 },
-  { nome: "Bradesco Saúde", pendente: 8900.00, recebido: 32100.00 },
-  { nome: "Amil", pendente: 12300.00, recebido: 29800.00 }
-];
-
-const mockProfissionais = [
-  { id: "1", nome: "Dr. João Silva", especialidade: "Cardiologia", salario: 8500.00 },
-  { id: "2", nome: "Dra. Ana Santos", especialidade: "Pediatria", salario: 7800.00 },
-  { id: "3", nome: "Dr. Carlos Mendes", especialidade: "Ortopedia", salario: 9200.00 },
-  { id: "4", nome: "Dra. Maria Costa", especialidade: "Dermatologia", salario: 7500.00 },
-];
-
-interface Pagamento {
-  id: string;
-  profissionalId: string;
-  profissionalNome: string;
-  mesReferencia: Date;
-  salarioBase: number;
-  bonus: number;
-  descontos: number;
-  valorLiquido: number;
-  metodoPagamento: string;
-  status: "Pendente" | "Pago";
-  dataPagamento?: string;
-  observacoes?: string;
-}
-
-const mockPagamentos: Pagamento[] = [
-  {
-    id: "1",
-    profissionalId: "1",
-    profissionalNome: "Dr. João Silva",
-    mesReferencia: new Date(2025, 9, 1),
-    salarioBase: 8500.00,
-    bonus: 500.00,
-    descontos: 300.00,
-    valorLiquido: 8700.00,
-    metodoPagamento: "Transferência Bancária",
-    status: "Pago",
-    dataPagamento: "2025-10-05"
-  },
-  {
-    id: "2",
-    profissionalId: "2",
-    profissionalNome: "Dra. Ana Santos",
-    mesReferencia: new Date(2025, 9, 1),
-    salarioBase: 7800.00,
-    bonus: 0,
-    descontos: 250.00,
-    valorLiquido: 7550.00,
-    metodoPagamento: "PIX",
-    status: "Pendente"
-  }
-];
+import { useListarFaturamentos } from "@/api/useFaturamentosApi";
+import { useListarConvenios } from "@/api/useConveniosApi";
+import { useListarFuncionarios } from "@/api/useFuncionariosApi";
+import {
+  useListarFolhasPagamento,
+  useRegistrarFolhaPagamento,
+  useAlterarStatusFolha,
+  useRemoverFolhaPagamento,
+  type FolhaPagamentoResumo,
+  type StatusFolha,
+  type TipoRegistro
+} from "@/api/useFolhaPagamentoApi";
 
 export default function Financeiro() {
-  const { isGestor } = useAuth();
-  const [pagamentos, setPagamentos] = useState<Pagamento[]>(mockPagamentos);
+  const { isGestor, user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPagamento, setEditingPagamento] = useState<Pagamento | null>(null);
-  const [pagamentoToDelete, setPagamentoToDelete] = useState<string | null>(null);
+  const [editingPagamento, setEditingPagamento] = useState<FolhaPagamentoResumo | null>(null);
+  const [pagamentoToDelete, setPagamentoToDelete] = useState<number | null>(null);
+
+  // Queries
+  const { data: faturamentos = [], isLoading: isLoadingFaturamentos } = useListarFaturamentos();
+  const { data: convenios = [], isLoading: isLoadingConvenios } = useListarConvenios();
+  const { data: funcionarios = [], isLoading: isLoadingFuncionarios } = useListarFuncionarios();
+  const { data: folhasPagamento = [], isLoading: isLoadingFolhas } = useListarFolhasPagamento();
+
+  // Mutations
+  const registrarFolhaMutation = useRegistrarFolhaPagamento();
+  const alterarStatusMutation = useAlterarStatusFolha();
+  const removerFolhaMutation = useRemoverFolhaPagamento();
+
+  // Cálculos baseados em dados reais
+  const totalFaturamentoPendente = useMemo(() => 
+    faturamentos
+      .filter(f => f.status === "PENDENTE")
+      .reduce((acc, f) => acc + Number(f.valor), 0),
+    [faturamentos]
+  );
+
+  const totalFaturamentoPago = useMemo(() =>
+    faturamentos
+      .filter(f => f.status === "PAGO")
+      .reduce((acc, f) => acc + Number(f.valor), 0),
+    [faturamentos]
+  );
+
+  const totalFolhaPendente = useMemo(() =>
+    folhasPagamento
+      .filter(f => f.status === "PENDENTE")
+      .reduce((acc, f) => acc + Number(f.valorLiquido), 0),
+    [folhasPagamento]
+  );
+
+  const totalFolhaPago = useMemo(() =>
+    folhasPagamento
+      .filter(f => f.status === "PAGO")
+      .reduce((acc, f) => acc + Number(f.valorLiquido), 0),
+    [folhasPagamento]
+  );
 
   const handleSavePagamento = (data: any) => {
-    const valorLiquido = data.salarioBase + data.bonus - data.descontos;
+    const usuarioResponsavelId = parseInt(user?.id || "1");
     
     if (editingPagamento) {
-      setPagamentos(pagamentos.map(p => 
-        p.id === editingPagamento.id 
-          ? { ...p, ...data, valorLiquido }
-          : p
-      ));
-      toast({
-        title: "Pagamento atualizado",
-        description: "As informações foram atualizadas com sucesso.",
-      });
+      toast.info("Funcionalidade de edição em desenvolvimento");
       setEditingPagamento(null);
+      setIsFormOpen(false);
     } else {
-      const novoPagamento: Pagamento = {
-        ...data,
-        id: `P${Date.now()}`,
-        valorLiquido,
-        status: "Pendente",
-      };
-      setPagamentos([novoPagamento, ...pagamentos]);
-      toast({
-        title: "Pagamento registrado",
-        description: "O pagamento foi cadastrado com sucesso.",
+      registrarFolhaMutation.mutate({
+        funcionarioId: parseInt(data.profissionalId),
+        periodoReferencia: format(data.mesReferencia, "yyyy-MM"),
+        tipoRegistro: "MENSALISTA" as TipoRegistro,
+        salarioBase: data.salarioBase,
+        beneficios: data.bonus || 0,
+        metodoPagamento: data.metodoPagamento,
+        usuarioResponsavelId: usuarioResponsavelId,
+        funcionarioAtivo: true
+      }, {
+        onSuccess: () => {
+          setIsFormOpen(false);
+        }
       });
     }
-    setIsFormOpen(false);
   };
 
-  const handleEdit = (pagamento: Pagamento) => {
+  const handleEdit = (pagamento: FolhaPagamentoResumo) => {
     setEditingPagamento(pagamento);
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setPagamentos(pagamentos.filter(p => p.id !== id));
-    setPagamentoToDelete(null);
-    toast({
-      title: "Pagamento removido",
-      description: "O registro foi removido com sucesso.",
-    });
+  const handleDelete = () => {
+    if (pagamentoToDelete) {
+      const usuarioResponsavelId = parseInt(user?.id || "1");
+      removerFolhaMutation.mutate({
+        id: pagamentoToDelete,
+        usuarioResponsavelId: usuarioResponsavelId
+      }, {
+        onSuccess: () => {
+          setPagamentoToDelete(null);
+        }
+      });
+    }
   };
 
-  const handleMarkAsPaid = (id: string) => {
-    setPagamentos(pagamentos.map(p => 
-      p.id === id 
-        ? { ...p, status: "Pago" as const, dataPagamento: new Date().toISOString() }
-        : p
-    ));
-    toast({
-      title: "Pagamento confirmado",
-      description: "O pagamento foi marcado como pago.",
+  const handleMarkAsPaid = (id: number) => {
+    const usuarioResponsavelId = parseInt(user?.id || "1");
+    alterarStatusMutation.mutate({
+      id: id,
+      payload: {
+        novoStatus: "PAGO" as StatusFolha,
+        usuarioResponsavelId: usuarioResponsavelId
+      }
     });
   };
-
-  const totalFolhaPendente = pagamentos
-    .filter(p => p.status === "Pendente")
-    .reduce((acc, p) => acc + p.valorLiquido, 0);
-
-  const totalFolhaPago = pagamentos
-    .filter(p => p.status === "Pago")
-    .reduce((acc, p) => acc + p.valorLiquido, 0);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -201,39 +148,45 @@ export default function Financeiro() {
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Receita Mensal
+              Receita Paga
             </CardTitle>
             <TrendingUp className="w-4 h-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">R$ 145.750</div>
-            <p className="text-xs text-success mt-1">+18% vs mês anterior</p>
+            <div className="text-2xl font-bold text-foreground">
+              {isLoadingFaturamentos ? <Loader2 className="w-6 h-6 animate-spin" /> : totalFaturamentoPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </div>
+            <p className="text-xs text-success mt-1">Faturamentos pagos</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Despesas Mensais
+              Despesas (Folha)
             </CardTitle>
             <TrendingDown className="w-4 h-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">R$ 42.300</div>
-            <p className="text-xs text-muted-foreground mt-1">29% da receita</p>
+            <div className="text-2xl font-bold text-foreground">
+              {isLoadingFolhas ? <Loader2 className="w-6 h-6 animate-spin" /> : totalFolhaPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Folha de pagamento</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              A Receber (Convênios)
+              A Receber
             </CardTitle>
             <Clock className="w-4 h-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">R$ 36.620</div>
-            <p className="text-xs text-muted-foreground mt-1">3 convênios</p>
+            <div className="text-2xl font-bold text-foreground">
+              {isLoadingFaturamentos ? <Loader2 className="w-6 h-6 animate-spin" /> : totalFaturamentoPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Faturamentos pendentes</p>
           </CardContent>
         </Card>
 
@@ -245,107 +198,108 @@ export default function Financeiro() {
             <DollarSign className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">R$ 103.450</div>
-            <p className="text-xs text-success mt-1">+12% vs mês anterior</p>
+            <div className="text-2xl font-bold text-foreground">
+              {(isLoadingFaturamentos || isLoadingFolhas) ? <Loader2 className="w-6 h-6 animate-spin" /> : (totalFaturamentoPago - totalFolhaPago).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            </div>
+            <p className="text-xs text-success mt-1">Receitas - Despesas</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="transacoes" className="space-y-4">
+      <Tabs defaultValue="faturamentos" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="transacoes">Transações</TabsTrigger>
+          <TabsTrigger value="faturamentos">Faturamentos</TabsTrigger>
           <TabsTrigger value="convenios">Convênios</TabsTrigger>
           <TabsTrigger value="folha">Folha de Pagamento</TabsTrigger>
-          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="transacoes" className="space-y-4">
+        <TabsContent value="faturamentos" className="space-y-4">
           <Card className="shadow-card">
             <CardHeader>
-              <CardTitle>Transações Recentes</CardTitle>
+              <CardTitle>Últimos Faturamentos</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {mockTransacoes.map((transacao) => (
-                  <div
-                    key={transacao.id}
-                    className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-lg ${
-                        transacao.tipo === "receita" 
-                          ? "bg-success/10" 
-                          : "bg-destructive/10"
-                      }`}>
-                        {transacao.tipo === "receita" ? (
-                          <TrendingUp className="w-4 h-4 text-success" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-destructive" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{transacao.descricao}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(transacao.data).toLocaleDateString('pt-BR')}
-                          </span>
-                          <span className="text-sm text-muted-foreground">•</span>
-                          <span className="text-sm text-muted-foreground">
-                            {transacao.formaPagamento}
-                          </span>
+              {isLoadingFaturamentos ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : faturamentos.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  Nenhum faturamento registrado.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {faturamentos.slice(0, 10).map((faturamento) => (
+                    <div
+                      key={faturamento.id}
+                      className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-full bg-success/10">
+                          <TrendingUp className="w-5 h-5 text-success" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{faturamento.descricaoProcedimento}</p>
+                          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                            <span>{new Date(faturamento.dataHoraFaturamento).toLocaleDateString('pt-BR')}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <CreditCard className="w-3 h-3" />
+                              {faturamento.metodoPagamento}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <div className="text-right">
+                        <p className="font-bold text-success">
+                          {Number(faturamento.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                        <Badge 
+                          variant={faturamento.status === "PAGO" ? "default" : "secondary"}
+                          className="mt-1"
+                        >
+                          {faturamento.status === "PAGO" ? "Pago" : faturamento.status === "PENDENTE" ? "Pendente" : faturamento.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-bold ${
-                        transacao.tipo === "receita" 
-                          ? "text-success" 
-                          : "text-destructive"
-                      }`}>
-                        {transacao.tipo === "receita" ? "+" : "-"}
-                        R$ {transacao.valor.toFixed(2)}
-                      </p>
-                      <Badge 
-                        variant={transacao.status === "pago" ? "default" : "secondary"}
-                        className="mt-1"
-                      >
-                        {transacao.status === "pago" ? "Pago" : "Pendente"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="convenios" className="space-y-4">
-          <div className="grid gap-4">
-            {mockConvenios.map((convenio, index) => (
-              <Card key={index} className="shadow-card">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">{convenio.nome}</h3>
-                    <CreditCard className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Valores Recebidos</p>
-                      <p className="text-xl font-bold text-success">
-                        R$ {convenio.recebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
+          {isLoadingConvenios ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : convenios.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Nenhum convênio cadastrado.
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {convenios.map((convenio) => (
+                <Card key={convenio.id} className="shadow-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-foreground">{convenio.nome}</h3>
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-primary" />
+                        <Badge variant={convenio.status === "ATIVO" ? "default" : "secondary"}>
+                          {convenio.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Pendente de Recebimento</p>
-                      <p className="text-xl font-bold text-warning">
-                        R$ {convenio.pendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Código: {convenio.codigoIdentificacao}</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="folha" className="space-y-4">
@@ -397,90 +351,84 @@ export default function Financeiro() {
                 </Card>
               </div>
 
-              <div className="space-y-4">
-                {pagamentos.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Nenhum pagamento registrado ainda.</p>
-                  </div>
-                ) : (
-                  pagamentos.map((pagamento) => (
-                    <Card key={pagamento.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="pt-6">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{pagamento.profissionalNome}</h3>
-                              <Badge variant={pagamento.status === "Pago" ? "default" : "secondary"}>
-                                {pagamento.status}
-                              </Badge>
+              {isLoadingFolhas ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : folhasPagamento.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum pagamento registrado ainda.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {folhasPagamento.map((folha) => {
+                    const funcionario = funcionarios.find(f => f.id === folha.funcionarioId);
+                    return (
+                      <Card key={folha.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-2 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold">{funcionario?.nome || `Funcionário ID: ${folha.funcionarioId}`}</h3>
+                                <Badge variant={folha.status === "PAGO" ? "default" : folha.status === "PENDENTE" ? "secondary" : "destructive"}>
+                                  {folha.status === "PAGO" ? "Pago" : folha.status === "PENDENTE" ? "Pendente" : "Cancelado"}
+                                </Badge>
+                              </div>
+                              
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p><strong>Referência:</strong> {folha.periodoReferencia}</p>
+                                <p><strong>Função:</strong> {funcionario?.funcao || "N/A"}</p>
+                              </div>
                             </div>
                             
-                            <div className="text-sm text-muted-foreground space-y-1">
-                              <p><strong>Referência:</strong> {format(new Date(pagamento.mesReferencia), "MMMM 'de' yyyy")}</p>
-                              <p><strong>Salário Base:</strong> {pagamento.salarioBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                              {pagamento.bonus > 0 && (
-                                <p className="text-success"><strong>Bônus:</strong> +{pagamento.bonus.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                              )}
-                              {pagamento.descontos > 0 && (
-                                <p className="text-destructive"><strong>Descontos:</strong> -{pagamento.descontos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                              )}
-                              <p><strong>Método:</strong> {pagamento.metodoPagamento}</p>
-                              {pagamento.dataPagamento && (
-                                <p><strong>Data do Pagamento:</strong> {new Date(pagamento.dataPagamento).toLocaleDateString('pt-BR')}</p>
-                              )}
-                              {pagamento.observacoes && (
-                                <p><strong>Observações:</strong> {pagamento.observacoes}</p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-col items-end gap-3">
-                            <div className="text-right">
-                              <p className="text-sm text-muted-foreground">Valor Líquido</p>
-                              <p className="text-2xl font-bold text-primary">
-                                {pagamento.valorLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                              </p>
-                            </div>
-
-                            {isGestor && (
-                              <div className="flex flex-col gap-2 w-full">
-                                {pagamento.status === "Pendente" && (
-                                  <Button 
-                                    size="sm" 
-                                    className="w-full"
-                                    onClick={() => handleMarkAsPaid(pagamento.id)}
-                                  >
-                                    <UserCheck className="h-4 w-4 mr-1" />
-                                    Confirmar Pagamento
-                                  </Button>
-                                )}
-                                <div className="flex gap-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    className="flex-1"
-                                    onClick={() => handleEdit(pagamento)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => setPagamentoToDelete(pagamento.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                            <div className="flex flex-col items-end gap-3">
+                              <div className="text-right">
+                                <p className="text-sm text-muted-foreground">Valor Líquido</p>
+                                <p className="text-2xl font-bold text-primary">
+                                  {Number(folha.valorLiquido).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </p>
                               </div>
-                            )}
+
+                              {isGestor && (
+                                <div className="flex flex-col gap-2 w-full">
+                                  {folha.status === "PENDENTE" && (
+                                    <Button 
+                                      size="sm" 
+                                      className="w-full"
+                                      onClick={() => handleMarkAsPaid(folha.id)}
+                                    >
+                                      <UserCheck className="h-4 w-4 mr-1" />
+                                      Confirmar Pagamento
+                                    </Button>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="flex-1"
+                                      onClick={() => handleEdit(folha)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => setPagamentoToDelete(folha.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -508,7 +456,7 @@ export default function Financeiro() {
         onOpenChange={setIsFormOpen}
         onSave={handleSavePagamento}
         initialData={editingPagamento}
-        profissionais={mockProfissionais}
+        profissionais={funcionarios.map(f => ({ id: String(f.id), nome: f.nome, especialidade: f.funcao, salario: 0 }))}
       />
 
       <AlertDialog open={!!pagamentoToDelete} onOpenChange={() => setPagamentoToDelete(null)}>
@@ -521,7 +469,7 @@ export default function Financeiro() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => pagamentoToDelete && handleDelete(pagamentoToDelete)}>
+            <AlertDialogAction onClick={handleDelete}>
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>

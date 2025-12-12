@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Clock, User, Plus, Search, X } from "lucide-react";
+import { Calendar, Clock, User, Plus, Search, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,76 +9,54 @@ import { AppointmentForm } from "@/components/AppointmentForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-
-const initialAppointments = [
-  {
-    id: 1,
-    patient: "Maria Silva",
-    doctor: "Dr. João Santos",
-    date: "2024-09-01",
-    time: "09:00",
-    type: "Consulta" as const,
-    status: "confirmado" as const,
-    specialty: "Cardiologia"
-  },
-  {
-    id: 2,
-    patient: "Pedro Costa",
-    doctor: "Dra. Ana Lima",
-    date: "2024-09-01",
-    time: "09:30",
-    type: "Retorno" as const,
-    status: "agendado" as const,
-    specialty: "Ortopedia"
-  },
-  {
-    id: 3,
-    patient: "João Santos",
-    doctor: "Dr. Carlos Mendes",
-    date: "2024-09-01",
-    time: "10:00",
-    type: "Exame" as const,
-    status: "em-atendimento" as const,
-    specialty: "Neurologia"
-  },
-] as Array<{
-  id: number;
-  patient: string;
-  doctor: string;
-  date: string;
-  time: string;
-  type: "Consulta" | "Retorno" | "Exame";
-  status: "confirmado" | "agendado" | "em-atendimento" | "concluido" | "cancelado";
-  specialty: string;
-}>;
+import {
+  useListarConsultas,
+  useAgendarConsulta,
+  useMudarStatusConsulta,
+  mapStatusToFrontend,
+  mapStatusToBackend,
+  type ConsultaResumo,
+  type StatusConsulta
+} from "@/api/useConsultasApi";
 
 export default function Agendamentos() {
-  const { isGestor } = useAuth();
+  const { isGestor, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [appointments, setAppointments] = useState(initialAppointments);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<typeof appointments[0] | undefined>();
+  const [editingAppointment, setEditingAppointment] = useState<ConsultaResumo | undefined>();
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState<number | null>(null);
 
+  // Queries e Mutations
+  const { data: consultas = [], isLoading, error } = useListarConsultas();
+  const agendarMutation = useAgendarConsulta();
+  const mudarStatusMutation = useMudarStatusConsulta();
+
   const handleSaveAppointment = (data: any) => {
+    const usuarioId = parseInt(user?.id || "1");
+    
     if (editingAppointment) {
-      setAppointments(appointments.map(a => 
-        a.id === editingAppointment.id 
-          ? { ...a, ...data }
-          : a
-      ));
-      setEditingAppointment(undefined);
+      // Atualizar consulta (remarcar)
+      toast.info("Funcionalidade de remarcar em desenvolvimento");
     } else {
-      const newAppointment = {
-        ...data,
-        id: Math.max(...appointments.map(a => a.id)) + 1,
-      };
-      setAppointments([...appointments, newAppointment]);
+      // Agendar nova consulta
+      const dataHoraISO = `${data.date}T${data.time}:00`;
+      agendarMutation.mutate({
+        dataHora: dataHoraISO,
+        descricao: data.type || "Consulta",
+        pacienteId: data.patientId,
+        medicoId: data.doctorId,
+        usuarioId: usuarioId
+      }, {
+        onSuccess: () => {
+          setIsFormOpen(false);
+          setEditingAppointment(undefined);
+        }
+      });
     }
   };
 
-  const handleEditAppointment = (appointment: typeof appointments[0]) => {
+  const handleEditAppointment = (appointment: ConsultaResumo) => {
     setEditingAppointment(appointment);
     setIsFormOpen(true);
   };
@@ -95,23 +73,29 @@ export default function Agendamentos() {
 
   const confirmCancelAppointment = () => {
     if (appointmentToCancel) {
-      setAppointments(appointments.map(a => 
-        a.id === appointmentToCancel 
-          ? { ...a, status: "cancelado" as const }
-          : a
-      ));
-      toast.success("Agendamento cancelado com sucesso!");
+      const usuarioId = parseInt(user?.id || "1");
+      mudarStatusMutation.mutate({
+        id: appointmentToCancel,
+        payload: {
+          novoStatus: "CANCELADA" as StatusConsulta,
+          usuarioId: usuarioId
+        }
+      }, {
+        onSuccess: () => {
+          setCancelDialogOpen(false);
+          setAppointmentToCancel(null);
+        }
+      });
     }
-    setCancelDialogOpen(false);
-    setAppointmentToCancel(null);
   };
 
-  const filteredAppointments = appointments.filter(appointment =>
-    appointment.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    appointment.doctor.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAppointments = consultas.filter(consulta =>
+    consulta.nomePaciente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    consulta.nomeMedico.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: StatusConsulta) => {
+    const statusFrontend = mapStatusToFrontend(status);
     const variants = {
       confirmado: "default",
       agendado: "secondary",
@@ -128,12 +112,20 @@ export default function Agendamentos() {
       cancelado: ""
     };
 
+    const labels: Record<string, string> = {
+      confirmado: "Confirmado",
+      agendado: "Agendado",
+      "em-atendimento": "Em Atendimento",
+      concluido: "Concluído",
+      cancelado: "Cancelado"
+    };
+
     return (
       <Badge 
-        variant={variants[status as keyof typeof variants] || "secondary"}
-        className={colors[status as keyof typeof colors] || ""}
+        variant={variants[statusFrontend as keyof typeof variants] || "secondary"}
+        className={colors[statusFrontend as keyof typeof colors] || ""}
       >
-        {status.replace("-", " ")}
+        {labels[statusFrontend] || statusFrontend}
       </Badge>
     );
   };
@@ -180,61 +172,73 @@ export default function Agendamentos() {
         </TabsList>
 
         <TabsContent value="hoje" className="space-y-4">
-          <div className="grid gap-4">
-            {filteredAppointments.map((appointment) => (
-              <Card key={appointment.id} className="hover:shadow-medical transition-all duration-300">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-primary">{appointment.time}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(appointment.date).toLocaleDateString('pt-BR', { 
-                            day: '2-digit', 
-                            month: 'short' 
-                          })}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-destructive">
+              Erro ao carregar agendamentos. Tente novamente.
+            </div>
+          ) : filteredAppointments.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {searchTerm ? "Nenhum agendamento encontrado com os filtros aplicados." : "Nenhum agendamento cadastrado."}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredAppointments.map((consulta) => {
+                const dataHora = new Date(consulta.dataHora);
+                const time = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const date = dataHora.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                
+                return (
+                  <Card key={consulta.id} className="hover:shadow-medical transition-all duration-300">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <div className="text-lg font-bold text-primary">{time}</div>
+                            <div className="text-xs text-muted-foreground">{date}</div>
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <User className="w-4 h-4 text-muted-foreground" />
+                              <span className="font-medium">{consulta.nomePaciente}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {consulta.nomeMedico}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{appointment.patient}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {appointment.doctor} • {appointment.specialty}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {appointment.type}
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                      {getStatusBadge(appointment.status)}
-                      {!isGestor && (
-                        <>
-                          <Button variant="outline" size="sm" onClick={() => handleEditAppointment(appointment)}>
-                            Remarcar
-                          </Button>
-                          {appointment.status !== "cancelado" && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleCancelAppointment(appointment.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
+                        <div className="flex items-center gap-3">
+                          {getStatusBadge(consulta.status)}
+                          {!isGestor && (
+                            <>
+                              <Button variant="outline" size="sm" onClick={() => handleEditAppointment(consulta)}>
+                                Remarcar
+                              </Button>
+                              {consulta.status !== "CANCELADA" && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => handleCancelAppointment(consulta.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </>
                           )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="semana">

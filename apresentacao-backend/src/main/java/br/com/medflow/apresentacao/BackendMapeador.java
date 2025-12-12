@@ -52,15 +52,6 @@ public class BackendMapeador extends ModelMapper {
 			}
 		});
 	
-
-        // Converte Integer (vindo do Formulário) para o Value Object UsuarioResponsavelId (Medicamento)
-        addConverter(new AbstractConverter<Integer, UsuarioResponsavelId>() {
-            @Override
-            protected UsuarioResponsavelId convert(Integer source) {
-                return new UsuarioResponsavelId(source);
-            }
-        });
-	
         
 
         // ===== CONVERSORES PARA TIPO EXAME =====

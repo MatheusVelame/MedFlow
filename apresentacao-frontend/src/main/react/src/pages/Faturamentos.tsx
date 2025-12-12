@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, DollarSign, Clock, CheckCircle, Edit, Trash2, Filter } from "lucide-react";
+import { FileText, DollarSign, Clock, CheckCircle, Edit, Trash2, Filter, Loader2 } from "lucide-react";
 import { FaturamentoForm } from "@/components/FaturamentoForm";
 import {
   Select,
@@ -24,127 +24,126 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Faturamento {
-  id: string;
-  pacienteNome: string;
-  pacienteId: string;
-  procedimentoTipo: "consulta" | "exame";
-  procedimentoDescricao: string;
-  valor: number;
-  metodoPagamento: string;
-  dataHora: string;
-  status: "Pendente" | "Pago" | "Cancelado";
-  usuarioResponsavel: string;
-  observacoes?: string;
-  justificativaValor?: string;
-}
-
-const mockFaturamentos: Faturamento[] = [
-  {
-    id: "1",
-    pacienteNome: "Maria Silva",
-    pacienteId: "P001",
-    procedimentoTipo: "consulta",
-    procedimentoDescricao: "Consulta Cardiologia",
-    valor: 250.00,
-    metodoPagamento: "Cartão de Crédito",
-    dataHora: "2025-10-15T10:30:00",
-    status: "Pago",
-    usuarioResponsavel: "João Atendente"
-  },
-  {
-    id: "2",
-    pacienteNome: "Carlos Santos",
-    pacienteId: "P002",
-    procedimentoTipo: "exame",
-    procedimentoDescricao: "Raio-X Tórax",
-    valor: 180.00,
-    metodoPagamento: "Convênio Unimed",
-    dataHora: "2025-10-15T11:00:00",
-    status: "Pendente",
-    usuarioResponsavel: "Ana Financeiro"
-  }
-];
+import {
+  useListarFaturamentos,
+  useFaturamentosPorStatus,
+  useRegistrarFaturamento,
+  useMarcarComoPago,
+  useCancelarFaturamento,
+  mapStatusToDisplay,
+  mapTipoProcedimentoToDisplay,
+  type FaturamentoResumo,
+  type RegistrarFaturamentoPayload,
+} from "@/api/useFaturamentosApi";
+import { useListarPacientes } from "@/api/usePacientesApi";
 
 export default function Faturamentos() {
   const { isGestor } = useAuth();
-  const [faturamentos, setFaturamentos] = useState<Faturamento[]>(mockFaturamentos);
-  const [editingFaturamento, setEditingFaturamento] = useState<Faturamento | null>(null);
-  const [faturamentoToDelete, setFaturamentoToDelete] = useState<string | null>(null);
+  const [editingFaturamento, setEditingFaturamento] = useState<FaturamentoResumo | null>(null);
+  const [faturamentoToCancelar, setFaturamentoToCancelar] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("todos");
 
-  const handleNovoFaturamento = (novoFaturamento: Omit<Faturamento, "id" | "dataHora" | "status" | "usuarioResponsavel">) => {
-    if (editingFaturamento) {
-      setFaturamentos(faturamentos.map(f => 
-        f.id === editingFaturamento.id 
-          ? { ...f, ...novoFaturamento }
-          : f
-      ));
-      toast({
-        title: "Faturamento atualizado",
-        description: "As informações foram atualizadas com sucesso.",
-      });
-      setEditingFaturamento(null);
-    } else {
-      const faturamento: Faturamento = {
-        ...novoFaturamento,
-        id: `F${Date.now()}`,
-        dataHora: new Date().toISOString(),
-        status: "Pendente",
-        usuarioResponsavel: "Usuário Atual"
+  // Queries
+  const { data: faturamentos = [], isLoading: isLoadingFaturamentos, error: errorFaturamentos } = useListarFaturamentos();
+  const { data: faturamentosPorStatus = [], isLoading: isLoadingPorStatus } = useFaturamentosPorStatus(
+    statusFilter !== "todos" ? statusFilter : null
+  );
+  const { data: pacientes = [] } = useListarPacientes();
+
+  // Mutations
+  const registrarFaturamentoMutation = useRegistrarFaturamento();
+  const marcarComoPagoMutation = useMarcarComoPago();
+  const cancelarFaturamentoMutation = useCancelarFaturamento();
+
+  // Mapear pacientes para lookup rápido
+  const pacientesMap = useMemo(() => {
+    const map = new Map<number, { nome: string }>();
+    pacientes.forEach(p => {
+      map.set(p.id, { nome: p.name });
+    });
+    return map;
+  }, [pacientes]);
+
+  // Enriquecer faturamentos com dados do paciente
+  const faturamentosEnriquecidos = useMemo(() => {
+    const lista = statusFilter === "todos" ? faturamentos : faturamentosPorStatus;
+    return lista.map(faturamento => {
+      const pacienteIdNum = parseInt(faturamento.pacienteId);
+      const paciente = pacientesMap.get(pacienteIdNum);
+      return {
+        ...faturamento,
+        pacienteNome: paciente?.nome || "Paciente não encontrado",
       };
-      setFaturamentos([faturamento, ...faturamentos]);
-      toast({
-        title: "Faturamento registrado",
-        description: "O faturamento foi cadastrado com sucesso.",
-      });
-    }
+    });
+  }, [faturamentos, faturamentosPorStatus, statusFilter, pacientesMap]);
+
+  const handleNovoFaturamento = (data: any) => {
+    const { user } = useAuth();
+    const payload: RegistrarFaturamentoPayload = {
+      pacienteId: data.pacienteId,
+      tipoProcedimento: data.procedimentoTipo.toUpperCase() as "CONSULTA" | "EXAME",
+      descricaoProcedimento: data.procedimentoDescricao,
+      valor: data.valor,
+      metodoPagamento: data.metodoPagamento.toUpperCase().replace(/\s+/g, "_"),
+      usuarioResponsavel: user?.id || "user-123",
+      observacoes: data.observacoes,
+    };
+
+    registrarFaturamentoMutation.mutate(payload, {
+      onSuccess: () => {
+        setEditingFaturamento(null);
+      }
+    });
   };
 
-  const handleEdit = (faturamento: Faturamento) => {
+  const handleEdit = (faturamento: FaturamentoResumo) => {
     setEditingFaturamento(faturamento);
   };
 
-  const handleDelete = (id: string) => {
-    setFaturamentos(faturamentos.filter(f => f.id !== id));
-    setFaturamentoToDelete(null);
-    toast({
-      title: "Faturamento removido",
-      description: "O faturamento foi removido com sucesso.",
+  const handleCancelar = (id: string) => {
+    const { user } = useAuth();
+    cancelarFaturamentoMutation.mutate({
+      id,
+      payload: {
+        motivo: "Cancelamento solicitado pelo usuário",
+        usuarioResponsavel: user?.id || "user-123",
+      }
     });
+    setFaturamentoToCancelar(null);
   };
 
-  const handleStatusChange = (id: string, newStatus: "Pendente" | "Pago" | "Cancelado") => {
-    setFaturamentos(faturamentos.map(f => 
-      f.id === id ? { ...f, status: newStatus } : f
-    ));
-    toast({
-      title: "Status atualizado",
-      description: `Faturamento marcado como ${newStatus}.`,
-    });
+  const handleStatusChange = (id: string, newStatus: string) => {
+    const { user } = useAuth();
+    if (newStatus === "PAGO") {
+      marcarComoPagoMutation.mutate({
+        id,
+        payload: {
+          usuarioResponsavel: user?.id || "user-123",
+        }
+      });
+    } else if (newStatus === "CANCELADO") {
+      setFaturamentoToCancelar(id);
+    }
   };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      Pendente: "secondary",
-      Pago: "default",
-      Cancelado: "destructive"
+      PENDENTE: "secondary",
+      PAGO: "default",
+      CANCELADO: "destructive",
+      INVALIDO: "destructive",
+      REMOVIDO: "secondary"
     };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+    return <Badge variant={variants[status] || "default"}>{mapStatusToDisplay(status)}</Badge>;
   };
 
-  const filteredFaturamentos = statusFilter === "todos" 
-    ? faturamentos 
-    : faturamentos.filter(f => f.status === statusFilter);
-
   const totalPendente = faturamentos
-    .filter(f => f.status === "Pendente")
-    .reduce((acc, f) => acc + f.valor, 0);
+    .filter(f => f.status === "PENDENTE")
+    .reduce((acc, f) => acc + Number(f.valor), 0);
 
   const totalPago = faturamentos
-    .filter(f => f.status === "Pago")
-    .reduce((acc, f) => acc + f.valor, 0);
+    .filter(f => f.status === "PAGO")
+    .reduce((acc, f) => acc + Number(f.valor), 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -163,7 +162,11 @@ export default function Faturamentos() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-warning">
-              {totalPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {isLoadingFaturamentos ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                totalPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Aguardando pagamento</p>
           </CardContent>
@@ -176,7 +179,11 @@ export default function Faturamentos() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {totalPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {isLoadingFaturamentos ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                totalPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Pagamentos confirmados</p>
           </CardContent>
@@ -188,7 +195,13 @@ export default function Faturamentos() {
             <FileText className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{faturamentos.length}</div>
+            <div className="text-2xl font-bold">
+              {isLoadingFaturamentos ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                faturamentos.length
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Registros no sistema</p>
           </CardContent>
         </Card>
@@ -213,7 +226,15 @@ export default function Faturamentos() {
             <CardContent>
               <FaturamentoForm 
                 onSubmit={handleNovoFaturamento} 
-                initialData={editingFaturamento}
+                initialData={editingFaturamento ? {
+                  pacienteId: editingFaturamento.pacienteId,
+                  pacienteNome: faturamentosEnriquecidos.find(f => f.id === editingFaturamento.id)?.pacienteNome || "",
+                  procedimentoTipo: editingFaturamento.tipoProcedimento.toLowerCase() as "consulta" | "exame",
+                  procedimentoDescricao: editingFaturamento.descricaoProcedimento,
+                  valor: Number(editingFaturamento.valor),
+                  metodoPagamento: editingFaturamento.metodoPagamento,
+                  observacoes: ""
+                } : undefined}
                 onCancel={() => setEditingFaturamento(null)}
               />
             </CardContent>
@@ -238,9 +259,9 @@ export default function Faturamentos() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                      <SelectItem value="Pago">Pago</SelectItem>
-                      <SelectItem value="Cancelado">Cancelado</SelectItem>
+                      <SelectItem value="PENDENTE">Pendente</SelectItem>
+                      <SelectItem value="PAGO">Pago</SelectItem>
+                      <SelectItem value="CANCELADO">Cancelado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -248,56 +269,60 @@ export default function Faturamentos() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filteredFaturamentos.length === 0 ? (
+                {isLoadingFaturamentos || isLoadingPorStatus ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : errorFaturamentos ? (
+                  <div className="text-center py-12 text-destructive">
+                    Erro ao carregar faturamentos. Tente novamente.
+                  </div>
+                ) : faturamentosEnriquecidos.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Nenhum faturamento encontrado com este filtro.
                   </div>
                 ) : (
-                  filteredFaturamentos.map((faturamento) => (
+                  faturamentosEnriquecidos.map((faturamento) => (
                     <Card key={faturamento.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="pt-6">
                         <div className="flex items-start justify-between">
                           <div className="space-y-2 flex-1">
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold">{faturamento.pacienteNome}</h3>
-                              <Badge variant="outline">{faturamento.pacienteId}</Badge>
+                              {getStatusBadge(faturamento.status)}
                             </div>
                             
                             <div className="text-sm text-muted-foreground space-y-1">
-                              <p><strong>Procedimento:</strong> {faturamento.procedimentoDescricao}</p>
-                              <p><strong>Tipo:</strong> {faturamento.procedimentoTipo === "consulta" ? "Consulta" : "Exame"}</p>
+                              <p><strong>Procedimento:</strong> {faturamento.descricaoProcedimento}</p>
+                              <p><strong>Tipo:</strong> {mapTipoProcedimentoToDisplay(faturamento.tipoProcedimento)}</p>
                               <p><strong>Pagamento:</strong> {faturamento.metodoPagamento}</p>
-                              <p><strong>Data:</strong> {new Date(faturamento.dataHora).toLocaleString('pt-BR')}</p>
-                              <p><strong>Responsável:</strong> {faturamento.usuarioResponsavel}</p>
-                              {faturamento.observacoes && (
-                                <p><strong>Observações:</strong> {faturamento.observacoes}</p>
-                              )}
-                              {faturamento.justificativaValor && (
-                                <p className="text-warning"><strong>Justificativa:</strong> {faturamento.justificativaValor}</p>
-                              )}
+                              <p><strong>Data:</strong> {new Date(faturamento.dataHoraFaturamento).toLocaleString('pt-BR')}</p>
                             </div>
                           </div>
                           
                           <div className="flex flex-col items-end gap-3">
                             <div className="text-2xl font-bold text-primary">
-                              {faturamento.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              {Number(faturamento.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </div>
                             
-                            <Select 
-                              value={faturamento.status} 
-                              onValueChange={(value: any) => handleStatusChange(faturamento.id, value)}
-                            >
-                              <SelectTrigger className="w-[130px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Pendente">Pendente</SelectItem>
-                                <SelectItem value="Pago">Pago</SelectItem>
-                                <SelectItem value="Cancelado">Cancelado</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            {faturamento.status === "PENDENTE" && (
+                              <Select 
+                                value={faturamento.status} 
+                                onValueChange={(value: string) => handleStatusChange(faturamento.id, value)}
+                                disabled={marcarComoPagoMutation.isPending || cancelarFaturamentoMutation.isPending}
+                              >
+                                <SelectTrigger className="w-[130px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="PENDENTE">Pendente</SelectItem>
+                                  <SelectItem value="PAGO">Pago</SelectItem>
+                                  <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
 
-                            {isGestor && (
+                            {isGestor && faturamento.status === "PENDENTE" && (
                               <div className="flex gap-2">
                                 <Button 
                                   variant="outline" 
@@ -309,7 +334,7 @@ export default function Faturamentos() {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => setFaturamentoToDelete(faturamento.id)}
+                                  onClick={() => setFaturamentoToCancelar(faturamento.id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -327,18 +352,18 @@ export default function Faturamentos() {
         </TabsContent>
       </Tabs>
 
-      <AlertDialog open={!!faturamentoToDelete} onOpenChange={() => setFaturamentoToDelete(null)}>
+      <AlertDialog open={!!faturamentoToCancelar} onOpenChange={() => setFaturamentoToCancelar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar cancelamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover este faturamento? Esta ação não pode ser desfeita.
+              Tem certeza que deseja cancelar este faturamento? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => faturamentoToDelete && handleDelete(faturamentoToDelete)}>
-              Confirmar
+            <AlertDialogAction onClick={() => faturamentoToCancelar && handleCancelar(faturamentoToCancelar)}>
+              Confirmar Cancelamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
