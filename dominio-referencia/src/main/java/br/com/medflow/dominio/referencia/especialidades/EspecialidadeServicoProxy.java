@@ -1,5 +1,8 @@
 package br.com.medflow.dominio.referencia.especialidades;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * Proxy: Intercepta as chamadas para adicionar comportamento (ex: Log/Auditoria)
  * antes de repassar para a implementação real.
@@ -63,5 +66,25 @@ public class EspecialidadeServicoProxy implements IEspecialidadeServico {
     public void atribuirMedico(String nomeMedico, String nomeEspecialidade) {
         log("ATRIBUIR_MEDICO", "Médico: " + nomeMedico + " -> Especialidade: " + nomeEspecialidade);
         servicoReal.atribuirMedico(nomeMedico, nomeEspecialidade);
+    }
+
+    // ========== MÉTODOS ADICIONAIS PARA A CAMADA DE APRESENTAÇÃO ==========
+
+    @Override
+    public List<Especialidade> listarTodas() {
+        log("LISTAR_TODAS", "Solicitação de listagem de especialidades");
+        return servicoReal.listarTodas();
+    }
+
+    @Override
+    public Optional<Especialidade> buscarPorNome(String nome) {
+        log("BUSCAR_POR_NOME", "Solicitação de busca pelo nome: " + nome);
+        return servicoReal.buscarPorNome(nome);
+    }
+
+    @Override
+    public Especialidade criar(String nome, String descricao) {
+        log("CRIAR", "Tentativa de criar especialidade: " + nome);
+        return servicoReal.criar(nome, descricao);
     }
 }

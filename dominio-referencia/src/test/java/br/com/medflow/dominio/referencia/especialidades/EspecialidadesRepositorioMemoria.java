@@ -3,6 +3,8 @@ package br.com.medflow.dominio.referencia.especialidades;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Repositório em Memória para uso exclusivo em testes BDD (Cucumber).
@@ -32,6 +34,11 @@ public class EspecialidadesRepositorioMemoria implements EspecialidadeRepositori
     @Override
     public void remover(Especialidade especialidade) {
         especialidades.remove(especialidade.getNome());
+    }
+
+    @Override
+    public List<Especialidade> buscarTodos() {
+        return new ArrayList<>(especialidades.values());
     }
 
     /**

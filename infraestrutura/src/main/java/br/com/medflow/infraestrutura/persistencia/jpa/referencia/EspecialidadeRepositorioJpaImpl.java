@@ -83,4 +83,6 @@ public class EspecialidadeRepositorioJpaImpl
         jpaRepository.findByNome(especialidade.getNome())
                 .ifPresent(jpaRepository::delete);
     }
+
+    // NOTE: Não sobrescrevemos buscarTodos() pois ele é 'final' no template e já fornece a implementação.
 }

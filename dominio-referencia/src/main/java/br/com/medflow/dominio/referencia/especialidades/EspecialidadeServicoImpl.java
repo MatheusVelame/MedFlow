@@ -1,5 +1,6 @@
 package br.com.medflow.dominio.referencia.especialidades;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -109,5 +110,22 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
 
         especialidade.registrarVinculoHistorico();
         especialidadeRepositorio.salvar(especialidade);
+    }
+
+    // ========== MÉTODOS PARA A CAMADA DE APRESENTAÇÃO ==========
+
+    @Override
+    public List<Especialidade> listarTodas() {
+        return especialidadeRepositorio.buscarTodos();
+    }
+
+    @Override
+    public Optional<Especialidade> buscarPorNome(String nome) {
+        return especialidadeRepositorio.buscarPorNome(nome);
+    }
+
+    @Override
+    public Especialidade criar(String nome, String descricao) {
+        return cadastrar(nome, descricao);
     }
 }
