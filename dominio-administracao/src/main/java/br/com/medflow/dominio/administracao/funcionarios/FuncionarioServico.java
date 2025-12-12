@@ -54,6 +54,36 @@ public class FuncionarioServico {
 		repositorio.salvar(funcionario);
 	}
 	
+	public Funcionario atualizarCompleto(
+			FuncionarioId id,
+			String nome, 
+			String funcao, 
+			String contato,
+			StatusFuncionario status,
+			UsuarioResponsavelId responsavelId, 
+			boolean temViculosAtivosFuncao,
+			boolean temAtividadesFuturas) {
+		
+		var funcionario = obter(id);
+		
+		// Valida se o nome e contato não estão duplicados
+		var existente = repositorio.obterPorNomeEContato(nome, contato);
+		if (existente.isPresent() && !existente.get().getId().equals(id)) {
+			throw new IllegalArgumentException("Já existe um funcionário com este contato.");
+		}
+		
+		// Atualiza os dados cadastrais
+		funcionario.atualizarDados(nome, funcao, contato, responsavelId, temViculosAtivosFuncao);
+		
+		// Atualiza o status se for diferente
+		if (funcionario.getStatus() != status) {
+			funcionario.mudarStatus(status, responsavelId, temAtividadesFuturas);
+		}
+		
+		repositorio.salvar(funcionario);
+		return funcionario;
+	}
+	
 	public void excluir(FuncionarioId id, UsuarioResponsavelId responsavelId, boolean possuiHistorico) {
 	    var funcionario = obter(id);
 

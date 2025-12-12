@@ -103,6 +103,31 @@ public class FuncionarioControlador {
             temVinculosAtivosFuncao
         );
     }
+    
+    // 2b. Comando: atualizarCompleto (PUT - atualiza tudo incluindo status)
+    @Transactional
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void atualizarCompleto(
+            @PathVariable Integer id, 
+            @Valid @RequestBody FuncionarioAtualizacaoCompletaFormulario formulario,
+            @RequestParam(defaultValue = "false") boolean temVinculosAtivosFuncao,
+            @RequestParam(defaultValue = "false") boolean temAtividadesFuturas) {
+        
+        var funcionarioId = new FuncionarioId(id);
+        var responsavelId = new UsuarioResponsavelId(formulario.getResponsavelId());
+        
+        servicoDominio.atualizarCompleto(
+            funcionarioId, 
+            formulario.getNome(),
+            formulario.getFuncao(),
+            formulario.getContato(),
+            formulario.getStatus(),
+            responsavelId,
+            temVinculosAtivosFuncao,
+            temAtividadesFuturas
+        );
+    }
 
     // 3. Comando: mudarStatus
     @Transactional
