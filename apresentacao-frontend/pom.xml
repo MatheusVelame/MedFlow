@@ -47,7 +47,7 @@
 						<goals>
 							<goal>npm</goal>
 						</goals>
-						<phase>compile</phase>
+						<phase>process-resources</phase> 
 						<configuration>
 							<arguments>run build</arguments>
 						</configuration>

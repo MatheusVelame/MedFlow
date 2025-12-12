@@ -1,5 +1,3 @@
-// Localização: dominio-catalogo/src/main/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoServico.java (Atualizado)
-
 package br.com.medflow.dominio.catalogo.medicamentos;
 
 import static org.apache.commons.lang3.Validate.notNull;
@@ -71,9 +69,24 @@ public class MedicamentoServico {
         Medicamento medicamento = repositorio.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Medicamento não encontrado."));
         
-        medicamento.solicitarRevisaoContraindicacoes(novaContraindicacao, responsavelId);
+        try {
+            // Tenta executar o comportamento, que LANÇA a exceção
+            medicamento.solicitarRevisaoContraindicacoes(novaContraindicacao, responsavelId);
+        } catch (RevisaoPendenteException e) {
+            // CORREÇÃO: A exceção foi lançada, mas o estado interno do AR foi atualizado.
+            // Precisamos salvar essas mudanças (a Revisão Pendente e a entrada de Histórico)
+            // antes de re-lançar a exceção.
+            repositorio.salvar(medicamento); 
+            
+            // Re-lança a exceção para que o Controller possa capturá-la 
+            // e evitar o rollback (devido ao noRollbackFor).
+            throw e;
+        }
         
-        repositorio.salvar(medicamento); // Salva o estado PENDENTE
+        // Se a lógica interna do AR fosse alterada para não lançar a exceção, 
+        // mas apenas retornar um objeto (por exemplo), a chamada salvar seria aqui.
+        // Mas, mantendo a regra de negócio do AR: 
+        // essa linha não será alcançada, o que está correto pelo design do AR.
     }
     
     /**

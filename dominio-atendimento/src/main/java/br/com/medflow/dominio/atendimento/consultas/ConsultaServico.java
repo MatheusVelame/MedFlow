@@ -24,13 +24,17 @@ public class ConsultaServico {
      * @param descricao Descrição da consulta.
      * @param pacienteId ID do Paciente (usado na simulação).
      * @param medicoId ID do Médico (usado na simulação).
+     * @param usuarioId ID do usuário responsável pela ação (NOVO).
      */
-    public void agendar(LocalDateTime dataHora, String descricao, Integer pacienteId, Integer medicoId) {
+    public void agendar(LocalDateTime dataHora, String descricao, Integer pacienteId, Integer medicoId, Integer usuarioId) {
         // 1. Validar regras de agendamento (Ex: verificar disponibilidade do médico)
         // Lógica de domínio aqui...
         
-        // 2. Criar a Aggregate Root
-        var novaConsulta = new Consulta(dataHora, descricao, pacienteId, medicoId);
+        // Cria o VO para rastreabilidade (Responsável)
+        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(usuarioId);
+        
+        // 2. Criar a Aggregate Root (Passando o Responsável, conforme nova assinatura)
+        var novaConsulta = new Consulta(dataHora, descricao, pacienteId, medicoId, responsavelId);
         
         // 3. Persistir usando a Porta (Interface) do repositório
         repositorio.salvar(novaConsulta);
@@ -40,14 +44,18 @@ public class ConsultaServico {
      * Comando: Mudar o status de uma consulta existente.
      * @param id ID da consulta a ser alterada.
      * @param novoStatus Novo status desejado.
+     * @param usuarioId ID do usuário responsável pela ação (NOVO).
      */
-    public void mudarStatus(ConsultaId id, StatusConsulta novoStatus) {
+    public void mudarStatus(ConsultaId id, StatusConsulta novoStatus, Integer usuarioId) {
         // 1. Buscar o Aggregate Root (garantindo o limite transacional)
         Consulta consulta = repositorio.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException("Consulta não encontrada."));
         
-        // 2. Executar o comportamento (regra de negócio) na própria Aggregate Root
-        consulta.mudarStatus(novoStatus);
+        // Cria o VO para rastreabilidade (Responsável)
+        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(usuarioId);
+        
+        // 2. Executar o comportamento (regra de negócio) na própria Aggregate Root (Passando o Responsável)
+        consulta.mudarStatus(novoStatus, responsavelId);
         
         // 3. Persistir o estado alterado
         repositorio.salvar(consulta);

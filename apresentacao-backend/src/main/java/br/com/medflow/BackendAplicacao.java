@@ -168,7 +168,6 @@ public class BackendAplicacao {
         return new CancelarFaturamentoUseCase(faturamentoServico);
     }
 
-
 	// =====================================================================
 	// Configuração de Convenios com Observer
 	// =====================================================================
@@ -197,41 +196,37 @@ public class BackendAplicacao {
 		return new ConvenioServicoAplicacao(repositorio);
 	}
 
+	// Configuração do Serviço de Domínio de Folha de Pagamento
+	@Bean
+	public FolhaPagamentoServico folhaPagamentoServico(FolhaPagamentoRepositorio repositorio) {
+		return new FolhaPagamentoServico(repositorio);
+	}
+
+	// Configuração do Serviço de Aplicação de Folha de Pagamento
+	@Bean
+	public FolhaPagamentoServicoAplicacao folhaPagamentoServicoAplicacao(
+			FolhaPagamentoServico servicoDominio,
+			FolhaPagamentoRepositorioAplicacao repositorioAplicacao) {
+		return new FolhaPagamentoServicoAplicacao(servicoDominio, repositorioAplicacao);
+	}
+
 
     // [Outros Beans de outros Contextos e Eventos seriam configurados aqui]
 
 	// =====================================================================
     // NOVAS CONFIGURAÇÕES DE BEANS PARA TIPOS DE EXAMES
     // =====================================================================
-    
+
     // Configuração do Serviço de Domínio TipoExame (Commands/Writes)
     @Bean
     public TipoExameServico tipoExameServico(TipoExameRepositorio repositorio) {
         return new TipoExameServico(repositorio);
     }
-    
+
     // Configuração do Serviço de Aplicação TipoExame (Queries/Reads)
     @Bean
     public TipoExameServicoAplicacao tipoExameServicoAplicacao(TipoExameRepositorioAplicacao repositorio) {
         return new TipoExameServicoAplicacao(repositorio);
-    }
-
-	// =====================================================================
-    // CONFIGURAÇÕES DE BEANS PARA FOLHA DE PAGAMENTO
-    // =====================================================================
-    
-    // Configuração do Serviço de Domínio FolhaPagamento (Commands/Writes)
-    @Bean
-    public FolhaPagamentoServico folhaPagamentoServico(FolhaPagamentoRepositorio repositorio) {
-        return new FolhaPagamentoServico(repositorio);
-    }
-    
-    // Configuração do Serviço de Aplicação FolhaPagamento (Queries/Reads)
-    @Bean
-    public FolhaPagamentoServicoAplicacao folhaPagamentoServicoAplicacao(
-            FolhaPagamentoServico servicoDominio,
-            FolhaPagamentoRepositorioAplicacao repositorioAplicacao) {
-        return new FolhaPagamentoServicoAplicacao(servicoDominio, repositorioAplicacao);
     }
 
 	public static void main(String[] args) throws IOException {
