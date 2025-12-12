@@ -1,5 +1,6 @@
 package br.com.medflow.aplicacao.financeiro.faturamentos;
 
+import br.com.medflow.aplicacao.excecoes.RecursoNaoEncontradoException;
 import static org.apache.commons.lang3.Validate.notNull;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public class FaturamentoServicoAplicacao {
 
     public FaturamentoDetalhes obterDetalhes(String id) {
         return repositorio.obterDetalhesPorId(id)
-            .orElseThrow(() -> new RuntimeException("Faturamento não encontrado"));
+            .orElseThrow(() -> new RecursoNaoEncontradoException("Faturamento", id));
     }
 
     public List<FaturamentoResumo> pesquisarPorStatus(StatusFaturamento status) {

@@ -1,5 +1,6 @@
 package br.com.medflow.aplicacao.prontuario;
 
+import br.com.medflow.aplicacao.excecoes.RecursoNaoEncontradoException;
 import static org.apache.commons.lang3.Validate.notNull;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public class ProntuarioServicoAplicacao {
 
     public ProntuarioDetalhes obterDetalhes(String id) {
         return repositorio.obterDetalhesPorId(id)
-            .orElseThrow(() -> new RuntimeException("Prontuário não encontrado"));
+            .orElseThrow(() -> new RecursoNaoEncontradoException("Prontuário", id));
     }
 
     public List<HistoricoItemResponse> listarHistoricoClinico(String prontuarioId) {

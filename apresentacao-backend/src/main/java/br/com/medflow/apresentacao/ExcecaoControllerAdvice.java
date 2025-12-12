@@ -1,5 +1,6 @@
 package br.com.medflow.apresentacao;
 
+import br.com.medflow.aplicacao.excecoes.RecursoNaoEncontradoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,6 +24,14 @@ public class ExcecaoControllerAdvice {
     @ResponseBody
     public ErroResposta handleIllegalStateException(IllegalStateException ex) {
         return new ErroResposta(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+    }
+
+    // Trata exceções de recurso não encontrado
+    @ExceptionHandler(RecursoNaoEncontradoException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public ErroResposta handleRecursoNaoEncontradoException(RecursoNaoEncontradoException ex) {
+        return new ErroResposta(HttpStatus.NOT_FOUND.value(), ex.getMessage());
     }
 }
 
