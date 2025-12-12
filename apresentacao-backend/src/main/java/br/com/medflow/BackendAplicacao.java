@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 // Imports de Catálogo (Medicamentos)
 import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoServico;
@@ -17,7 +18,19 @@ import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoRepositorioApli
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaRepositorioAplicacao;
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaServicoAplicacao;
 
+// Imports de Administração (Funcionários) - NOVOS!
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioServico;
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioRepositorio;
+import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioServicoAplicacao;
+import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioRepositorioAplicacao;
+
 @SpringBootApplication
+@ComponentScan(basePackages = {
+    "br.com.medflow",
+    "br.com.medflow.infraestrutura",
+    "br.com.medflow.aplicacao",
+    "br.com.medflow.dominio"
+})
 public class BackendAplicacao {
     
     // Configuração do Serviço de Domínio (Commands/Writes - Exemplo Medicamento)
@@ -42,6 +55,23 @@ public class BackendAplicacao {
     @Bean
     public ConsultaServicoAplicacao consultaServicoAplicacao(ConsultaRepositorioAplicacao repositorio) {
         return new ConsultaServicoAplicacao(repositorio);
+    }
+
+    // Configuração do Serviço de Domínio (Commands/Writes - Funcionários) - NOVO!
+    @Bean
+    public FuncionarioServico funcionarioServico(FuncionarioRepositorio repositorio) {
+        return new FuncionarioServico(repositorio);
+    }
+
+    // Configuração do Serviço de Aplicação (Queries/Reads - Funcionários) - NOVO!
+    /**
+     * Configura o bean do Serviço de Aplicação de Funcionários (Queries).
+     * O Spring injetará o FuncionarioRepositorioAplicacao que é implementado 
+     * na camada de Infraestrutura (FuncionarioRepositorioAplicacaoImpl).
+     */
+    @Bean
+    public FuncionarioServicoAplicacao funcionarioServicoAplicacao(FuncionarioRepositorioAplicacao repositorio) {
+        return new FuncionarioServicoAplicacao(repositorio);
     }
 
     // [Outros Beans de outros Contextos e Eventos seriam configurados aqui]

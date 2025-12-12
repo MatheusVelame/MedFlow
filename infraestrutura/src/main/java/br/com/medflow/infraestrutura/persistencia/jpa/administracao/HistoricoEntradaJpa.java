@@ -4,7 +4,7 @@ import br.com.medflow.dominio.administracao.funcionarios.AcaoHistorico;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
+@Entity(name = "HistoricoEntradaFuncionarioJpa")
 @Table(name = "historico_funcionarios")
 public class HistoricoEntradaJpa {
 

@@ -1,12 +1,15 @@
 package br.com.medflow.infraestrutura.persistencia.jpa.administracao;
 
 import br.com.medflow.dominio.administracao.funcionarios.Funcionario;
+import br.com.medflow.dominio.administracao.funcionarios.Funcionario.HistoricoEntrada;
 import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
 import br.com.medflow.dominio.administracao.funcionarios.FuncionarioRepositorio;
+import br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId;
 import br.com.medflow.infraestrutura.persistencia.jpa.JpaMapeador;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -74,8 +77,8 @@ public class FuncionarioRepositorioImpl implements FuncionarioRepositorio {
         FuncionarioJpa jpa = jpaOptional
             .orElseThrow(() -> new RuntimeException("Funcionário não encontrado: " + id.getId()));
 
-		// Mapeamento reverso (JPA -> Domínio)
-		return mapeador.map(jpa, Funcionario.class);
+		// Mapeamento reverso manual (JPA -> Domínio) para evitar problema no construtor do JpaMapeador
+		return mapearJpaParaDominio(jpa);
 	}
     
 	@Override
@@ -83,7 +86,7 @@ public class FuncionarioRepositorioImpl implements FuncionarioRepositorio {
         List<FuncionarioJpa> jpas = jpaRepository.findAll();
             
         return jpas.stream()
-            .map(jpa -> mapeador.map(jpa, Funcionario.class))
+            .map(this::mapearJpaParaDominio)
             .collect(Collectors.toList());
     }
 
@@ -96,8 +99,41 @@ public class FuncionarioRepositorioImpl implements FuncionarioRepositorio {
             return Optional.empty();
         }
         
-		// Mapeamento reverso (JPA -> Domínio)
-		return Optional.of(mapeador.map(jpaOptional.get(), Funcionario.class));
+		// Mapeamento reverso manual (JPA -> Domínio)
+		return Optional.of(mapearJpaParaDominio(jpaOptional.get()));
+	}
+	
+	/**
+	 * Mapeia FuncionarioJpa para Funcionario (domínio) manualmente.
+	 * Isso evita problemas com validações do ModelMapper durante a configuração.
+	 */
+	private Funcionario mapearJpaParaDominio(FuncionarioJpa jpa) {
+		FuncionarioId funcionarioId = new FuncionarioId(jpa.getId());
+		
+		// Mapeia o histórico
+		List<HistoricoEntrada> historico = new ArrayList<>();
+		if (jpa.getHistorico() != null) {
+			for (var historicoJpa : jpa.getHistorico()) {
+				UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(historicoJpa.getResponsavelId());
+				HistoricoEntrada entrada = new HistoricoEntrada(
+					historicoJpa.getAcao(),
+					historicoJpa.getDescricao(),
+					responsavelId,
+					historicoJpa.getDataHora()
+				);
+				historico.add(entrada);
+			}
+		}
+		
+		// Usa o construtor de reconstrução
+		return new Funcionario(
+			funcionarioId,
+			jpa.getNome(),
+			jpa.getFuncao(),
+			jpa.getContato(),
+			jpa.getStatus(),
+			historico
+		);
 	}
 
 	@Override

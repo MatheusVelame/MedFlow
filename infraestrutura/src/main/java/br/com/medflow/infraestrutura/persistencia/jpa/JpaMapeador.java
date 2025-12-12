@@ -106,13 +106,7 @@ public class JpaMapeador extends ModelMapper {
         // O mapeamento do responsavelId para UsuarioResponsavelId será feito automaticamente se configurado corretamente
             
         // Mapeamento reverso de JPA (FuncionarioJpa) para DOMÍNIO (Funcionario)
-        createTypeMap(FuncionarioJpa.class, Funcionario.class)
-            .addMappings(mapper -> {
-                // Mapeia o ID (Integer) para FuncionarioId (Value Object)
-                mapper.map(
-                    src -> src.getId() != null ? new FuncionarioId(src.getId()) : null,
-                    (dest, value) -> {} // O ID será setado via construtor ou setter específico
-                );
-            });
+        // O ModelMapper usará o construtor de Funcionario que recebe FuncionarioId, nome, funcao, contato, status e historico
+        // O mapeamento do ID será feito manualmente no FuncionarioRepositorioImpl para evitar validação durante a configuração
 	}
 }
