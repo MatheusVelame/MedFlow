@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.NoSuchElementException; 
+
+
 
 // ====================================================================================
 // CLASSES DE SUPORTE (Mocks necessários para o Cucumber)
@@ -35,7 +35,6 @@ class NotificacaoServicoMock {
 
 public class ConsultaFuncionalidadeBase {
     protected ConsultaRepositorioMemoria repositorio = new ConsultaRepositorioMemoria(); 
-    // Usamos as classes de Domínio
     protected Map<String, Medico> medicos = new HashMap<>(); 
     protected Map<String, Paciente> pacientes = new HashMap<>(); 
     protected NotificacaoServicoMock notificacaoServico = new NotificacaoServicoMock();
@@ -137,7 +136,7 @@ public class ConsultaFuncionalidadeBase {
         return "Ana Silva"; 
     }
     
-    // MÉTODO CORRIGIDO para usar o construtor e IDs da classe de produção
+    // MÉTODO CORRIGIDO para usar o construtor e IDs da classe de produção (ADICIONANDO RESPONSAVEL)
     protected void cadastrarConsulta(String medicoNome, String pacienteNome, LocalDateTime dataHora) {
         // Cria uma descrição que permite ao repositório mock buscar os nomes.
         String descricao = String.format("Consulta com %s (Paciente: %s)", medicoNome, pacienteNome);
@@ -151,8 +150,11 @@ public class ConsultaFuncionalidadeBase {
         
         Integer medicoIdSimulado = medicoNome.contains("Eduardo") ? 1 : 2; 
 
-        // Usa o construtor de CRIAÇÃO da classe de domínio Consulta
-        Consulta nova = new Consulta(dataHora, descricao, pacienteIdSimulado, medicoIdSimulado); 
+        // NOVO: Simula o ID do usuário que está cadastrando a consulta (Recepcionista/Sistema)
+        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(99); // Recepcionista
+
+        // Usa o construtor de CRIAÇÃO da classe de domínio Consulta (NOVA ASSINATURA)
+        Consulta nova = new Consulta(dataHora, descricao, pacienteIdSimulado, medicoIdSimulado, responsavelId); 
         
         String chave = medicoNome + dataHora.toString(); 
         repositorio.salvar(chave, nova); 
@@ -189,6 +191,7 @@ public class ConsultaFuncionalidadeBase {
 
     }
 
+    // MÉTODO CORRIGIDO para usar a nova ação de domínio Consulta.remarcar()
     protected void remarcarConsulta(String pacienteNome, LocalDateTime novaDataHora, String usuario) throws Exception {
         // Regra do limite de remarcação (Mock)
         String patientKey = "Paciente Teste"; // O paciente usado nos cenários de limite
@@ -207,14 +210,19 @@ public class ConsultaFuncionalidadeBase {
             throw new IllegalStateException("A remarcação só é possível com mais de 24h de antecedência");
         }
         
-        // Simulação do sucesso:
-        consultaAtual.mudarStatus(StatusConsulta.AGENDADA); 
+        // NOVO: Simula o ID do usuário responsável pela ação
+        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(1); // Usuario/Sistema
+        
+        // FIX: Chama o método de domínio correto para remarcação
+        consultaAtual.remarcar(novaDataHora, responsavelId); 
+        
         this.dataHoraConsulta = novaDataHora; // Atualiza a data de referência para o THEN
         
         // Atualiza o contador de remarcações no mock
         remarcacoesCount.put(patientKey, currentCount + 1); 
     }
     
+    // MÉTODO CORRIGIDO para usar a nova assinatura de mudarStatus
     protected void cancelarConsulta(String motivo, String usuario) throws Exception {
         if (motivo == null || motivo.trim().isEmpty()) {
             throw new IllegalArgumentException("O motivo é obrigatório");
@@ -231,6 +239,62 @@ public class ConsultaFuncionalidadeBase {
             throw new IllegalStateException("Penalidade: restrição de agendamento por 30 dias");
         }
         
-        consultaAtual.mudarStatus(StatusConsulta.CANCELADA); 
+        // NOVO: Simula o ID do usuário responsável pela ação
+        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(1); // Usuario/Sistema
+        
+        // Chama mudarStatus com a nova assinatura
+        consultaAtual.mudarStatus(StatusConsulta.CANCELADA, responsavelId); 
+    }
+    
+    // ====================================================================================
+    // MÉTODOS AUXILIARES PARA VALIDAÇÃO DO ITERATOR (inalterados)
+    // ====================================================================================
+
+    /** Retorna o número de entradas no histórico usando o Iterator. */
+    protected int contarEntradasHistorico() {
+        if (consultaAtual == null) return 0;
+        int count = 0;
+        IteradorHistorico<HistoricoConsultaEntrada> iterador = consultaAtual.criarIterador();
+        while (iterador.temProximo()) {
+            iterador.proximo();
+            count++;
+        }
+        return count;
+    }
+
+    /** Verifica se o histórico contém uma entrada com uma ação específica usando o Iterator. */
+    protected boolean historicoContemAcao(AcaoHistorico acao) {
+        if (consultaAtual == null) return false;
+        
+        IteradorHistorico<HistoricoConsultaEntrada> iterador = consultaAtual.criarIterador();
+        try {
+             while (iterador.temProximo()) {
+                HistoricoConsultaEntrada entrada = iterador.proximo();
+                if (entrada.getAcao() == acao) {
+                    return true;
+                }
+            }
+        } catch (NoSuchElementException e) {
+            // Ignorar, apenas para segurança em caso de uso indevido no teste
+        }
+        return false;
+    }
+
+    /** Verifica se o histórico contém uma entrada com uma descrição específica usando o Iterator. */
+    protected boolean historicoContemDescricao(String parteDescricao) {
+        if (consultaAtual == null) return false;
+        
+        IteradorHistorico<HistoricoConsultaEntrada> iterador = consultaAtual.criarIterador();
+        try {
+            while (iterador.temProximo()) {
+                HistoricoConsultaEntrada entrada = iterador.proximo();
+                if (entrada.getDescricao().contains(parteDescricao)) {
+                    return true;
+                }
+            }
+        } catch (NoSuchElementException e) {
+            // Ignorar
+        }
+        return false;
     }
 }

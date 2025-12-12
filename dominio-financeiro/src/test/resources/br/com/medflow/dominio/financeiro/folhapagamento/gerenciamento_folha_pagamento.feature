@@ -72,7 +72,6 @@ Feature: Gerenciamento da Folha de Pagamento
 # ====================================================================
 
   Scenario: RN1 - Consulta - Sucesso - Busca por ID de funcionário
-        # Este cenário falhou (Expected: 1 Actual: 0) porque o setup não estava sendo executado.
     Given que o histórico de pagamentos contém registro de "André Gomes" com ID 111
     And que o histórico de pagamentos contém registro de "Sofia Lima" com ID 222
     When o gestor digita o ID 222 no campo de busca
@@ -84,10 +83,6 @@ Feature: Gerenciamento da Folha de Pagamento
     When o gestor busca por "Mariana Costa"
     Then o sistema deve exibir uma lista vazia
     And exibir a mensagem "Nenhum registro encontrado para a sua busca."
-
-    # ====================================================================
-    # RN2 - Consulta (Filtros)
-    # ====================================================================
 
   Scenario: RN2 - Consulta - Sucesso - Filtro por Período de Referência
     Given que o histórico de pagamentos contém registro de "Rafael Borges" para período "08/2025"

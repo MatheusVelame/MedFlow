@@ -7,9 +7,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Objects; // <-- NOVO IMPORT
+import java.util.Objects; 
 
-public class Medicamento {
+/**
+ * CLASSE MODIFICADA PARA IMPLEMENTAR O PADRÃO ITERATOR.
+ * Implementa ColecaoHistorico para ser o Aggregate/Collection.
+ */
+public class Medicamento implements ColecaoHistorico { // <-- MODIFICAÇÃO AQUI
 	private MedicamentoId id;
 
 	private String nome;
@@ -142,6 +146,13 @@ public class Medicamento {
 		this.historico.add(entrada);
 	}
 
+    // MÉTODO NOVO: Implementação do padrão Iterator (ColecaoHistorico)
+    @Override
+    public IteradorHistorico<HistoricoEntrada> criarIterador() {
+        // Retorna uma cópia defensiva da lista para o Iterator, garantindo encapsulamento.
+        return new MedicamentoHistoricoIterator(List.copyOf(this.historico));
+    }
+	
 	public Optional<RevisaoPendente> getRevisaoPendente() {
 		return Optional.ofNullable(revisaoPendente);
 	}
@@ -150,6 +161,9 @@ public class Medicamento {
 	public String getUsoPrincipal() { return usoPrincipal; }
 	public String getContraindicacoes() { return contraindicacoes; }
 	public StatusMedicamento getStatus() { return status; }
+    
+    // MÉTODO MODIFICADO (Opcional, mas boa prática para desencorajar o acesso direto)
+    @Deprecated // Indicando que o método preferencial é via Iterator
 	public List<HistoricoEntrada> getHistorico() { return List.copyOf(historico); }
 	public MedicamentoId getId() { return id; }
 
