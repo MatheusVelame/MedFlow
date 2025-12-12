@@ -16,6 +16,9 @@ import br.com.medflow.dominio.financeiro.convenios.ConvenioId;
 // Imports dos Value Objects do domínio TipoExame
 import br.com.medflow.dominio.referencia.tiposExames.TipoExameId;
 
+// Imports de Value Objects de funcionários
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
+// Não importar UsuarioResponsavelId de funcionários para evitar conflito - usar nome completo
 
 @Component
 public class BackendMapeador extends ModelMapper {
@@ -33,7 +36,7 @@ public class BackendMapeador extends ModelMapper {
         });
 
 
-        // Converte Integer (vindo do Formulário) para o Value Object UsuarioResponsavelId
+        // Converte Integer (vindo do Formulário) para o Value Object UsuarioResponsavelId (medicamentos)
 		addConverter(new AbstractConverter<Integer, UsuarioResponsavelId>() {
 			@Override
 			protected UsuarioResponsavelId convert(Integer source) {
@@ -59,6 +62,7 @@ public class BackendMapeador extends ModelMapper {
         });
 	
         
+
         // ===== CONVERSORES PARA TIPO EXAME =====
         
         // Converte Integer para TipoExameId
@@ -76,8 +80,27 @@ public class BackendMapeador extends ModelMapper {
                 return new br.com.medflow.dominio.referencia.tiposExames.UsuarioResponsavelId(source);
             }
         });
-    }
 
+        // ===== CONVERSORES PARA FUNCIONÁRIOS =====
+        
+        // Converte Integer (vindo do Formulário) para o Value Object FuncionarioId
+		addConverter(new AbstractConverter<Integer, FuncionarioId>() {
+			@Override
+			protected FuncionarioId convert(Integer source) {
+				return new FuncionarioId(source); 
+			}
+		});
+
+        // Converte Integer (vindo do Formulário) para o Value Object UsuarioResponsavelId (funcionários)
+		addConverter(new AbstractConverter<Integer, br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId>() {
+			@Override
+			protected br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId convert(Integer source) {
+				return new br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId(source);
+			}
+		});
+        
+        // [Outros conversores para Value Objects de outros domínios]
+    }
 
     // Sobrescrita do método map para lidar com fontes nulas (padrão SGB)
     @Override
