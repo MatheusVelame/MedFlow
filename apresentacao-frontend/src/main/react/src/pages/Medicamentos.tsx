@@ -1,13 +1,16 @@
 // Localização: apresentacao-frontend/src/main/react/src/pages/Medicamentos.tsx
 
 import React, { useState, useMemo } from 'react';
-import { PlusCircle, Search, MoreVertical, Archive, CheckCircle, XCircle, RefreshCcw, AlertTriangle } from "lucide-react"; 
+// MUDANÇA 1: Adicionar ícones 'Power' (Ativar) e 'ZapOff' (Inativar)
+import { PlusCircle, Search, MoreVertical, Archive, CheckCircle, XCircle, RefreshCcw, AlertTriangle, Power, ZapOff } from "lucide-react"; 
 import { 
     useListarMedicamentos, 
     useArquivarMedicamento, 
     useAprovarRevisao, 
     useRejeitarRevisao, 
     useSolicitarRevisao, 
+    // MUDANÇA 2: Importar o novo hook
+    useMudarStatus, 
     AcaoResponsavelPayload, 
     MedicamentoResumo 
 } from "../api/useMedicamentosApi";
@@ -42,6 +45,8 @@ export default function Medicamentos() {
   const aprovarMutation = useAprovarRevisao();
   const rejeitarMutation = useRejeitarRevisao();
   const solicitarRevisaoMutation = useSolicitarRevisao();
+  // MUDANÇA 3: Inicializar o novo hook
+  const mudarStatusMutation = useMudarStatus(); 
 
   const [isCadastroOpen, setIsCadastroOpen] = useState(false);
   const [isRevisaoModalOpen, setIsRevisaoModalOpen] = useState(false);
@@ -65,6 +70,21 @@ export default function Medicamentos() {
       const payload: AcaoResponsavelPayload = { responsavelId: RESPONSAVEL_ID };
       mutation.mutate({ id: medicamento.id, payload: payload }); 
   };
+  
+  // MUDANÇA 4: NOVO HANDLER para mudar status (Ativo/Inativo)
+  const handleMudarStatus = (medicamento: MedicamentoResumo, novoStatus: 'ATIVO' | 'INATIVO') => {
+      // Usamos 'false' para temPrescricaoAtiva, pois a regra crítica é contra ARQUIVAMENTO
+      const temPrescricaoAtiva = false; 
+      
+      const variables = {
+          id: medicamento.id,
+          payload: { responsavelId: RESPONSAVEL_ID },
+          novoStatus: novoStatus,
+          temPrescricaoAtiva: temPrescricaoAtiva
+      };
+      
+      mudarStatusMutation.mutate(variables);
+  }
   
   // Handlers específicos
   const handleAbrirSolicitarRevisao = (medicamento: MedicamentoResumo) => {
@@ -155,10 +175,12 @@ export default function Medicamentos() {
                             <TableCell>{medicamento.usoPrincipal}</TableCell>
                             <TableCell className="max-w-[200px] truncate">{medicamento.contraindicacoes}</TableCell> 
                             <TableCell>
+                                {/* MUDANÇA 5: Atualizar a lógica de exibição do Badge para incluir INATIVO */}
                                 <Badge 
                                     variant={
                                         medicamento.status === 'ATIVO' ? "default" : 
-                                        (medicamento.status === 'REVISAO_PENDENTE' ? 'destructive' : 'secondary')
+                                        (medicamento.status === 'INATIVO' ? 'outline' : // Status INATIVO
+                                        (medicamento.status === 'REVISAO_PENDENTE' ? 'destructive' : 'secondary'))
                                     }
                                 >
                                     {medicamento.status.replace('_', ' ')}
@@ -195,8 +217,8 @@ export default function Medicamentos() {
                                         {/* AÇÃO: Editar Uso Principal */}
                                         <DropdownMenuItem 
                                             onClick={() => handleAbrirEdicaoUsoPrincipal(medicamento)}
-                                            // CORREÇÃO 3: Desabilitar se houver revisão pendente
-                                            disabled={medicamento.possuiRevisaoPendente} 
+                                            // CORREÇÃO 3: Desabilitar se houver revisão pendente ou se ARQUIVADO
+                                            disabled={medicamento.possuiRevisaoPendente || medicamento.status === 'ARQUIVADO'} 
                                         >
                                             <RefreshCcw className="mr-2 h-4 w-4" /> Editar Uso Principal
                                         </DropdownMenuItem>
@@ -204,17 +226,38 @@ export default function Medicamentos() {
                                         {/* AÇÃO: Solicitar Revisão (AGORA DESABILITADA SE JÁ PENDENTE) */}
                                         <DropdownMenuItem 
                                             onClick={() => handleAbrirSolicitarRevisao(medicamento)}
-                                            // CORREÇÃO 4: Desabilitar se já houver revisão pendente
-                                            disabled={medicamento.possuiRevisaoPendente}
+                                            // CORREÇÃO 4: Desabilitar se já houver revisão pendente ou se ARQUIVADO
+                                            disabled={medicamento.possuiRevisaoPendente || medicamento.status === 'ARQUIVADO'}
                                         >
                                             <CheckCircle className="mr-2 h-4 w-4" /> Solicitar Revisão
                                         </DropdownMenuItem>
                                         
                                         <DropdownMenuSeparator />
                                         
-                                        {/* AÇÃO: Arquivar (PUT /arquivar) */}
-                                        {/* CORREÇÃO 5: Adicionar verificação para evitar arquivamento com revisão pendente */}
+                                        {/* MUDANÇA 6: Ação Inativar (se ATIVO e sem revisão pendente) */}
                                         {medicamento.status === 'ATIVO' && !medicamento.possuiRevisaoPendente && (
+                                            <DropdownMenuItem 
+                                                onClick={() => handleMudarStatus(medicamento, 'INATIVO')}
+                                                disabled={mudarStatusMutation.isPending}
+                                                className="text-yellow-600"
+                                            >
+                                                <ZapOff className="mr-2 h-4 w-4" /> {mudarStatusMutation.isPending ? 'Inativando...' : 'Inativar'}
+                                            </DropdownMenuItem>
+                                        )}
+                                        
+                                        {/* MUDANÇA 7: Ação Reativar (se INATIVO e sem revisão pendente) */}
+                                        {medicamento.status === 'INATIVO' && !medicamento.possuiRevisaoPendente && (
+                                            <DropdownMenuItem 
+                                                onClick={() => handleMudarStatus(medicamento, 'ATIVO')}
+                                                disabled={mudarStatusMutation.isPending}
+                                                className="text-green-600"
+                                            >
+                                                <Power className="mr-2 h-4 w-4" /> {mudarStatusMutation.isPending ? 'Reativando...' : 'Reativar'}
+                                            </DropdownMenuItem>
+                                        )}
+
+                                        {/* MUDANÇA 8: Arquivar (permitir se for ATIVO ou INATIVO, mas não ARQUIVADO ou PENDENTE) */}
+                                        {(medicamento.status === 'ATIVO' || medicamento.status === 'INATIVO') && !medicamento.possuiRevisaoPendente && (
                                             <DropdownMenuItem 
                                                 onClick={() => handleAcaoSimples(medicamento, arquivarMutation)}
                                                 disabled={arquivarMutation.isPending}

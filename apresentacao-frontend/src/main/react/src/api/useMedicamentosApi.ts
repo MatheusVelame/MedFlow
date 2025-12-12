@@ -13,7 +13,8 @@ export interface MedicamentoResumo {
   nome: string;
   usoPrincipal: string;
   contraindicacoes: string;
-  status: 'ATIVO' | 'ARQUIVADO' | 'REVISAO_PENDENTE';
+  // MODIFICAÇÃO: Adicionar 'INATIVO' ao tipo Status
+  status: 'ATIVO' | 'INATIVO' | 'ARQUIVADO' | 'REVISAO_PENDENTE';
   // CORREÇÃO: Adicionar a propriedade booleana retornada pelo backend
   possuiRevisaoPendente: boolean; 
 }
@@ -34,6 +35,16 @@ export interface SolicitarRevisaoPayload {
   novaContraindicacao: string;
   responsavelId: number;
 }
+
+// NOVO TIPO: Variáveis para o comando de Mudar Status
+interface MudarStatusMutateVariables {
+    id: number; 
+    payload: AcaoResponsavelPayload; // { responsavelId: number }
+    // Status alvo pode ser ATIVO, INATIVO ou ARQUIVADO (o endpoint permite)
+    novoStatus: 'ATIVO' | 'INATIVO' | 'ARQUIVADO'; 
+    temPrescricaoAtiva: boolean; // Parâmetro de query exigido pelo endpoint Java
+}
+
 interface MutateVariables<T> { id: number; payload: T; }
 
 // =====================================================================
@@ -52,9 +63,17 @@ const createMedicamento = async (payload: CadastrarMedicamentoPayload) => {
   return axios.post(API_BASE_URL, payload);
 };
 
-// CORREÇÃO: Usamos 'await' e omitimos 'return' para tipar como Promise<void>
+// CORREÇÃO: O endpoint /arquivar é um atalho que assume temPrescricaoAtiva=false por padrão
 const arquivarMedicamentoApi = async ({ id, payload }: MutateVariables<AcaoResponsavelPayload>) => {
-    await axios.put(`${API_BASE_URL}/${id}/arquivar`, payload);
+    // Definimos temPrescricaoAtiva=false como padrão no backend, mas é bom passar explicitamente
+    await axios.put(`${API_BASE_URL}/${id}/arquivar?temPrescricaoAtiva=false`, payload);
+};
+
+// NOVO: Função para Mudar o Status (PUT /status/{novoStatus})
+const mudarStatusApi = async ({ id, payload, novoStatus, temPrescricaoAtiva }: MudarStatusMutateVariables) => {
+    // Chama o endpoint PUT /backend/medicamentos/{id}/status/{novoStatus}?temPrescricaoAtiva=...
+    const url = `${API_BASE_URL}/${id}/status/${novoStatus}?temPrescricaoAtiva=${temPrescricaoAtiva}`;
+    await axios.put(url, payload); 
 };
 
 const updateUsoPrincipalApi = async ({ id, payload }: MutateVariables<UsoPrincipalPayload>) => {
@@ -136,6 +155,22 @@ export function useAtualizarUsoPrincipal() {
         },
     });
 }
+
+// NOVO HOOK: Para mudar status entre ATIVO e INATIVO
+export function useMudarStatus() {
+    const queryClient = useQueryClient();
+    return useMutation<void, Error, MudarStatusMutateVariables>({
+        mutationFn: mudarStatusApi,
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['medicamentos'] });
+            toast.success(`Status alterado para ${variables.novoStatus.toLowerCase()} com sucesso.`);
+        },
+        onError: (error) => {
+            toast.error((error as any).response?.data?.message || "Erro ao mudar o status do medicamento.");
+        },
+    });
+}
+
 
 export function useArquivarMedicamento() {
     const queryClient = useQueryClient();
