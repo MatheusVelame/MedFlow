@@ -146,10 +146,10 @@ export default function Medicamentos() {
                 </TableHeader>
                 <TableBody>
                     {filteredMedicamentos.map((medicamento) => (
-                        // O highlight visual na linha inteira ainda é útil
-                        <TableRow key={medicamento.id} className={medicamento.status === 'REVISAO_PENDENTE' ? 'bg-yellow-50 hover:bg-yellow-100' : ''}>
+                        // CORREÇÃO 1: O destaque visual agora usa 'possuiRevisaoPendente'
+                        <TableRow key={medicamento.id} className={medicamento.possuiRevisaoPendente ? 'bg-yellow-50 hover:bg-yellow-100' : ''}>
                             
-                            {/* CÉLULA: NOME (Removemos o Badge duplicado daqui) */}
+                            {/* CÉLULA: NOME */}
                             <TableCell className="font-medium">{medicamento.nome}</TableCell>
 
                             <TableCell>{medicamento.usoPrincipal}</TableCell>
@@ -165,16 +165,13 @@ export default function Medicamentos() {
                                 </Badge>
                             </TableCell>
 
-                            {/* NOVA CÉLULA: INDICADOR DE REVISÃO PENDENTE */}
+                            {/* CORREÇÃO 2: LÓGICA DO INDICADOR DE REVISÃO PENDENTE */}
                             <TableCell className="text-center">
                                 {
-                                    // Usamos o campo 'possuiRevisaoPendente' do DTO (implícito no JSON fornecido)
-                                    // ou o campo 'status' que já é retornado pelo backend. 
-                                    // Vou usar 'status' por ser mais robusto, mas o campo booleano
-                                    // é mais direto para esta coluna. Usaremos uma verificação robusta.
-                                    medicamento.status === 'REVISAO_PENDENTE' ? (
-                                        <div title="Revisão Pendente (Sim)">
-                                            <CheckCircle className="h-5 w-5 text-red-500 mx-auto" />
+                                    medicamento.possuiRevisaoPendente ? (
+                                        <div title="Revisão Pendente (Sim - Requer Aprovação)">
+                                            {/* Usamos AlertTriangle e cor de alerta (orange/red) */}
+                                            <AlertTriangle className="h-5 w-5 text-orange-500 mx-auto" /> 
                                         </div>
                                     ) : (
                                         <div title="Revisão Pendente (Não)">
@@ -198,7 +195,8 @@ export default function Medicamentos() {
                                         {/* AÇÃO: Editar Uso Principal */}
                                         <DropdownMenuItem 
                                             onClick={() => handleAbrirEdicaoUsoPrincipal(medicamento)}
-                                            disabled={medicamento.status === 'REVISAO_PENDENTE'} 
+                                            // CORREÇÃO 3: Desabilitar se houver revisão pendente
+                                            disabled={medicamento.possuiRevisaoPendente} 
                                         >
                                             <RefreshCcw className="mr-2 h-4 w-4" /> Editar Uso Principal
                                         </DropdownMenuItem>
@@ -206,7 +204,8 @@ export default function Medicamentos() {
                                         {/* AÇÃO: Solicitar Revisão (AGORA DESABILITADA SE JÁ PENDENTE) */}
                                         <DropdownMenuItem 
                                             onClick={() => handleAbrirSolicitarRevisao(medicamento)}
-                                            disabled={medicamento.status === 'REVISAO_PENDENTE'}
+                                            // CORREÇÃO 4: Desabilitar se já houver revisão pendente
+                                            disabled={medicamento.possuiRevisaoPendente}
                                         >
                                             <CheckCircle className="mr-2 h-4 w-4" /> Solicitar Revisão
                                         </DropdownMenuItem>
@@ -214,7 +213,8 @@ export default function Medicamentos() {
                                         <DropdownMenuSeparator />
                                         
                                         {/* AÇÃO: Arquivar (PUT /arquivar) */}
-                                        {medicamento.status === 'ATIVO' && (
+                                        {/* CORREÇÃO 5: Adicionar verificação para evitar arquivamento com revisão pendente */}
+                                        {medicamento.status === 'ATIVO' && !medicamento.possuiRevisaoPendente && (
                                             <DropdownMenuItem 
                                                 onClick={() => handleAcaoSimples(medicamento, arquivarMutation)}
                                                 disabled={arquivarMutation.isPending}
@@ -225,7 +225,8 @@ export default function Medicamentos() {
                                         )}
                                         
                                         {/* AÇÕES DE REVISÃO (APROVAR / REJEITAR) */}
-                                        {medicamento.status === 'REVISAO_PENDENTE' && (
+                                        {/* CORREÇÃO 6: Exibir ações de revisão se o campo possuiRevisaoPendente for verdadeiro */}
+                                        {medicamento.possuiRevisaoPendente && (
                                             <>
                                                 <DropdownMenuSeparator /> 
                                                 <DropdownMenuLabel>Ações de Revisão</DropdownMenuLabel>

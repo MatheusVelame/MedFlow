@@ -14,6 +14,8 @@ export interface MedicamentoResumo {
   usoPrincipal: string;
   contraindicacoes: string;
   status: 'ATIVO' | 'ARQUIVADO' | 'REVISAO_PENDENTE';
+  // CORREÇÃO: Adicionar a propriedade booleana retornada pelo backend
+  possuiRevisaoPendente: boolean; 
 }
 
 // Payloads para DTOs do Backend
