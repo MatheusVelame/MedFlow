@@ -41,7 +41,7 @@ public class ExameControlador {
             new UsuarioResponsavelId(request.responsavelId())
         );
 
-        URI uri = uriBuilder.path("/exames/{id}").buildAndExpand(exameCriado.getId().valor()).toUri();
+        URI uri = uriBuilder.path("/exames/{id}").buildAndExpand(exameCriado.getId().getValor()).toUri();
         return ResponseEntity.created(uri).body(ExameResponse.de(exameCriado));
     }
 

@@ -1,13 +1,17 @@
 package br.com.medflow.infraestrutura.persistencia.jpa.atendimento;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import br.com.medflow.dominio.atendimento.exames.StatusExame;
@@ -29,6 +33,9 @@ public class ExameJpa {
     private StatusExame status;
 
     private Long responsavelId;
+
+    @OneToMany(mappedBy = "exame", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HistoricoExameJpa> historico = new ArrayList<>();
 
     @Deprecated // Uso exclusivo do Hibernate
     public ExameJpa() {
@@ -59,4 +66,12 @@ public class ExameJpa {
     public void setStatus(StatusExame status) { this.status = status; }
     public Long getResponsavelId() { return responsavelId; }
     public void setResponsavelId(Long responsavelId) { this.responsavelId = responsavelId; }
+
+    public List<HistoricoExameJpa> getHistorico() {
+        return historico;
+    }
+
+    public void setHistorico(List<HistoricoExameJpa> historico) {
+        this.historico = historico;
+    }
 }

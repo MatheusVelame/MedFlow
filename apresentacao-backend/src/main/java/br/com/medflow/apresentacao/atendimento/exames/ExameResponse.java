@@ -13,7 +13,7 @@ public record ExameResponse(
 ) {
     public static ExameResponse de(Exame exame) {
         return new ExameResponse(
-            exame.getId().valor(),
+            exame.getId().getValor(),
             exame.getPacienteId(),
             exame.getMedicoId(),
             exame.getTipoExame(),

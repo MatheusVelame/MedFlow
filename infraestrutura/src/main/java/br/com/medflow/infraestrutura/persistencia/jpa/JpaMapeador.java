@@ -189,5 +189,99 @@ public class JpaMapeador extends ModelMapper {
             System.err.println("Aviso: Não foi possível criar mapeamento explícito para HistoricoEntrada de Convenio: " + e.getMessage());
         }
 
+        // === 7. Mapeamento de DOMÍNIO (HistoricoEntrada de Exame) para JPA ===
+        try {
+            createTypeMap(
+                br.com.medflow.dominio.atendimento.exames.HistoricoEntrada.class,
+                br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa.class)
+                .addMappings(mapper -> {
+                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setId);
+                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setExame);
+
+                    mapper.map(
+                        br.com.medflow.dominio.atendimento.exames.HistoricoEntrada::getAcao,
+                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setAcao
+                    );
+
+                    mapper.map(
+                        br.com.medflow.dominio.atendimento.exames.HistoricoEntrada::getDescricao,
+                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setDescricao
+                    );
+
+                    // Mapeia responsavel.getValor() (Long)
+                    mapper.map(
+                        src -> src.getUsuario().getValor(),
+                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setResponsavelId
+                    );
+
+                    mapper.map(
+                        br.com.medflow.dominio.atendimento.exames.HistoricoEntrada::getDataHora,
+                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setDataHora
+                    );
+                });
+
+            // Mapeamento inverso: JPA -> Domínio
+            createTypeMap(
+                br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa.class,
+                br.com.medflow.dominio.atendimento.exames.HistoricoEntrada.class)
+                .setProvider(request -> {
+                    var jpa = (br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa) request.getSource();
+                    return new br.com.medflow.dominio.atendimento.exames.HistoricoEntrada(
+                        jpa.getAcao(),
+                        jpa.getDescricao(),
+                        new br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId(jpa.getResponsavelId())
+                    );
+                });
+        } catch (Exception e) {
+            System.err.println("Aviso: Não foi possível criar mapeamento explícito para HistoricoEntrada de Exame: " + e.getMessage());
+        }
+
+        // === 8. Mapeamento ExameJpa <-> Exame (simplificado, histórico tratado separadamente) ===
+        try {
+            createTypeMap(br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa.class, br.com.medflow.dominio.atendimento.exames.Exame.class)
+                .setProvider(request -> {
+                    var jpa = (br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa) request.getSource();
+
+                    // Mapear historico via mapeador
+                    var historicoDominio = jpa.getHistorico().stream()
+                        .map(h -> map(h, br.com.medflow.dominio.atendimento.exames.HistoricoEntrada.class))
+                        .toList();
+
+                    return new br.com.medflow.dominio.atendimento.exames.Exame(
+                        jpa.getId() == null ? null : new br.com.medflow.dominio.atendimento.exames.ExameId(jpa.getId()),
+                        jpa.getPacienteId(),
+                        jpa.getMedicoId(),
+                        jpa.getTipoExame(),
+                        jpa.getDataHora(),
+                        jpa.getStatus(),
+                        historicoDominio,
+                        false,
+                        false,
+                        null
+                    );
+                });
+
+            // Mapeamento domínio -> JPA (skip historico para evitar duplicação; será tratado manualmente no repositório)
+            createTypeMap(br.com.medflow.dominio.atendimento.exames.Exame.class, br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa.class)
+                .addMappings(mapper -> {
+                    mapper.map(src -> src.getId() == null ? null : src.getId().getValor(), br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setId);
+                    mapper.map(br.com.medflow.dominio.atendimento.exames.Exame::getPacienteId, br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setPacienteId);
+                    mapper.map(br.com.medflow.dominio.atendimento.exames.Exame::getMedicoId, br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setMedicoId);
+                    mapper.map(br.com.medflow.dominio.atendimento.exames.Exame::getTipoExame, br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setTipoExame);
+                    mapper.map(br.com.medflow.dominio.atendimento.exames.Exame::getDataHora, br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setDataHora);
+                    mapper.map(br.com.medflow.dominio.atendimento.exames.Exame::getStatus, br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setStatus);
+                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setHistorico);
+
+                    mapper.map(src -> {
+                        // extrair responsavel do último histórico, se existir
+                        if (src.getHistorico() == null || src.getHistorico().isEmpty()) return null;
+                        var ultima = src.getHistorico().get(src.getHistorico().size() - 1);
+                        return ultima == null || ultima.getUsuario() == null ? null : ultima.getUsuario().getValor();
+                    }, br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ExameJpa::setResponsavelId);
+                });
+        } catch (Exception e) {
+            System.err.println("Aviso: não foi possível criar mapeamento para Exame: " + e.getMessage());
+        }
+
 	}
 }

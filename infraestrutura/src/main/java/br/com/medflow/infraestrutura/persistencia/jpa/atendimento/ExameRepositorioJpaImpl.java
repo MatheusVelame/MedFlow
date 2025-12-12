@@ -1,6 +1,7 @@
 package br.com.medflow.infraestrutura.persistencia.jpa.atendimento;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
@@ -8,14 +9,17 @@ import br.com.medflow.dominio.atendimento.exames.Exame;
 import br.com.medflow.dominio.atendimento.exames.ExameId;
 import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
 import br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId;
+import br.com.medflow.infraestrutura.persistencia.jpa.JpaMapeador;
 
 @Repository
 public class ExameRepositorioJpaImpl implements ExameRepositorio {
 
     private final ExameJpaRepository jpaRepository;
+    private final JpaMapeador mapeador;
 
-    public ExameRepositorioJpaImpl(ExameJpaRepository jpaRepository) {
+    public ExameRepositorioJpaImpl(ExameJpaRepository jpaRepository, JpaMapeador mapeador) {
         this.jpaRepository = jpaRepository;
+        this.mapeador = mapeador;
     }
 
     @Override
@@ -53,40 +57,33 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
     private ExameJpa paraJpa(Exame dominio) {
         if (dominio == null) return null;
 
-        Long id = (dominio.getId() != null) ? dominio.getId().getValor() : null;
+        ExameJpa exameJpa = mapeador.map(dominio, ExameJpa.class);
 
-        // Tentativa de extrair um UsuarioResponsavelId do histórico mais recente (se existir)
-        Long responsavel = null;
-        try {
-            if (dominio.getHistorico() != null && !dominio.getHistorico().isEmpty()) {
-                var ultima = dominio.getHistorico().get(dominio.getHistorico().size() - 1);
-                if (ultima != null && ultima.getUsuario() != null) {
-                    responsavel = ultima.getUsuario().getValor();
-                }
-            }
-        } catch (Exception e) {
-            // Se não for possível extrair, manter responsavel como null
+        // Mapear histórico: converter cada entrada de domínio em JPA e associar ao exameJpa
+        var historicoDominio = dominio.getHistorico();
+        if (historicoDominio != null) {
+            var historicoJpa = historicoDominio.stream()
+                .map(h -> {
+                    var he = mapeador.map(h, HistoricoExameJpa.class);
+                    he.setExame(exameJpa);
+                    return he;
+                })
+                .collect(Collectors.toList());
+            exameJpa.setHistorico(historicoJpa);
         }
 
-        return new ExameJpa(
-            id,
-            dominio.getPacienteId(),
-            dominio.getMedicoId(),
-            dominio.getTipoExame(),
-            dominio.getDataHora(),
-            dominio.getStatus(),
-            responsavel
-        );
+        return exameJpa;
     }
 
     private Exame paraDominio(ExameJpa jpa) {
         if (jpa == null) return null;
 
-        // Reconstruir o histórico como vazio aqui; se houver uma tabela de histórico separada, o repositório deve montar isso.
-        java.util.List<br.com.medflow.dominio.atendimento.exames.HistoricoEntrada> historico = java.util.Collections.emptyList();
+        // Mapear historico JPA -> domínio
+        var historicoDominio = jpa.getHistorico().stream()
+            .map(h -> mapeador.map(h, br.com.medflow.dominio.atendimento.exames.HistoricoEntrada.class))
+            .collect(Collectors.toList());
 
         ExameId id = (jpa.getId() != null) ? new ExameId(jpa.getId()) : null;
-        UsuarioResponsavelId responsavelId = (jpa.getResponsavelId() != null) ? new UsuarioResponsavelId(jpa.getResponsavelId()) : null;
 
         return new Exame(
             id,
@@ -95,7 +92,7 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
             jpa.getTipoExame(),
             jpa.getDataHora(),
             jpa.getStatus(),
-            historico,
+            historicoDominio,
             false,
             false,
             null
