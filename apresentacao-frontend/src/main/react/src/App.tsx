@@ -20,6 +20,7 @@ import Relatorios from "./pages/Relatorios";
 import Especialidades from "./pages/Especialidades";
 import Convenios from "./pages/Convenios";
 import Medicamentos from "./pages/Medicamentos";
+import MedicamentosMedico from "./pages/Medicamentos-medico";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import TiposExames from "./pages/TiposExames";
@@ -88,8 +89,13 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path="/medicamentos" element={
-                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                      <ProtectedRoute allowedRoles={['gestor']}>
                         <Medicamentos />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/medicamentos-medico" element={
+                      <ProtectedRoute allowedRoles={['medico']}>
+                        <MedicamentosMedico />
                       </ProtectedRoute>
                     } />
                     <Route path="/relatorios" element={
