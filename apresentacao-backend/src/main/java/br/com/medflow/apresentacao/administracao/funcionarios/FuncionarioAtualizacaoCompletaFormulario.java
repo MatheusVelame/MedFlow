@@ -39,3 +39,4 @@ public class FuncionarioAtualizacaoCompletaFormulario {
     public Integer getResponsavelId() { return responsavelId; }
     public void setResponsavelId(Integer responsavelId) { this.responsavelId = responsavelId; }
 }
+

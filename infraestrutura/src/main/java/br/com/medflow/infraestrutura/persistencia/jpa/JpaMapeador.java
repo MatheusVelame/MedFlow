@@ -34,6 +34,9 @@ public class JpaMapeador extends ModelMapper {
 
 	public JpaMapeador() {
 		super();
+		// Configura o ModelMapper para ser mais permissivo durante a inicialização
+		this.getConfiguration().setSkipNullEnabled(true);
+		this.getConfiguration().setAmbiguityIgnored(true);
 		
         // === 1. Mapeamento de DOMÍNIO (HistoricoEntrada) para JPA ===
         createTypeMap(HistoricoEntrada.class, HistoricoEntradaJpa.class)
@@ -83,14 +86,32 @@ public class JpaMapeador extends ModelMapper {
             });
         
         
+            // Mapeamento de DOMÍNIO (HistoricoEntrada de Funcionario) para JPA
             createTypeMap(
                 br.com.medflow.dominio.administracao.funcionarios.Funcionario.HistoricoEntrada.class, 
                 br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa.class)
                 .addMappings(mapper -> {
+                    // Ignora campos que não devem ser mapeados automaticamente
+                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setId);
+                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setFuncionario);
+                    
+                    // Mapeia explicitamente os campos que devem ser mapeados automaticamente
+                    mapper.map(
+                        br.com.medflow.dominio.administracao.funcionarios.Funcionario.HistoricoEntrada::getAcao,
+                        br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setAcao
+                    );
+                    mapper.map(
+                        br.com.medflow.dominio.administracao.funcionarios.Funcionario.HistoricoEntrada::getDescricao,
+                        br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setDescricao
+                    );
+                    
                     // Mapeia o código do responsável (String) para Integer
                     // NOTA: UsuarioResponsavelId de funcionários usa getCodigo() (String), não getId()
                     mapper.map(
                         src -> {
+                            if (src == null || src.getResponsavel() == null) {
+                                return null;
+                            }
                             String codigo = src.getResponsavel().getCodigo();
                             try {
                                 return Integer.parseInt(codigo);
@@ -106,9 +127,6 @@ public class JpaMapeador extends ModelMapper {
                         br.com.medflow.dominio.administracao.funcionarios.Funcionario.HistoricoEntrada::getDataHora, 
                         br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setDataHora
                     );
-                    
-                    // Ignora o mapeamento bidirecional neste sentido
-                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setFuncionario);
                 });
                 
             // Mapeamento de DOMÍNIO (Funcionario) para JPA
