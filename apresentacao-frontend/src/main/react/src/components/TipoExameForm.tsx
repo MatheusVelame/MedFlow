@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,13 +17,6 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -48,7 +42,7 @@ interface TipoExameFormProps {
   onSave: (data: z.infer<typeof formSchema>) => void;
   initialData?: any;
   existingCodes: string[];
-  especialidades: Array<{ id: string; nome: string }>;
+  isLoading?: boolean;
 }
 
 export function TipoExameForm({ 
@@ -57,11 +51,11 @@ export function TipoExameForm({
   onSave, 
   initialData,
   existingCodes,
-  especialidades
+  isLoading = false
 }: TipoExameFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+    defaultValues: {
       codigo: "",
       descricao: "",
       especialidade: "",
@@ -70,8 +64,33 @@ export function TipoExameForm({
     },
   });
 
+  // CORREÇÃO: useEffect para resetar o formulário ao abrir
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        // Modo Edição: Carrega os dados
+        form.reset({
+          codigo: initialData.codigo,
+          descricao: initialData.descricao,
+          especialidade: initialData.especialidade,
+          valor: Number(initialData.valor),
+          observacoes: initialData.observacoes || "",
+        });
+      } else {
+        // Modo Criação: Limpa o formulário
+        form.reset({
+          codigo: "",
+          descricao: "",
+          especialidade: "",
+          valor: 0,
+          observacoes: "",
+        });
+      }
+    }
+  }, [open, initialData, form]);
+
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    // Validar código único apenas para novos cadastros
+    // Validar código único apenas para novos cadastros (Criação)
     if (!initialData && existingCodes.includes(data.codigo.toUpperCase())) {
       form.setError("codigo", {
         type: "manual",
@@ -84,7 +103,6 @@ export function TipoExameForm({
       ...data,
       codigo: data.codigo.toUpperCase(),
     });
-    form.reset();
   };
 
   return (
@@ -108,7 +126,8 @@ export function TipoExameForm({
                       placeholder="Ex: HEMOG-001" 
                       {...field}
                       onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                      disabled={!!initialData}
+                      // Desabilitado na edição para não permitir trocar a chave primária
+                      disabled={!!initialData || isLoading}
                     />
                   </FormControl>
                   <FormDescription>
@@ -130,7 +149,8 @@ export function TipoExameForm({
                       placeholder="Descreva o tipo de exame" 
                       className="resize-none" 
                       rows={3}
-                      {...field} 
+                      {...field}
+                      disabled={isLoading}
                     />
                   </FormControl>
                   <FormMessage />
@@ -145,20 +165,13 @@ export function TipoExameForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especialidade *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a especialidade" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {especialidades.map((esp) => (
-                          <SelectItem key={esp.id} value={esp.nome}>
-                            {esp.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                        <Input 
+                            placeholder="Ex: Cardiologia" 
+                            {...field}
+                            disabled={isLoading}
+                        />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -176,7 +189,8 @@ export function TipoExameForm({
                         step="0.01" 
                         min="0.01"
                         placeholder="0.00" 
-                        {...field} 
+                        {...field}
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -196,7 +210,8 @@ export function TipoExameForm({
                       placeholder="Informações adicionais sobre o tipo de exame" 
                       className="resize-none" 
                       rows={2}
-                      {...field} 
+                      {...field}
+                      disabled={isLoading}
                     />
                   </FormControl>
                   <FormMessage />
@@ -211,11 +226,11 @@ export function TipoExameForm({
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
                 Cancelar
               </Button>
-              <Button type="submit">
-                {initialData ? "Atualizar" : "Cadastrar"}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Salvando..." : (initialData ? "Atualizar" : "Cadastrar")}
               </Button>
             </div>
           </form>

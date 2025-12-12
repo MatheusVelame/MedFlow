@@ -11,7 +11,8 @@ import {
   ClipboardList,
   Activity,
   CreditCard,
-  Pill
+  Pill,
+  Microscope
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -52,6 +53,7 @@ const managementItems: NavItem[] = [
   { title: "Medicamentos", url: "/medicamentos", icon: Pill, roles: ['gestor', 'medico'] },
   { title: "Profissionais", url: "/profissionais", icon: Stethoscope, roles: ['gestor'] },
   { title: "Especialidades", url: "/especialidades", icon: Activity, roles: ['gestor'] },
+  { title: "Tipos de Exame", url: "/tipos-exames", icon: Microscope, roles: ['gestor'] },
   { title: "Relatórios", url: "/relatorios", icon: ClipboardList, roles: ['gestor'] },
 ];
 

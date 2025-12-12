@@ -22,6 +22,7 @@ import Convenios from "./pages/Convenios";
 import Medicamentos from "./pages/Medicamentos";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import TiposExames from "./pages/TiposExames";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,11 @@ const App = () => (
                         <Relatorios />
                       </ProtectedRoute>
                     } />
+					<Route path="/tipos-exames" element={
+					  <ProtectedRoute allowedRoles={['gestor']}>
+					    <TiposExames />
+					  </ProtectedRoute>
+					} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </MedicalLayout>
