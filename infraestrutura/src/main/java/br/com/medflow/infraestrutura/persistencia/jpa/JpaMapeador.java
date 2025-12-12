@@ -12,10 +12,8 @@ import br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ConsultaJpa;
 
 // IMPORTS PARA FUNCIONÁRIOS
 import br.com.medflow.dominio.administracao.funcionarios.Funcionario;
-import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
 import br.com.medflow.infraestrutura.persistencia.jpa.administracao.FuncionarioJpa;
 // Não importar HistoricoEntradaJpa de administracao para evitar conflito com o de catalogo
-import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioDetalhes;
 import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioResumo;
 
 import org.modelmapper.ModelMapper;
@@ -93,10 +91,11 @@ public class JpaMapeador extends ModelMapper {
             });
         
         // Mapeamento JPA (FuncionarioJpa) para DTOs de Aplicação (Queries)
-        // Mapeamento para DTO de Detalhes
-        createTypeMap(FuncionarioJpa.class, FuncionarioDetalhes.class);
+        // Nota: FuncionarioDetalhes é mapeado manualmente em FuncionarioRepositorioAplicacaoImpl
+        // porque FuncionarioDetalhes e HistoricoEntradaResumo são interfaces
         
         // Mapeamento para DTO de Resumo
+        // O ModelMapper pode usar o construtor protegido sem argumentos e depois setar os valores
         createTypeMap(FuncionarioJpa.class, FuncionarioResumo.class);
         
         // === 5. MAPEAMENTOS REVERSOS (JPA -> DOMÍNIO) PARA FUNCIONÁRIOS ===

@@ -1,7 +1,6 @@
 package br.com.medflow.aplicacao.administracao.funcionarios;
 
 import br.com.medflow.dominio.administracao.funcionarios.StatusFuncionario;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface FuncionarioDetalhes {
@@ -13,11 +12,4 @@ public interface FuncionarioDetalhes {
 	StatusFuncionario getStatus();
 	
 	List<HistoricoEntradaResumo> getHistorico();
-}
-
-interface HistoricoEntradaResumo {
-    String getAcao(); 
-    String getDescricao();
-    Integer getResponsavelId();
-    LocalDateTime getDataHora();
 }

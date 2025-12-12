@@ -3,6 +3,7 @@ package br.com.medflow.infraestrutura.persistencia.jpa.administracao;
 import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioDetalhes;
 import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioRepositorioAplicacao;
 import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioResumo;
+import br.com.medflow.aplicacao.administracao.funcionarios.HistoricoEntradaResumo;
 import br.com.medflow.dominio.administracao.funcionarios.StatusFuncionario;
 import br.com.medflow.infraestrutura.persistencia.jpa.JpaMapeador;
 
@@ -29,7 +30,7 @@ public class FuncionarioRepositorioAplicacaoImpl implements FuncionarioRepositor
 
     @Override
     public List<FuncionarioResumo> pesquisarResumos() {
-        // Encontra todas as entidades JPA
+        // Encontra todas as entidades JPA (sem histórico para resumo, mais eficiente)
         List<FuncionarioJpa> jpas = jpaRepository.findAll();
         
         // Mapeia cada entidade JPA para o DTO de Resumo da Camada de Aplicação
@@ -40,23 +41,89 @@ public class FuncionarioRepositorioAplicacaoImpl implements FuncionarioRepositor
 
     @Override
     public Optional<FuncionarioDetalhes> obterDetalhesPorId(Integer id) {
-        Optional<FuncionarioJpa> jpaOptional = jpaRepository.findById(id);
+        // Usa JOIN FETCH para carregar o histórico junto com o funcionário
+        Optional<FuncionarioJpa> jpaOptional = jpaRepository.findByIdWithHistorico(id);
 
         if (jpaOptional.isEmpty()) {
             return Optional.empty();
         }
         
-        // Carrega o histórico com JOIN FETCH se necessário
+        // O histórico já está carregado via JOIN FETCH
         FuncionarioJpa jpa = jpaOptional.get();
-        // O histórico já deve estar carregado se usar @EntityGraph ou JOIN FETCH na query
-        // Por enquanto, assumimos que está carregado via LAZY quando necessário
         
-        // Mapeia a entidade JPA completa para o DTO de Detalhes da Camada de Aplicação
-        return Optional.of(mapeador.map(jpa, FuncionarioDetalhes.class));
+        // Mapeia manualmente porque FuncionarioDetalhes é uma interface com HistoricoEntradaResumo também interface
+        FuncionarioDetalhes detalhes = criarFuncionarioDetalhes(jpa);
+        
+        return Optional.of(detalhes);
+    }
+    
+    /**
+     * Cria uma implementação de FuncionarioDetalhes a partir de FuncionarioJpa.
+     * Necessário porque FuncionarioDetalhes é uma interface e o histórico também é uma interface.
+     */
+    private FuncionarioDetalhes criarFuncionarioDetalhes(FuncionarioJpa jpa) {
+        return new FuncionarioDetalhes() {
+            @Override
+            public Integer getId() {
+                return jpa.getId();
+            }
+
+            @Override
+            public String getNome() {
+                return jpa.getNome();
+            }
+
+            @Override
+            public String getFuncao() {
+                return jpa.getFuncao();
+            }
+
+            @Override
+            public String getContato() {
+                return jpa.getContato();
+            }
+
+            @Override
+            public br.com.medflow.dominio.administracao.funcionarios.StatusFuncionario getStatus() {
+                return jpa.getStatus();
+            }
+
+            @Override
+            public List<HistoricoEntradaResumo> getHistorico() {
+                if (jpa.getHistorico() == null) {
+                    return List.of();
+                }
+                
+                return jpa.getHistorico().stream()
+                    .map(historicoJpa -> new HistoricoEntradaResumo() {
+                        @Override
+                        public String getAcao() {
+                            return historicoJpa.getAcao() != null ? historicoJpa.getAcao().name() : null;
+                        }
+
+                        @Override
+                        public String getDescricao() {
+                            return historicoJpa.getDescricao();
+                        }
+
+                        @Override
+                        public Integer getResponsavelId() {
+                            return historicoJpa.getResponsavelId();
+                        }
+
+                        @Override
+                        public java.time.LocalDateTime getDataHora() {
+                            return historicoJpa.getDataHora();
+                        }
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            }
+        };
     }
 
     @Override
     public List<FuncionarioResumo> pesquisarPorStatus(StatusFuncionario status) {
+        // Para resumo, não precisa do histórico, então usa a query simples
         List<FuncionarioJpa> jpas = jpaRepository.findByStatus(status);
 
         // Mapeia as entidades JPA para a lista de DTOs de Resumo
@@ -67,6 +134,7 @@ public class FuncionarioRepositorioAplicacaoImpl implements FuncionarioRepositor
 
     @Override
     public List<FuncionarioResumo> pesquisarPorFuncao(String funcao) {
+        // Para resumo, não precisa do histórico, então usa a query simples
         List<FuncionarioJpa> jpas = jpaRepository.findByFuncaoIgnoreCase(funcao);
 
         // Mapeia as entidades JPA para a lista de DTOs de Resumo
