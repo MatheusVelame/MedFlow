@@ -52,7 +52,21 @@ public abstract class RepositorioJpaTemplate<JPA, DOMINIO> {
      * Método de conversão comum (parte fixa do algoritmo).
      */
     protected final DOMINIO converterParaDominio(JPA jpa) {
-        return mapper.map(jpa, dominioClass);
+        try {
+            // tentativa normal
+            return mapper.map(jpa, dominioClass);
+        } catch (org.modelmapper.MappingException ex) {
+            // fallback: instanciar manualmente e mapear para a instância (evita ModelMapper tentar criar a instância)
+            try {
+                var ctor = dominioClass.getDeclaredConstructor();
+                ctor.setAccessible(true);
+                DOMINIO instancia = ctor.newInstance();
+                mapper.map(jpa, instancia);
+                return instancia;
+            } catch (Exception e) {
+                throw ex; // reapresenta a exception original para manter stacktrace útil
+            }
+        }
     }
     
     // ========== MÉTODOS ABSTRATOS (implementados pelas subclasses) ==========

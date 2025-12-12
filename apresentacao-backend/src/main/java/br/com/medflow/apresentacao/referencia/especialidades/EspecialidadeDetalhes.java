@@ -14,7 +14,8 @@ public record EspecialidadeDetalhes(
             especialidade.getId(),
             especialidade.getNome(),
             especialidade.getDescricao(),
-            especialidade.getStatus().name(),
+            // Null-safe: evita NPE caso status seja nulo
+            (especialidade.getStatus() != null) ? especialidade.getStatus().name() : null,
             especialidade.isPossuiVinculoHistorico()
         );
     }

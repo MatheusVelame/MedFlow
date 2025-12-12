@@ -1,0 +1,24 @@
+import { api, request } from "./apiClient";
+import type {
+  ExameResponse,
+  AgendamentoExameRequest,
+  AtualizacaoExameRequest,
+  CancelamentoExameRequest,
+} from "./types";
+
+export const examesApi = {
+  listar: async (): Promise<ExameResponse[]> =>
+    request<ExameResponse[]>(api.get(`/exames`)),
+
+  agendar: async (payload: AgendamentoExameRequest): Promise<ExameResponse> =>
+    request<ExameResponse>(api.post(`/exames`, payload)),
+
+  atualizar: async (id: number, payload: AtualizacaoExameRequest): Promise<ExameResponse> =>
+    request<ExameResponse>(api.put(`/exames/${id}`, payload)),
+
+  excluir: async (id: number, responsavelId: number): Promise<void> =>
+    request<void>(api.delete(`/exames/${id}`, { params: { responsavelId } })),
+
+  cancelar: async (id: number, payload: CancelamentoExameRequest): Promise<ExameResponse> =>
+    request<ExameResponse>(api.patch(`/exames/${id}/cancelamento`, payload)),
+};

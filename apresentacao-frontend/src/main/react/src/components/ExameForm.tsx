@@ -8,14 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useListarPacientes } from "@/api/usePacientesApi";
+import { useListarFuncionarios } from "@/api/useFuncionariosApi";
+import { tiposExamesApi } from "@/api";
 
 const exameSchema = z.object({
-  paciente: z.string().min(1, "Paciente é obrigatório"),
-  tipo: z.string().min(1, "Tipo de exame é obrigatório"),
-  solicitante: z.string().min(1, "Médico solicitante é obrigatório"),
+  pacienteId: z.number().min(1, "Paciente é obrigatório"),
+  tipoExame: z.string().min(1, "Tipo de exame é obrigatório"),
+  medicoId: z.number().min(1, "Médico solicitante é obrigatório"),
   laboratorio: z.string().min(1, "Laboratório é obrigatório"),
   prioridade: z.enum(["normal", "urgente"]),
-  dataSolicitacao: z.string().min(1, "Data é obrigatória"),
+  dataHora: z.string().min(1, "Data e hora é obrigatória"),
 });
 
 type ExameFormData = z.infer<typeof exameSchema>;
@@ -31,19 +34,31 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
     resolver: zodResolver(exameSchema),
     defaultValues: {
       prioridade: "normal",
-      dataSolicitacao: new Date().toISOString().split('T')[0]
+      dataHora: new Date().toISOString().slice(0,16), // datetime-local value
+      laboratorio: "",
     }
   });
+
+  const { data: pacientes = [] } = useListarPacientes();
+  const { data: funcionarios = [] } = useListarFuncionarios();
+
+  // carregar tipos de exames para seleção
+  const [tipos, setTipos] = (window as any)._tiposExamesCache || [ ];
+  useEffect(() => {
+    let mounted = true;
+    tiposExamesApi.listar().then(data => { if(mounted){ setTipos(data); (window as any)._tiposExamesCache = data; } });
+    return () => { mounted = false; };
+  }, []);
 
   useEffect(() => {
     if (!open) {
       reset({
-        paciente: "",
-        tipo: "",
-        solicitante: "",
+        pacienteId: 0,
+        tipoExame: "",
+        medicoId: 0,
         laboratorio: "",
         prioridade: "normal",
-        dataSolicitacao: new Date().toISOString().split('T')[0]
+        dataHora: new Date().toISOString().slice(0,16),
       });
     }
   }, [open, reset]);
@@ -65,20 +80,47 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="paciente">Paciente *</Label>
-              <Input id="paciente" {...register("paciente")} placeholder="Nome do paciente" />
-              {errors.paciente && <p className="text-sm text-destructive">{errors.paciente.message}</p>}
+              <Select onValueChange={(v: any) => setValue('pacienteId', Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pacientes.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.pacienteId && <p className="text-sm text-destructive">{errors.pacienteId.message}</p>}
             </div>
 
             <div className="col-span-2">
-              <Label htmlFor="tipo">Tipo de Exame *</Label>
-              <Input id="tipo" {...register("tipo")} placeholder="Ex: Hemograma Completo" />
-              {errors.tipo && <p className="text-sm text-destructive">{errors.tipo.message}</p>}
+              <Label htmlFor="tipoExame">Tipo de Exame *</Label>
+              <Select onValueChange={(v: any) => setValue('tipoExame', v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {((window as any)._tiposExamesCache || tipos).map((t: any) => (
+                    <SelectItem key={t.id} value={t.descricao || t.codigo || String(t.id)}>{t.descricao || t.codigo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.tipoExame && <p className="text-sm text-destructive">{errors.tipoExame.message}</p>}
             </div>
 
             <div>
-              <Label htmlFor="solicitante">Médico Solicitante *</Label>
-              <Input id="solicitante" {...register("solicitante")} />
-              {errors.solicitante && <p className="text-sm text-destructive">{errors.solicitante.message}</p>}
+              <Label htmlFor="medicoId">Médico Solicitante *</Label>
+              <Select onValueChange={(v: any) => setValue('medicoId', Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {funcionarios.map(f => (
+                    <SelectItem key={f.id} value={String(f.id)}>{f.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.medicoId && <p className="text-sm text-destructive">{errors.medicoId.message}</p>}
             </div>
 
             <div>
@@ -102,9 +144,9 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="dataSolicitacao">Data da Solicitação *</Label>
-              <Input id="dataSolicitacao" type="date" {...register("dataSolicitacao")} />
-              {errors.dataSolicitacao && <p className="text-sm text-destructive">{errors.dataSolicitacao.message}</p>}
+              <Label htmlFor="dataHora">Data e Hora *</Label>
+              <Input id="dataHora" type="datetime-local" {...register("dataHora")} />
+              {errors.dataHora && <p className="text-sm text-destructive">{errors.dataHora.message}</p>}
             </div>
           </div>
 

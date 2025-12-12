@@ -2,6 +2,7 @@ package br.com.medflow.infraestrutura.persistencia.jpa.atendimento;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
@@ -50,6 +51,11 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
         var conflitos = jpaRepository.encontrarConflitos(pacienteId, dataHora, idIgnorar);
         
         return conflitos.stream().findFirst().map(this::paraDominio);
+    }
+
+    @Override
+    public List<Exame> listarTodos() {
+        return jpaRepository.findAll().stream().map(this::paraDominio).collect(Collectors.toList());
     }
 
     // --- Métodos Auxiliares de Mapeamento (Converter) ---

@@ -72,6 +72,26 @@ public class BackendMapeador extends ModelMapper {
             }
         });
 
+        // Conversor para StatusEspecialidade <-> String (tolerante a nulos)
+        addConverter(new AbstractConverter<br.com.medflow.dominio.referencia.especialidades.StatusEspecialidade, String>() {
+            @Override
+            protected String convert(br.com.medflow.dominio.referencia.especialidades.StatusEspecialidade source) {
+                return source != null ? source.name() : null;
+            }
+        });
+
+        addConverter(new AbstractConverter<String, br.com.medflow.dominio.referencia.especialidades.StatusEspecialidade>() {
+            @Override
+            protected br.com.medflow.dominio.referencia.especialidades.StatusEspecialidade convert(String source) {
+                if (source == null) return null;
+                try {
+                    return br.com.medflow.dominio.referencia.especialidades.StatusEspecialidade.valueOf(source);
+                } catch (IllegalArgumentException e) {
+                    return null; // fallback caso valor desconhecido
+                }
+            }
+        });
+
         // ===== CONVERSORES PARA FUNCIONÁRIOS =====
         
         // Converte Integer (vindo do Formulário) para o Value Object FuncionarioId

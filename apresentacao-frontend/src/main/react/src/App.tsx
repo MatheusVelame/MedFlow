@@ -24,6 +24,8 @@ import MedicamentosMedico from "./pages/Medicamentos-medico";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import TiposExames from "./pages/TiposExames";
+import EspecialidadeNovo from "./pages/EspecialidadeNovo";
+import EspecialidadeDetalhe from "./pages/EspecialidadeDetalhe";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +83,16 @@ const App = () => (
                     <Route path="/especialidades" element={
                       <ProtectedRoute allowedRoles={['gestor']}>
                         <Especialidades />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/especialidades/novo" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <EspecialidadeNovo />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/especialidades/:id" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <EspecialidadeDetalhe />
                       </ProtectedRoute>
                     } />
                     <Route path="/convenios" element={

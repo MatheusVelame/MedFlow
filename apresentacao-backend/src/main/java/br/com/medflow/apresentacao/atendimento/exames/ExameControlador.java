@@ -1,9 +1,12 @@
 package br.com.medflow.apresentacao.atendimento.exames;
 
 import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +20,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import br.com.medflow.dominio.atendimento.exames.Exame;
 import br.com.medflow.dominio.atendimento.exames.ExameId;
 import br.com.medflow.dominio.atendimento.exames.IExameServico;
+import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
 import br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId;
 
 @RestController
@@ -24,9 +28,18 @@ import br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId;
 public class ExameControlador {
 
     private final IExameServico exameServico;
+    private final ExameRepositorio exameRepositorio;
 
-    public ExameControlador(IExameServico exameServico) {
+    public ExameControlador(IExameServico exameServico, ExameRepositorio exameRepositorio) {
         this.exameServico = exameServico;
+        this.exameRepositorio = exameRepositorio;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ExameResponse>> listar() {
+        List<Exame> todos = exameRepositorio.listarTodos();
+        List<ExameResponse> resp = todos.stream().map(ExameResponse::de).collect(Collectors.toList());
+        return ResponseEntity.ok(resp);
     }
 
     @PostMapping

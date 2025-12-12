@@ -15,52 +15,40 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EspecialidadeForm } from "@/components/EspecialidadeForm";
 import { toast } from "@/hooks/use-toast";
+import { useEspecialidades, useCriarEspecialidade, useAtualizarEspecialidade, useExcluirEspecialidade } from "@/hooks/useEspecialidades";
 
 interface Especialidade {
   id: number;
   nome: string;
   descricao: string;
-  ativa: boolean;
-  medicosVinculados: number;
+  ativa?: boolean;
+  medicosVinculados?: number;
 }
 
-const initialEspecialidades: Especialidade[] = [
-  { id: 1, nome: "Cardiologia", descricao: "Especialidade médica que trata do coração", ativa: true, medicosVinculados: 3 },
-  { id: 2, nome: "Pediatria", descricao: "Especialidade médica dedicada à saúde infantil", ativa: true, medicosVinculados: 2 },
-  { id: 3, nome: "Ortopedia", descricao: "Especialidade médica que trata do sistema musculoesquelético", ativa: true, medicosVinculados: 2 },
-  { id: 4, nome: "Dermatologia", descricao: "Especialidade médica que trata da pele", ativa: true, medicosVinculados: 1 },
-  { id: 5, nome: "Clínico Geral", descricao: "Atendimento médico generalista", ativa: true, medicosVinculados: 4 },
-];
-
 export default function Especialidades() {
-  const [especialidades, setEspecialidades] = useState<Especialidade[]>(initialEspecialidades);
+  const { data: especialidadesData, isLoading, isError } = useEspecialidades();
+  const criar = useCriarEspecialidade();
+  const atualizar = useAtualizarEspecialidade();
+  const excluir = useExcluirEspecialidade();
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEspecialidade, setEditingEspecialidade] = useState<Especialidade | null>(null);
   const [especialidadeToDelete, setEspecialidadeToDelete] = useState<number | null>(null);
 
-  const handleSave = (data: any) => {
-    if (editingEspecialidade) {
-      setEspecialidades(especialidades.map(e => 
-        e.id === editingEspecialidade.id ? { ...e, ...data } : e
-      ));
-      toast({
-        title: "Especialidade atualizada",
-        description: "As informações foram atualizadas com sucesso.",
-      });
-    } else {
-      const newEspecialidade = {
-        id: Math.max(...especialidades.map(e => e.id)) + 1,
-        ...data,
-        medicosVinculados: 0,
-      };
-      setEspecialidades([...especialidades, newEspecialidade]);
-      toast({
-        title: "Especialidade cadastrada",
-        description: "Nova especialidade foi adicionada com sucesso.",
-      });
+  const handleSave = async (data: any) => {
+    try {
+      if (editingEspecialidade) {
+        await atualizar.mutateAsync({ id: editingEspecialidade.id, payload: { novoNome: data.nome, novaDescricao: data.descricao } });
+        toast({ title: "Especialidade atualizada", description: "As informações foram atualizadas com sucesso." });
+      } else {
+        await criar.mutateAsync({ nome: data.nome, descricao: data.descricao });
+        toast({ title: "Especialidade cadastrada", description: "Nova especialidade foi adicionada com sucesso." });
+      }
+      setIsFormOpen(false);
+      setEditingEspecialidade(null);
+    } catch (e: any) {
+      toast({ title: "Erro", description: e?.message ?? "Erro ao salvar especialidade" });
     }
-    setIsFormOpen(false);
-    setEditingEspecialidade(null);
   };
 
   const handleEdit = (especialidade: Especialidade) => {
@@ -68,13 +56,14 @@ export default function Especialidades() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    setEspecialidades(especialidades.filter(e => e.id !== id));
-    setEspecialidadeToDelete(null);
-    toast({
-      title: "Especialidade removida",
-      description: "A especialidade foi removida com sucesso.",
-    });
+  const handleDelete = async (id: number) => {
+    try {
+      await excluir.mutateAsync(id);
+      setEspecialidadeToDelete(null);
+      toast({ title: "Especialidade removida", description: "A especialidade foi removida com sucesso." });
+    } catch (e: any) {
+      toast({ title: "Erro ao remover", description: e?.message ?? "Não foi possível remover a especialidade" });
+    }
   };
 
   return (
@@ -84,14 +73,17 @@ export default function Especialidades() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Especialidades Médicas</h1>
           <p className="text-muted-foreground">Gerencie as especialidades disponíveis na clínica</p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+        <Button onClick={() => { setIsFormOpen(true); setEditingEspecialidade(null); }} className="gap-2">
           <Plus className="h-4 w-4" />
           Nova Especialidade
         </Button>
       </div>
 
+      {isLoading && <div>Carregando especialidades...</div>}
+      {isError && <div>Erro ao carregar especialidades</div>}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {especialidades.map((especialidade) => (
+        {especialidadesData?.map((especialidade) => (
           <Card key={especialidade.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -101,8 +93,8 @@ export default function Especialidades() {
                   </div>
                   <div>
                     <CardTitle className="text-lg">{especialidade.nome}</CardTitle>
-                    <Badge variant={especialidade.ativa ? "default" : "secondary"} className="mt-1">
-                      {especialidade.ativa ? "Ativa" : "Inativa"}
+                    <Badge variant={especialidade.status === 'ATIVA' ? "default" : "secondary"} className="mt-1">
+                      {especialidade.status}
                     </Badge>
                   </div>
                 </div>
@@ -110,24 +102,24 @@ export default function Especialidades() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">{especialidade.descricao}</p>
-              
+
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-muted-foreground">Médicos vinculados:</span>
-                <Badge variant="outline">{especialidade.medicosVinculados}</Badge>
+                <Badge variant="outline">{especialidade.medicosVinculados ?? 0}</Badge>
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="flex-1"
-                  onClick={() => handleEdit(especialidade)}
+                  onClick={() => handleEdit(especialidade as Especialidade)}
                 >
                   <Edit className="h-4 w-4 mr-1" />
                   Editar
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setEspecialidadeToDelete(especialidade.id)}
                 >
@@ -143,7 +135,7 @@ export default function Especialidades() {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSave={handleSave}
-        initialData={editingEspecialidade}
+        initialData={editingEspecialidade ?? undefined}
       />
 
       <AlertDialog open={!!especialidadeToDelete} onOpenChange={() => setEspecialidadeToDelete(null)}>

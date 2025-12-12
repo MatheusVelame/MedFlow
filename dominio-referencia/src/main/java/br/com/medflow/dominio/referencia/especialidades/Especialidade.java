@@ -11,6 +11,11 @@ public class Especialidade {
     private StatusEspecialidade status;
     private boolean possuiVinculoHistorico; // RN 3.2: Flag para controle de exclusão física
 
+    // Construtor sem-argumentos necessário para frameworks (Mapeamento/ModelMapper/JPA)
+    public Especialidade() {
+        // Intencionalmente vazio - usado apenas para desserialização e mapeamento
+    }
+
     // Construtor para novas especialidades (RN 1.5 - Status Inicial Ativa)
     public Especialidade(String nome, String descricao) {
         validarNomeObrigatorio(nome);
@@ -96,4 +101,10 @@ public class Especialidade {
     public String getDescricao() { return descricao; }
     public StatusEspecialidade getStatus() { return status; }
     public boolean isPossuiVinculoHistorico() { return possuiVinculoHistorico; }
+
+    // Setters públicos para auxiliar frameworks/ModelMapper na reconstrução do Aggregate
+    public void setNome(String nome) { this.nome = nome; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public void setStatus(StatusEspecialidade status) { this.status = status; }
+    public void setPossuiVinculoHistorico(boolean possuiVinculoHistorico) { this.possuiVinculoHistorico = possuiVinculoHistorico; }
 }

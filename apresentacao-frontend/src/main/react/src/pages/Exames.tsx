@@ -28,6 +28,10 @@ import {
   TipoExameResumo 
 } from "@/api/useTiposExamesApi";
 
+// IMPORTS NOVOS: Exame hooks e form
+import { ExameForm } from "@/components/ExameForm";
+import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList } from "@/hooks/useExames";
+
 export default function Exames() {
   const { isGestor } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,6 +55,20 @@ export default function Exames() {
   const [isTipoExameFormOpen, setIsTipoExameFormOpen] = useState(false);
   const [editingTipoExame, setEditingTipoExame] = useState<TipoExameResumo | null>(null);
   const [tipoExameToDelete, setTipoExameToDelete] = useState<number | null>(null);
+
+  // ========================================================================
+  // EXAMES: hooks e UI state
+  // ========================================================================
+  const { data: exames = [] } = useExamesList();
+  const agendar = useAgendarExame();
+  const atualizarExame = useAtualizarExame();
+  const cancelarExame = useCancelarExame();
+  const excluirExame = useExcluirExame();
+
+  const [isExameFormOpen, setIsExameFormOpen] = useState(false);
+  const [editingExame, setEditingExame] = useState<any | null>(null);
+  const [exameToDelete, setExameToDelete] = useState<number | null>(null);
+  const [exameToCancel, setExameToCancel] = useState<number | null>(null);
 
   // ========================================================================
   // HANDLERS
@@ -143,6 +161,54 @@ export default function Exames() {
     });
   };
 
+  // Exames handlers
+  const handleOpenAgendar = () => {
+    setEditingExame(null);
+    setIsExameFormOpen(true);
+  };
+
+  const handleSaveExame = async (data: any) => {
+    try {
+      // o backend espera dataHora como LocalDateTime (YYYY-MM-DDTHH:mm:ss)
+      if (editingExame) {
+        await atualizarExame.mutateAsync({ id: editingExame.id, payload: { medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: data.dataHora, responsavelId: Number(data.responsavelId) } });
+        toast({ title: 'Exame atualizado', description: 'Agendamento atualizado.' });
+      } else {
+        await agendar.mutateAsync({ pacienteId: Number(data.pacienteId), medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: data.dataHora, responsavelId: Number(data.responsavelId) });
+        toast({ title: 'Exame agendado', description: 'Agendamento criado com sucesso.' });
+      }
+      setIsExameFormOpen(false);
+      setEditingExame(null);
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.message ?? 'Erro ao salvar exame' });
+    }
+  };
+
+  const handleEditExame = (exame: any) => {
+    setEditingExame(exame);
+    setIsExameFormOpen(true);
+  };
+
+  const handleDeleteExame = async (id: number) => {
+    try {
+      await excluirExame.mutateAsync({ id, responsavelId: 1073741824 });
+      toast({ title: 'Exame excluído', description: 'Exame removido.' });
+      setExameToDelete(null);
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.message ?? 'Erro ao excluir exame' });
+    }
+  };
+
+  const handleCancelExame = async (id: number, motivo?: string) => {
+    try {
+      await cancelarExame.mutateAsync({ id, payload: { motivo: motivo ?? 'Cancelado pelo usuário', responsavelId: 1073741824 } });
+      toast({ title: 'Exame cancelado', description: 'Exame cancelado com sucesso.' });
+      setExameToCancel(null);
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.message ?? 'Erro ao cancelar exame' });
+    }
+  };
+
   // ========================================================================
   // HELPERS VISUAIS
   // ========================================================================
@@ -189,6 +255,12 @@ export default function Exames() {
           <h1 className="text-3xl font-bold text-foreground">Tipos de Exames</h1>
           <p className="text-muted-foreground">Gerencie os tipos de exames disponíveis na clínica</p>
         </div>
+        <div className="flex gap-2">
+          <Button onClick={handleOpenAgendar} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Agendar Exame
+          </Button>
+        </div>
       </div>
 
       <TipoExameForm
@@ -200,6 +272,8 @@ export default function Exames() {
         especialidades={[]}
         isLoading={isCadastrando || isEditando} 
       />
+
+      <ExameForm open={isExameFormOpen} onOpenChange={setIsExameFormOpen} initialData={editingExame ?? undefined} onSave={handleSaveExame} />
 
       <div className="grid gap-6 md:grid-cols-4">
         <Card className="shadow-card">
