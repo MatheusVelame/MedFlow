@@ -21,6 +21,10 @@ public class AgendamentoFormulario {
     
     @NotNull(message = "O ID do médico é obrigatório.")
     private Integer medicoId;
+    
+    // NOVO CAMPO: ID do usuário responsável pela ação
+    @NotNull(message = "O ID do usuário responsável é obrigatório.")
+    private Integer usuarioId;
 
     // Getters e Setters
     public LocalDateTime getDataHora() { return dataHora; }
@@ -31,4 +35,6 @@ public class AgendamentoFormulario {
     public void setPacienteId(Integer pacienteId) { this.pacienteId = pacienteId; }
     public Integer getMedicoId() { return medicoId; }
     public void setMedicoId(Integer medicoId) { this.medicoId = medicoId; }
+    public Integer getUsuarioId() { return usuarioId; }
+    public void setUsuarioId(Integer usuarioId) { this.usuarioId = usuarioId; }
 }

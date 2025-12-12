@@ -34,6 +34,13 @@ import br.com.medflow.dominio.financeiro.evento.EventoBarramento;
 import br.com.medflow.infraestrutura.evento.EventoBarramentoImpl;
 import br.com.medflow.aplicacao.financeiro.convenios.ConvenioAuditoriaObservador;
 
+//NOVOS IMPORTS para TiposExames
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameServico;
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorio;
+import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameServicoAplicacao;
+import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameRepositorioAplicacao;
+
+
 @SpringBootApplication
 public class BackendAplicacao {
     
@@ -49,7 +56,7 @@ public class BackendAplicacao {
     public ConsultaServicoAplicacao consultaServicoAplicacao(ConsultaRepositorioAplicacao repositorio) {
         return new ConsultaServicoAplicacao(repositorio);
     }
-
+    
     // =====================================================================
     // NOVAS CONFIGURAÇÕES DE BEANS PARA MEDICAMENTOS
     // =====================================================================
@@ -108,6 +115,26 @@ public class BackendAplicacao {
 			FolhaPagamentoRepositorioAplicacao repositorioAplicacao) {
 		return new FolhaPagamentoServicoAplicacao(servicoDominio, repositorioAplicacao);
 	}
+
+
+    // [Outros Beans de outros Contextos e Eventos seriam configurados aqui]
+
+	// =====================================================================
+    // NOVAS CONFIGURAÇÕES DE BEANS PARA TIPOS DE EXAMES
+    // =====================================================================
+
+    // Configuração do Serviço de Domínio TipoExame (Commands/Writes)
+    @Bean
+    public TipoExameServico tipoExameServico(TipoExameRepositorio repositorio) {
+        return new TipoExameServico(repositorio);
+    }
+
+    // Configuração do Serviço de Aplicação TipoExame (Queries/Reads)
+    @Bean
+    public TipoExameServicoAplicacao tipoExameServicoAplicacao(TipoExameRepositorioAplicacao repositorio) {
+        return new TipoExameServicoAplicacao(repositorio);
+    }
+
 
 	public static void main(String[] args) throws IOException {
 		run(BackendAplicacao.class, args);
