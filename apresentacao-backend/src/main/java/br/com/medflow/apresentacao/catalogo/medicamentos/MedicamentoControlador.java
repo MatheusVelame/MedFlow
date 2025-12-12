@@ -8,6 +8,7 @@ import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoServico;
 import br.com.medflow.dominio.catalogo.medicamentos.StatusMedicamento;
 import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoId;
 import br.com.medflow.dominio.catalogo.medicamentos.UsuarioResponsavelId;
+import br.com.medflow.dominio.catalogo.medicamentos.RevisaoPendenteException; // <-- NOVO IMPORT
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -133,7 +134,7 @@ public class MedicamentoControlador {
     
     // 5. Comando: solicitarRevisaoContraindicacoes
     // PUT /backend/medicamentos/{id}/revisao/solicitar
-    @Transactional
+    @Transactional(noRollbackFor = RevisaoPendenteException.class) // <-- CORREÇÃO
     @PutMapping("/{id}/revisao/solicitar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void solicitarRevisao(@PathVariable Integer id, @Valid @RequestBody RevisaoFormulario formulario) {
