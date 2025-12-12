@@ -1,165 +1,237 @@
+// Localização: aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoServicoAplicacao.java
+
 package br.com.medflow.aplicacao.administracao.medicos;
 
 import static org.apache.commons.lang3.Validate.notEmpty;
 import static org.apache.commons.lang3.Validate.notNull;
 
-import br.com.medflow.dominio.administracao.funcionarios.Medico;
-import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
-import br.com.medflow.dominio.administracao.funcionarios.StatusFuncionario;
-import br.com.medflow.dominio.administracao.funcionarios.CRM;
+import br.com.medflow.dominio.administracao.funcionarios.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Serviço de Aplicação para Médicos, focado em operações de LEITURA (Queries).
- *
- * PADRÃO STRATEGY APLICADO:
- * Este serviço usa uma estratégia de conversão injetada para transformar
- * entidades de domínio (Medico) em DTOs (MedicoResumo/MedicoDetalhes).
+ * Serviço de Aplicação para Médicos (Queries e Commands).
  */
 @Service
 public class MedicoServicoAplicacao {
 
-    private final MedicoRepositorioAplicacao repositorio;
+    private final MedicoRepositorioAplicacao medicoRepositorioLeitura;
+    private final FuncionarioRepositorio medicoRepositorioEscrita;
     private final MedicoConversaoStrategy strategy;
 
     @Autowired
     public MedicoServicoAplicacao(
-            @Qualifier("medicoRepositorioAplicacaoImpl") MedicoRepositorioAplicacao repositorio,
+            @Qualifier("medicoRepositorioAplicacaoImpl") MedicoRepositorioAplicacao medicoRepositorioLeitura,
+            @Qualifier("medicoRepositorioImpl") FuncionarioRepositorio medicoRepositorioEscrita,
             MedicoConversaoStrategy strategy) {
 
-        notNull(repositorio, "O repositório de médicos não pode ser nulo");
+        notNull(medicoRepositorioLeitura, "O repositório de leitura não pode ser nulo");
+        notNull(medicoRepositorioEscrita, "O repositório de escrita não pode ser nulo");
         notNull(strategy, "A estratégia de conversão não pode ser nula");
 
-        this.repositorio = repositorio;
+        this.medicoRepositorioLeitura = medicoRepositorioLeitura;
+        this.medicoRepositorioEscrita = medicoRepositorioEscrita;
         this.strategy = strategy;
     }
 
-    /**
-     * Lista todos os médicos (retorna resumos).
-     * Usado pelo endpoint: GET /api/medicos
-     */
-    public List<MedicoResumo> listarTodos() {
-        List<Medico> medicos = repositorio.pesquisarTodos();
+    // ========== QUERIES (LEITURA) ==========
 
+    public List<MedicoResumo> listarTodos() {
+        List<Medico> medicos = medicoRepositorioLeitura.pesquisarTodos();
         return medicos.stream()
                 .map(strategy::converterParaResumo)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Obtém detalhes de um médico por ID.
-     * Usado pelo endpoint: GET /api/medicos/{id}
-     */
     public MedicoDetalhes obterPorId(Integer id) {
         notNull(id, "O ID não pode ser nulo");
-
         FuncionarioId medicoId = new FuncionarioId(id.toString());
-        Medico medico = repositorio.obterPorId(medicoId)
-                .orElse(null);
-
-        if (medico == null) {
-            return null;
-        }
-
-        return strategy.converterParaDetalhes(medico);
+        Medico medico = medicoRepositorioLeitura.obterPorId(medicoId).orElse(null);
+        return medico != null ? strategy.converterParaDetalhes(medico) : null;
     }
 
-    /**
-     * Obtém detalhes de um médico por CRM.
-     * Usado pelo endpoint: GET /api/medicos/crm/{crm}
-     */
     public MedicoDetalhes obterPorCrm(String crmCompleto) {
         notEmpty(crmCompleto, "O CRM não pode ser vazio");
-
         CRM crm = new CRM(crmCompleto);
-        Medico medico = repositorio.obterPorCrm(crm)
+        Medico medico = medicoRepositorioLeitura.obterPorCrm(crm).orElse(null);
+        return medico != null ? strategy.converterParaDetalhes(medico) : null;
+    }
+
+    public List<MedicoResumo> listarPorStatus(StatusFuncionario status) {
+        notNull(status, "O status não pode ser nulo");
+        List<Medico> medicos = medicoRepositorioLeitura.pesquisarPorStatus(status);
+        return medicos.stream()
+                .map(strategy::converterParaResumo)
+                .collect(Collectors.toList());
+    }
+
+    public List<MedicoResumo> listarPorEspecialidade(Integer especialidadeId) {
+        notNull(especialidadeId, "O ID da especialidade não pode ser nulo");
+        List<Medico> medicos = medicoRepositorioLeitura.pesquisarPorEspecialidade(especialidadeId);
+        return medicos.stream()
+                .map(strategy::converterParaResumo)
+                .collect(Collectors.toList());
+    }
+
+    public List<MedicoResumo> buscarGeral(String termoBusca) {
+        notEmpty(termoBusca, "O termo de busca não pode ser vazio");
+        List<Medico> medicos = medicoRepositorioLeitura.buscarGeral(termoBusca);
+        return medicos.stream()
+                .map(strategy::converterParaResumo)
+                .collect(Collectors.toList());
+    }
+
+    // ========== COMMANDS (ESCRITA) ==========
+
+    /**
+     * Cadastra novo médico.
+     */
+    @Transactional
+    public MedicoDetalhes cadastrar(MedicoCadastroRequest request) {
+        notNull(request, "O request não pode ser nulo");
+        notEmpty(request.getNome(), "O nome é obrigatório");
+        notEmpty(request.getContato(), "O contato é obrigatório");
+        notEmpty(request.getCrmNumero(), "O número do CRM é obrigatório");
+        notEmpty(request.getCrmUf(), "A UF do CRM é obrigatória");
+        notNull(request.getEspecialidadeId(), "A especialidade é obrigatória");
+
+        // Monta CRM completo
+        String crmCompleto = request.getCrmNumero() + "-" + request.getCrmUf();
+        CRM crm = new CRM(crmCompleto);
+
+        // Cria Especialidade
+        Medico.EspecialidadeId especialidade = new Medico.EspecialidadeId(request.getEspecialidadeId());
+
+        // Cria entidade
+        FuncionarioId novoId = new FuncionarioId("");
+        UsuarioResponsavelId responsavel = new UsuarioResponsavelId(1);
+
+        Medico medico = new Medico(
+                novoId,
+                request.getNome(),
+                "Médico",
+                request.getContato(),
+                crm,
+                especialidade,
+                responsavel
+        );
+
+        // Salva
+        medicoRepositorioEscrita.salvar(medico);
+
+        // Retorna detalhes
+        return medicoRepositorioLeitura.obterPorCrm(crm)
+                .map(strategy::converterParaDetalhes)
+                .orElse(null);
+    }
+
+    /**
+     * Atualiza médico existente.
+     *
+     * Usa AcaoHistorico.ATUALIZACAO do domínio.
+     */
+    @Transactional
+    public MedicoDetalhes atualizar(Integer id, MedicoAtualizacaoRequest request) {
+        notNull(id, "O ID não pode ser nulo");
+        notNull(request, "O request não pode ser nulo");
+
+        // Busca médico existente
+        FuncionarioId medicoId = new FuncionarioId(id.toString());
+        Medico medicoExistente = medicoRepositorioLeitura.obterPorId(medicoId)
                 .orElse(null);
 
-        if (medico == null) {
+        if (medicoExistente == null) {
             return null;
         }
 
-        return strategy.converterParaDetalhes(medico);
+        // Determina valores atualizados
+        String novoNome = (request.getNome() != null && !request.getNome().isEmpty())
+                ? request.getNome()
+                : medicoExistente.getNome();
+
+        String novoContato = (request.getContato() != null && !request.getContato().isEmpty())
+                ? request.getContato()
+                : medicoExistente.getContato();
+
+        // Adiciona entrada de atualização no histórico
+        List<Funcionario.HistoricoEntrada> historicoAtualizado = new ArrayList<>(medicoExistente.getHistorico());
+        historicoAtualizado.add(new Funcionario.HistoricoEntrada(
+                AcaoHistorico.ATUALIZACAO, // ← ENUM CORRETO!
+                "Dados atualizados",
+                new UsuarioResponsavelId(1),
+                LocalDateTime.now()
+        ));
+
+        // Recria médico com dados atualizados
+        Medico medicoAtualizado = new Medico(
+                medicoExistente.getId(),
+                novoNome,
+                medicoExistente.getFuncao(),
+                novoContato,
+                medicoExistente.getStatus().name(),
+                historicoAtualizado,
+                medicoExistente.getCrm(),
+                medicoExistente.getEspecialidade()
+        );
+
+        // Salva
+        medicoRepositorioEscrita.salvar(medicoAtualizado);
+
+        // Retorna atualizado
+        return medicoRepositorioLeitura.obterPorId(medicoId)
+                .map(strategy::converterParaDetalhes)
+                .orElse(null);
     }
 
     /**
-     * Lista médicos por status.
-     * Usado pelo endpoint: GET /api/medicos/status/{status}
+     * Remove médico (inativa).
+     *
+     * Usa AcaoHistorico.EXCLUSAO do domínio.
      */
-    public List<MedicoResumo> listarPorStatus(StatusFuncionario status) {
-        notNull(status, "O status não pode ser nulo");
+    @Transactional
+    public boolean remover(Integer id) {
+        notNull(id, "O ID não pode ser nulo");
 
-        List<Medico> medicos = repositorio.pesquisarPorStatus(status);
+        // Busca médico
+        FuncionarioId medicoId = new FuncionarioId(id.toString());
+        Medico medicoExistente = medicoRepositorioLeitura.obterPorId(medicoId)
+                .orElse(null);
 
-        return medicos.stream()
-                .map(strategy::converterParaResumo)
-                .collect(Collectors.toList());
-    }
+        if (medicoExistente == null) {
+            return false;
+        }
 
-    /**
-     * Lista médicos por especialidade.
-     * Usado pelo endpoint: GET /api/medicos/especialidade/{id}
-     */
-    public List<MedicoResumo> listarPorEspecialidade(Integer especialidadeId) {
-        notNull(especialidadeId, "O ID da especialidade não pode ser nulo");
+        // Adiciona entrada de exclusão no histórico
+        List<Funcionario.HistoricoEntrada> historicoAtualizado = new ArrayList<>(medicoExistente.getHistorico());
+        historicoAtualizado.add(new Funcionario.HistoricoEntrada(
+                AcaoHistorico.EXCLUSAO, // ← ENUM CORRETO!
+                "Médico inativado",
+                new UsuarioResponsavelId(1),
+                LocalDateTime.now()
+        ));
 
-        List<Medico> medicos = repositorio.pesquisarPorEspecialidade(especialidadeId);
+        // Recria médico com status INATIVO
+        Medico medicoInativo = new Medico(
+                medicoExistente.getId(),
+                medicoExistente.getNome(),
+                medicoExistente.getFuncao(),
+                medicoExistente.getContato(),
+                "INATIVO",
+                historicoAtualizado,
+                medicoExistente.getCrm(),
+                medicoExistente.getEspecialidade()
+        );
 
-        return medicos.stream()
-                .map(strategy::converterParaResumo)
-                .collect(Collectors.toList());
-    }
+        // Salva
+        medicoRepositorioEscrita.salvar(medicoInativo);
 
-    /**
-     * Busca geral por nome, CRM ou especialidade.
-     * Usado pelo endpoint: GET /api/medicos/buscar?termo=X
-     */
-    public List<MedicoResumo> buscarGeral(String termoBusca) {
-        notEmpty(termoBusca, "O termo de busca não pode ser vazio");
-
-        List<Medico> medicos = repositorio.buscarGeral(termoBusca);
-
-        return medicos.stream()
-                .map(strategy::converterParaResumo)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Lista apenas médicos ativos.
-     */
-    public List<MedicoResumo> listarAtivos() {
-        return listarPorStatus(StatusFuncionario.ATIVO);
-    }
-
-    /**
-     * Lista médicos ativos por especialidade.
-     */
-    public List<MedicoResumo> listarAtivosPorEspecialidade(Integer especialidadeId) {
-        notNull(especialidadeId, "O ID da especialidade não pode ser nulo");
-
-        List<Medico> medicos = repositorio.pesquisarPorEspecialidade(especialidadeId);
-
-        return medicos.stream()
-                .filter(m -> m.getStatus() == StatusFuncionario.ATIVO)
-                .map(strategy::converterParaResumo)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Busca médicos por nome parcial.
-     */
-    public List<MedicoResumo> buscarPorNome(String nome) {
-        notEmpty(nome, "O nome não pode ser vazio");
-
-        List<Medico> medicos = repositorio.pesquisarPorNome(nome);
-
-        return medicos.stream()
-                .map(strategy::converterParaResumo)
-                .collect(Collectors.toList());
+        return true;
     }
 }
