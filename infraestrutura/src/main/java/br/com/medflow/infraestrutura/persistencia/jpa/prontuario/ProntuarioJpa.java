@@ -11,8 +11,8 @@ public class ProntuarioJpa {
     @Column(length = 36)
     private String id;
 
-    @Column(name = "paciente_id", nullable = false, length = 36)
-    private String pacienteId;
+    @Column(name = "paciente_id", nullable = false)
+    private Integer pacienteId;
 
     @Column(name = "atendimento_id", length = 36)
     private String atendimentoId;
@@ -36,8 +36,8 @@ public class ProntuarioJpa {
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
-    public String getPacienteId() { return pacienteId; }
-    public void setPacienteId(String pacienteId) { this.pacienteId = pacienteId; }
+    public Integer getPacienteId() { return pacienteId; }
+    public void setPacienteId(Integer pacienteId) { this.pacienteId = pacienteId; }
 
     public String getAtendimentoId() { return atendimentoId; }
     public void setAtendimentoId(String atendimentoId) { this.atendimentoId = atendimentoId; }

@@ -15,8 +15,8 @@ public class HistoricoClinicoJpa {
     @Column(name = "prontuario_id", nullable = false, length = 36)
     private String prontuarioId;
 
-    @Column(name = "paciente_id", nullable = false, length = 36)
-    private String pacienteId;
+    @Column(name = "paciente_id", nullable = false)
+    private Integer pacienteId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String sintomas;
@@ -47,8 +47,8 @@ public class HistoricoClinicoJpa {
     public String getProntuarioId() { return prontuarioId; }
     public void setProntuarioId(String prontuarioId) { this.prontuarioId = prontuarioId; }
 
-    public String getPacienteId() { return pacienteId; }
-    public void setPacienteId(String pacienteId) { this.pacienteId = pacienteId; }
+    public Integer getPacienteId() { return pacienteId; }
+    public void setPacienteId(Integer pacienteId) { this.pacienteId = pacienteId; }
 
     public String getSintomas() { return sintomas; }
     public void setSintomas(String sintomas) { this.sintomas = sintomas; }

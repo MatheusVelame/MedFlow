@@ -30,7 +30,8 @@ public class ProntuarioMapeadorBase {
         public ProntuarioJpa toJpa(Prontuario prontuario) {
             ProntuarioJpa jpa = new ProntuarioJpa();
             jpa.setId(prontuario.getId());
-            jpa.setPacienteId(prontuario.getPacienteId());
+            // Converter String (domínio) para Integer (JPA)
+            jpa.setPacienteId(Integer.parseInt(prontuario.getPacienteId()));
             jpa.setAtendimentoId(prontuario.getAtendimentoId());
             jpa.setStatus(prontuario.getStatus());
             jpa.setDataHoraCriacao(prontuario.getDataHoraCriacao());
@@ -50,7 +51,8 @@ public class ProntuarioMapeadorBase {
             HistoricoClinicoJpa jpa = new HistoricoClinicoJpa();
             jpa.setId(historico.getId());
             jpa.setProntuarioId(prontuarioId);
-            jpa.setPacienteId(historico.getPacienteId());
+            // Converter String (domínio) para Integer (JPA)
+            jpa.setPacienteId(Integer.parseInt(historico.getPacienteId()));
             jpa.setSintomas(historico.getSintomas());
             jpa.setDiagnostico(historico.getDiagnostico());
             jpa.setConduta(historico.getConduta());
@@ -64,7 +66,7 @@ public class ProntuarioMapeadorBase {
         public HistoricoClinico toDomainHistorico(HistoricoClinicoJpa jpa) {
             return new HistoricoClinico(
                     jpa.getId(),
-                    jpa.getPacienteId(),
+                    String.valueOf(jpa.getPacienteId()), // Converter Integer (JPA) para String (domínio)
                     jpa.getSintomas(),
                     jpa.getDiagnostico(),
                     jpa.getConduta(),

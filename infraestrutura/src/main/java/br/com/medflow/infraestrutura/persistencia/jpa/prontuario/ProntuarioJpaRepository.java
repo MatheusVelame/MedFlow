@@ -8,5 +8,5 @@ import java.util.List;
 @Repository
 public interface ProntuarioJpaRepository extends JpaRepository<ProntuarioJpa, String> {
     
-    List<ProntuarioJpa> findByPacienteId(String pacienteId);
+    List<ProntuarioJpa> findByPacienteId(Integer pacienteId);
 }

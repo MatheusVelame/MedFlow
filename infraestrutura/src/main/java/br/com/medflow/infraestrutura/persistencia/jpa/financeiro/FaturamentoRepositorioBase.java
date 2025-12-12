@@ -57,7 +57,8 @@ public class FaturamentoRepositorioBase implements FaturamentoRepositorio {
 
     @Override
     public List<Faturamento> pesquisarPorPaciente(PacienteId pacienteId) {
-        return jpaRepository.findByPacienteId(pacienteId.getValor()).stream()
+        Integer pacienteIdInt = Integer.parseInt(pacienteId.getValor());
+        return jpaRepository.findByPacienteId(pacienteIdInt).stream()
                 .map(this::toDomain)
                 .collect(Collectors.toList());
     }
@@ -115,7 +116,8 @@ public class FaturamentoRepositorioBase implements FaturamentoRepositorio {
         if (faturamento.getId() != null) {
             jpa.setId(faturamento.getId().getValor());
         }
-        jpa.setPacienteId(faturamento.getPacienteId().getValor());
+        // Converter String (domínio) para Integer (JPA)
+        jpa.setPacienteId(Integer.parseInt(faturamento.getPacienteId().getValor()));
         jpa.setTipoProcedimento(faturamento.getTipoProcedimento());
         jpa.setDescricaoProcedimento(faturamento.getDescricaoProcedimento());
         jpa.setValor(faturamento.getValor().getValor());
@@ -150,8 +152,9 @@ public class FaturamentoRepositorioBase implements FaturamentoRepositorio {
                 .collect(Collectors.toList());
 
         // Criar faturamento - o construtor cria uma entrada de CRIACAO automaticamente
+        // Converter Integer (JPA) para String (domínio)
         Faturamento faturamento = new Faturamento(
-                new PacienteId(jpa.getPacienteId()),
+                new PacienteId(String.valueOf(jpa.getPacienteId())),
                 jpa.getTipoProcedimento(),
                 jpa.getDescricaoProcedimento(),
                 new Valor(jpa.getValor()),

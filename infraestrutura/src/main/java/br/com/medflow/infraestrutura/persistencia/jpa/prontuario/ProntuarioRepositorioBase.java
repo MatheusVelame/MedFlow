@@ -61,7 +61,8 @@ public class ProntuarioRepositorioBase implements ProntuarioRepositorio {
 
     @Override
     public List<Prontuario> buscarPorPaciente(String pacienteId) {
-        return jpaRepository.findByPacienteId(pacienteId).stream()
+        Integer pacienteIdInt = Integer.parseInt(pacienteId);
+        return jpaRepository.findByPacienteId(pacienteIdInt).stream()
                 .map(this::toDomain)
                 .collect(Collectors.toList());
     }
@@ -77,7 +78,8 @@ public class ProntuarioRepositorioBase implements ProntuarioRepositorio {
     protected ProntuarioJpa toJpa(Prontuario prontuario) {
         ProntuarioJpa jpa = new ProntuarioJpa();
         jpa.setId(prontuario.getId());
-        jpa.setPacienteId(prontuario.getPacienteId());
+        // Converter String (domínio) para Integer (JPA)
+        jpa.setPacienteId(Integer.parseInt(prontuario.getPacienteId()));
         jpa.setAtendimentoId(prontuario.getAtendimentoId());
         jpa.setStatus(prontuario.getStatus());
         jpa.setDataHoraCriacao(prontuario.getDataHoraCriacao());
@@ -90,7 +92,8 @@ public class ProntuarioRepositorioBase implements ProntuarioRepositorio {
         HistoricoClinicoJpa jpa = new HistoricoClinicoJpa();
         jpa.setId(historico.getId());
         jpa.setProntuarioId(prontuarioId);
-        jpa.setPacienteId(historico.getPacienteId());
+        // Converter String (domínio) para Integer (JPA)
+        jpa.setPacienteId(Integer.parseInt(historico.getPacienteId()));
         jpa.setSintomas(historico.getSintomas());
         jpa.setDiagnostico(historico.getDiagnostico());
         jpa.setConduta(historico.getConduta());
@@ -127,7 +130,7 @@ public class ProntuarioRepositorioBase implements ProntuarioRepositorio {
 
         Prontuario prontuario = new Prontuario(
                 jpa.getId(),
-                jpa.getPacienteId(),
+                String.valueOf(jpa.getPacienteId()), // Converter Integer (JPA) para String (domínio)
                 jpa.getAtendimentoId(),
                 jpa.getDataHoraCriacao(),
                 jpa.getProfissionalResponsavel(),
@@ -149,7 +152,7 @@ public class ProntuarioRepositorioBase implements ProntuarioRepositorio {
     protected HistoricoClinico toDomainHistorico(HistoricoClinicoJpa jpa) {
         return new HistoricoClinico(
                 jpa.getId(),
-                jpa.getPacienteId(),
+                String.valueOf(jpa.getPacienteId()), // Converter Integer (JPA) para String (domínio)
                 jpa.getSintomas(),
                 jpa.getDiagnostico(),
                 jpa.getConduta(),

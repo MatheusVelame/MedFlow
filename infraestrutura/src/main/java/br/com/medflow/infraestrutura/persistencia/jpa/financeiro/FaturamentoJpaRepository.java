@@ -10,7 +10,7 @@ import java.util.List;
 @Repository
 public interface FaturamentoJpaRepository extends JpaRepository<FaturamentoJpa, String> {
     
-    List<FaturamentoJpa> findByPacienteId(String pacienteId);
+    List<FaturamentoJpa> findByPacienteId(Integer pacienteId);
     
     List<FaturamentoJpa> findByStatus(StatusFaturamento status);
     

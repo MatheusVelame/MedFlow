@@ -13,8 +13,8 @@ public class FaturamentoJpa {
     @Column(length = 36)
     private String id;
 
-    @Column(name = "paciente_id", nullable = false, length = 36)
-    private String pacienteId;
+    @Column(name = "paciente_id", nullable = false)
+    private Integer pacienteId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_procedimento", nullable = false)
@@ -54,8 +54,8 @@ public class FaturamentoJpa {
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
-    public String getPacienteId() { return pacienteId; }
-    public void setPacienteId(String pacienteId) { this.pacienteId = pacienteId; }
+    public Integer getPacienteId() { return pacienteId; }
+    public void setPacienteId(Integer pacienteId) { this.pacienteId = pacienteId; }
 
     public TipoProcedimento getTipoProcedimento() { return tipoProcedimento; }
     public void setTipoProcedimento(TipoProcedimento tipoProcedimento) { this.tipoProcedimento = tipoProcedimento; }

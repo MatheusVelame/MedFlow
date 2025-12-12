@@ -10,5 +10,5 @@ public interface HistoricoClinicoJpaRepository extends JpaRepository<HistoricoCl
     
     List<HistoricoClinicoJpa> findByProntuarioId(String prontuarioId);
     
-    List<HistoricoClinicoJpa> findByPacienteId(String pacienteId);
+    List<HistoricoClinicoJpa> findByPacienteId(Integer pacienteId);
 }

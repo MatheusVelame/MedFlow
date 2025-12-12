@@ -52,7 +52,7 @@ public class ProntuarioMapeadorValidacaoDecorator extends ProntuarioMapeadorDeco
     }
 
     private void validarProntuarioJpa(ProntuarioJpa jpa) {
-        if (jpa.getPacienteId() == null || jpa.getPacienteId().trim().isEmpty()) {
+        if (jpa.getPacienteId() == null) {
             throw new IllegalArgumentException("ID do paciente é obrigatório");
         }
         if (jpa.getStatus() == null) {
@@ -76,7 +76,7 @@ public class ProntuarioMapeadorValidacaoDecorator extends ProntuarioMapeadorDeco
     }
 
     private void validarHistoricoClinicoJpa(HistoricoClinicoJpa jpa) {
-        if (jpa.getPacienteId() == null || jpa.getPacienteId().trim().isEmpty()) {
+        if (jpa.getPacienteId() == null) {
             throw new IllegalArgumentException("ID do paciente no histórico clínico é obrigatório");
         }
     }
