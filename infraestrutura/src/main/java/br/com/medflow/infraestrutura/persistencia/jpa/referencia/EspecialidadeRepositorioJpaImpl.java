@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import br.com.medflow.dominio.referencia.especialidades.Especialidade;
@@ -20,7 +21,7 @@ public class EspecialidadeRepositorioJpaImpl
 
     public EspecialidadeRepositorioJpaImpl(
             EspecialidadeJpaRepository jpaRepository, 
-            ModelMapper mapper) {
+            @Qualifier("jpaMapeador") ModelMapper mapper) {
         super(mapper, Especialidade.class);
         this.jpaRepository = jpaRepository;
     }
