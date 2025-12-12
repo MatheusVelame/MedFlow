@@ -8,6 +8,7 @@ import br.com.medflow.dominio.administracao.funcionarios.FuncionarioRepositorio;
 import br.com.medflow.dominio.administracao.funcionarios.Medico;
 import br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId;
 import br.com.medflow.infraestrutura.persistencia.jpa.JpaMapeador;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 // Implementa o contrato da Camada de Domínio (Commands)
 @Component("funcionarioRepositorioImpl")
+@Primary
 public class FuncionarioRepositorioImpl implements FuncionarioRepositorio { 
 
 	private final FuncionarioJpaRepository jpaRepository;
