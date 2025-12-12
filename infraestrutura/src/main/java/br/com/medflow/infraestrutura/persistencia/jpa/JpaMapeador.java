@@ -10,6 +10,12 @@ import br.com.medflow.aplicacao.atendimento.consultas.ConsultaDetalhes;
 import br.com.medflow.aplicacao.atendimento.consultas.ConsultaResumo;
 import br.com.medflow.infraestrutura.persistencia.jpa.atendimento.ConsultaJpa;
 
+// IMPORTS PARA FUNCIONÁRIOS
+import br.com.medflow.dominio.administracao.funcionarios.Funcionario;
+import br.com.medflow.infraestrutura.persistencia.jpa.administracao.FuncionarioJpa;
+// Não importar HistoricoEntradaJpa de administracao para evitar conflito com o de catalogo
+import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioResumo;
+
 // NOVOS IMPORTS PARA PRONTUÁRIO
 import br.com.medflow.aplicacao.prontuario.ProntuarioDetalhes;
 import br.com.medflow.aplicacao.prontuario.ProntuarioResumo;
@@ -54,14 +60,15 @@ public class JpaMapeador extends ModelMapper {
             });
             
 
-        // === 3. NOVOS MAPEAMENTOS JPA (ConsultaJpa) para DTOs de Aplicação (Queries) ===
-        // Mapeamento para DTO de Detalhes
+        // === 3. CONFIGURAÇÃO DE MAPA PARA CONSULTAS (RESOLVE O PROBLEMA DO NULL) ===
+        
+        // Mapeamento de ConsultaJpa para ConsultaDetalhes (necessário para campos finais)
         createTypeMap(ConsultaJpa.class, ConsultaDetalhes.class);
         
-        // Mapeamento para DTO de Resumo
+        // Mapeamento de ConsultaJpa para ConsultaResumo (necessário para campos finais)
         createTypeMap(ConsultaJpa.class, ConsultaResumo.class);
         
-        // === 4. NOVOS MAPEAMENTOS JPA (ProntuarioJpa) para DTOs de Aplicação (Queries) ===
+
         // Mapeamento para DTO de Detalhes
         createTypeMap(ProntuarioJpa.class, ProntuarioDetalhes.class);
         
@@ -74,6 +81,45 @@ public class JpaMapeador extends ModelMapper {
                 // Ignora a coleção bidirecional (a lógica está no RepositorioImpl)
                 mapper.skip(ConvenioJpa::setHistorico);
             });
+        
+        
+            createTypeMap(
+                br.com.medflow.dominio.administracao.funcionarios.Funcionario.HistoricoEntrada.class, 
+                br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa.class)
+                .addMappings(mapper -> {
+                    // Mapeia o código do responsável (String) para Integer
+                    // NOTA: UsuarioResponsavelId de funcionários usa getCodigo() (String), não getId()
+                    mapper.map(
+                        src -> {
+                            String codigo = src.getResponsavel().getCodigo();
+                            try {
+                                return Integer.parseInt(codigo);
+                            } catch (NumberFormatException e) {
+                                throw new RuntimeException("Erro ao converter código do responsável para Integer: " + codigo, e);
+                            }
+                        }, 
+                        br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setResponsavelId
+                    );
+                    
+                    // Garante o mapeamento do LocalDateTime (DATA_HORA)
+                    mapper.map(
+                        br.com.medflow.dominio.administracao.funcionarios.Funcionario.HistoricoEntrada::getDataHora, 
+                        br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setDataHora
+                    );
+                    
+                    // Ignora o mapeamento bidirecional neste sentido
+                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setFuncionario);
+                });
+                
+            // Mapeamento de DOMÍNIO (Funcionario) para JPA
+            createTypeMap(Funcionario.class, FuncionarioJpa.class)
+                .addMappings(mapper -> {
+                    // Ignora a coleção bidirecional (a lógica está no RepositorioImpl)
+                    mapper.skip(FuncionarioJpa::setHistorico);
+                });
+            
+
+            createTypeMap(FuncionarioJpa.class, FuncionarioResumo.class);
             
         // === 6. Mapeamento de DOMÍNIO (HistoricoEntrada de Convenio) para JPA ===
         // HistoricoEntrada é uma classe interna de Convenio, então usamos reflexão
@@ -124,5 +170,6 @@ public class JpaMapeador extends ModelMapper {
             // Se não conseguir criar o mapeamento, o ModelMapper tentará mapear automaticamente
             System.err.println("Aviso: Não foi possível criar mapeamento explícito para HistoricoEntrada de Convenio: " + e.getMessage());
         }
+
 	}
 }

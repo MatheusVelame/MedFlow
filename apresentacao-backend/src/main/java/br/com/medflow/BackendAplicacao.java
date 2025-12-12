@@ -8,6 +8,7 @@ import java.io.IOException;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 // Imports de Consultas (Módulo 1)
 import br.com.medflow.dominio.atendimento.consultas.ConsultaServico;
@@ -58,10 +59,21 @@ import br.com.medflow.dominio.financeiro.folhapagamento.FolhaPagamentoRepositori
 import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoServicoAplicacao;
 import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoRepositorioAplicacao;
 
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioServico;
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioRepositorio;
+import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioServicoAplicacao;
+import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioRepositorioAplicacao;
 
 @SpringBootApplication
+@ComponentScan(basePackages = {
+    "br.com.medflow",
+    "br.com.medflow.infraestrutura",
+    "br.com.medflow.aplicacao",
+    "br.com.medflow.dominio"
+})
 public class BackendAplicacao {
     
+
     // =====================================================================
     // CONFIGURAÇÕES DE BEANS PARA CONSULTAS
     // =====================================================================
@@ -80,17 +92,19 @@ public class BackendAplicacao {
     // =====================================================================
     
     // Configuração do Serviço de Domínio Medicamento (Commands/Writes)
+
 	@Bean
 	public MedicamentoServico medicamentoServico(MedicamentoRepositorio repositorio) {
 		return new MedicamentoServico(repositorio);
 	}
 
-    // Configuração do Serviço de Aplicação Medicamento (Queries/Reads)
+
+    // Configuração do Serviço de Aplicação (Queries/Reads - Medicamento)
+
 	@Bean
 	public MedicamentoServicoAplicacao medicamentoServicoAplicacao(MedicamentoRepositorioAplicacao repositorio) {
 		return new MedicamentoServicoAplicacao(repositorio);
 	}
-
     // =====================================================================
     // CONFIGURAÇÕES DE BEANS PARA PRONTUÁRIO
     // =====================================================================
@@ -210,11 +224,29 @@ public class BackendAplicacao {
 		return new FolhaPagamentoServicoAplicacao(servicoDominio, repositorioAplicacao);
 	}
 
+	// =====================================================================
+    // CONFIGURAÇÕES DE BEANS PARA FUNCIONÁRIOS
+    // =====================================================================
 
-    // [Outros Beans de outros Contextos e Eventos seriam configurados aqui]
+    // Configuração do Serviço de Domínio (Commands/Writes - Funcionários)
+    @Bean
+    public FuncionarioServico funcionarioServico(FuncionarioRepositorio repositorio) {
+        return new FuncionarioServico(repositorio);
+    }
+
+    // Configuração do Serviço de Aplicação (Queries/Reads - Funcionários)
+    /**
+     * Configura o bean do Serviço de Aplicação de Funcionários (Queries).
+     * O Spring injetará o FuncionarioRepositorioAplicacao que é implementado 
+     * na camada de Infraestrutura (FuncionarioRepositorioAplicacaoImpl).
+     */
+    @Bean
+    public FuncionarioServicoAplicacao funcionarioServicoAplicacao(FuncionarioRepositorioAplicacao repositorio) {
+        return new FuncionarioServicoAplicacao(repositorio);
+    }
 
 	// =====================================================================
-    // NOVAS CONFIGURAÇÕES DE BEANS PARA TIPOS DE EXAMES
+    // CONFIGURAÇÕES DE BEANS PARA TIPOS DE EXAMES
     // =====================================================================
 
     // Configuração do Serviço de Domínio TipoExame (Commands/Writes)
