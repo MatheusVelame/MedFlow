@@ -54,21 +54,21 @@ public class FuncionarioServico {
 		repositorio.salvar(funcionario);
 	}
 	
-//	public void excluir(FuncionarioId id, UsuarioResponsavelId responsavelId, boolean possuiHistorico) {
-//	    var funcionario = obter(id);
-//
-//	    if (funcionario.getStatus() != StatusFuncionario.INATIVO) {
-//	        throw new IllegalStateException("A exclusão definitiva só pode ser realizada em funcionários INATIVOS.");
-//	    }
-//
-//	    if (possuiHistorico) {
-//	        throw new IllegalStateException("Não é possível excluir o funcionário, pois ele possui histórico de atuação (escalas/atendimentos) que deve ser preservado.");
-//	    }
-//	    
-//	    funcionario.adicionarEntradaHistorico(AcaoHistorico.EXCLUSAO, "Funcionário excluído permanentemente do sistema.", responsavelId);
-//	    
-//	    repositorio.remover(id); 
-//	}
+	public void excluir(FuncionarioId id, UsuarioResponsavelId responsavelId, boolean possuiHistorico) {
+	    var funcionario = obter(id);
+
+	    if (funcionario.getStatus() != StatusFuncionario.INATIVO) {
+	        throw new IllegalStateException("A exclusão definitiva só pode ser realizada em funcionários INATIVOS.");
+	    }
+
+	    if (possuiHistorico) {
+	        throw new IllegalStateException("Não é possível excluir o funcionário, pois ele possui histórico de atuação (escalas/atendimentos) que deve ser preservado.");
+	    }
+	    
+	    funcionario.adicionarEntradaHistorico(AcaoHistorico.EXCLUSAO, "Funcionário excluído permanentemente do sistema.", responsavelId);
+	    
+	    repositorio.remover(id); 
+	}
 
 	public void validarAtribuicaoParaNovaAtividade(FuncionarioId id) {
 		var funcionario = obter(id);

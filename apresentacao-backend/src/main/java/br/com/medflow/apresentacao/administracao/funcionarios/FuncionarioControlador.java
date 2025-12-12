@@ -124,4 +124,19 @@ public class FuncionarioControlador {
             temAtividadesFuturas
         );
     }
+    
+    // 4. Comando: excluir
+    @Transactional
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirFuncionario(
+            @PathVariable Integer id,
+            @Valid @RequestBody UsuarioResponsavelFormulario responsavel,
+            @RequestParam(defaultValue = "false") boolean possuiHistorico) {
+        
+        var funcionarioId = new FuncionarioId(id);
+        var responsavelId = new UsuarioResponsavelId(responsavel.getResponsavelId());
+        
+        servicoDominio.excluir(funcionarioId, responsavelId, possuiHistorico);
+    }
 }
