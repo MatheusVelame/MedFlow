@@ -1,7 +1,7 @@
 // Localização: apresentacao-frontend/src/main/react/src/api/useMedicamentosApi.ts
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import axios, { AxiosError } from "axios"; // Adicionado AxiosError para tipagem correta
 import { toast } from "sonner"; 
 
 // =====================================================================
@@ -61,7 +61,27 @@ const updateUsoPrincipalApi = async ({ id, payload }: MutateVariables<UsoPrincip
 };
 
 const solicitarRevisaoApi = async ({ id, payload }: MutateVariables<SolicitarRevisaoPayload>) => {
-    await axios.put(`${API_BASE_URL}/${id}/revisao/solicitar`, payload);
+    try {
+        // Tenta fazer a requisição PUT. Se o backend retornar 204 (status de sucesso), resolve.
+        await axios.put(`${API_BASE_URL}/${id}/revisao/solicitar`, payload);
+    } catch (error) {
+        const axiosError = error as AxiosError;
+        
+        // Verifica se é o erro esperado de "Sucesso Funcional" (400 Bad Request)
+        if (axiosError.response && axiosError.response.status === 400) {
+            const errorMessage = (axiosError.response.data as any)?.mensagem || (axiosError.response.data as any)?.message;
+            
+            // Verifica a mensagem de exceção de domínio (RevisaoPendenteException)
+            if (errorMessage === "Alteração crítica exige revisão.") {
+                // Se for o 400 esperado, não re-lançamos o erro. 
+                // Isso faz com que a Promise resolva com sucesso (e o Mutation onSuccess será chamado).
+                return; 
+            }
+        }
+        
+        // Se for um erro real (rede, 5xx, ou 4xx inesperado), re-lança
+        throw error;
+    }
 };
 
 const aprovarRevisaoApi = async ({ id, payload }: MutateVariables<AcaoResponsavelPayload>) => {
@@ -134,11 +154,14 @@ export function useSolicitarRevisao() {
     return useMutation<void, Error, MutateVariables<SolicitarRevisaoPayload>>({ 
         mutationFn: solicitarRevisaoApi,
         onSuccess: () => {
+            // Este onSuccess é chamado para 204 ou para o 400 que foi tratado como sucesso funcional na API.
             queryClient.invalidateQueries({ queryKey: ['medicamentos'] });
-            toast.success("Revisão de contraindicações solicitada.");
+            // Mensagem atualizada para refletir o fluxo de revisão
+            toast.success("Revisão de contraindicações solicitada e pendente de aprovação."); 
         },
         onError: (error) => {
-            toast.error((error as any).response?.data?.message || "Erro ao solicitar revisão.");
+            // Este onError agora só trata erros reais.
+            toast.error((error as any).response?.data?.message || "Erro ao solicitar revisão. Verifique os dados.");
         },
     });
 }

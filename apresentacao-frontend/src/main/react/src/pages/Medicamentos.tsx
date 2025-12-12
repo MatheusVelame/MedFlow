@@ -1,7 +1,7 @@
 // Localização: apresentacao-frontend/src/main/react/src/pages/Medicamentos.tsx
 
 import React, { useState, useMemo } from 'react';
-import { PlusCircle, Search, MoreVertical, Archive, CheckCircle, XCircle, RefreshCcw } from "lucide-react";
+import { PlusCircle, Search, MoreVertical, Archive, CheckCircle, XCircle, RefreshCcw, AlertTriangle } from "lucide-react"; 
 import { 
     useListarMedicamentos, 
     useArquivarMedicamento, 
@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 // Importar componentes de formulário
 import { MedicamentoForm } from "../components/MedicamentoForm";
 import { SolicitarRevisaoForm } from "../components/SolicitarRevisaoForm"; 
-import { UsoPrincipalEdicaoForm } from "../components/UsoPrincipalEdicaoForm"; // <-- IMPORTADO AQUI
+import { UsoPrincipalEdicaoForm } from "../components/UsoPrincipalEdicaoForm"; 
 
 // Componente Layout (Presumido)
 interface MedicalLayoutProps {
@@ -45,7 +45,7 @@ export default function Medicamentos() {
 
   const [isCadastroOpen, setIsCadastroOpen] = useState(false);
   const [isRevisaoModalOpen, setIsRevisaoModalOpen] = useState(false);
-  const [isEdicaoUsoPrincipalOpen, setIsEdicaoUsoPrincipalOpen] = useState(false); // <-- NOVO ESTADO
+  const [isEdicaoUsoPrincipalOpen, setIsEdicaoUsoPrincipalOpen] = useState(false);
   const [medicamentoSelecionado, setMedicamentoSelecionado] = useState<MedicamentoResumo | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -75,7 +75,7 @@ export default function Medicamentos() {
   // FUNÇÃO QUE ABRE O NOVO MODAL DE EDIÇÃO
   const handleAbrirEdicaoUsoPrincipal = (medicamento: MedicamentoResumo) => {
       setMedicamentoSelecionado(medicamento);
-      setIsEdicaoUsoPrincipalOpen(true); // Abre o modal
+      setIsEdicaoUsoPrincipalOpen(true);
   };
 
   // Funções de Fechamento de Modal
@@ -84,7 +84,7 @@ export default function Medicamentos() {
       setIsRevisaoModalOpen(false);
   };
 
-  const fecharModalEdicaoUsoPrincipal = () => { // <-- NOVO FECHADOR
+  const fecharModalEdicaoUsoPrincipal = () => {
       setMedicamentoSelecionado(null);
       setIsEdicaoUsoPrincipalOpen(false);
   };
@@ -139,15 +139,20 @@ export default function Medicamentos() {
                         <TableHead>Uso Principal</TableHead>
                         <TableHead>Contraindicações</TableHead>
                         <TableHead>Status</TableHead>
+                        {/* NOVA COLUNA: INDICADOR DE REVISÃO PENDENTE */}
+                        <TableHead className="text-center">Revisão Pendente</TableHead> 
                         <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {filteredMedicamentos.map((medicamento) => (
-                        <TableRow key={medicamento.id}>
+                        // O highlight visual na linha inteira ainda é útil
+                        <TableRow key={medicamento.id} className={medicamento.status === 'REVISAO_PENDENTE' ? 'bg-yellow-50 hover:bg-yellow-100' : ''}>
+                            
+                            {/* CÉLULA: NOME (Removemos o Badge duplicado daqui) */}
                             <TableCell className="font-medium">{medicamento.nome}</TableCell>
-                            <TableCell>{medicamento.usoPrincipal}</TableCell>
 
+                            <TableCell>{medicamento.usoPrincipal}</TableCell>
                             <TableCell className="max-w-[200px] truncate">{medicamento.contraindicacoes}</TableCell> 
                             <TableCell>
                                 <Badge 
@@ -159,6 +164,26 @@ export default function Medicamentos() {
                                     {medicamento.status.replace('_', ' ')}
                                 </Badge>
                             </TableCell>
+
+                            {/* NOVA CÉLULA: INDICADOR DE REVISÃO PENDENTE */}
+                            <TableCell className="text-center">
+                                {
+                                    // Usamos o campo 'possuiRevisaoPendente' do DTO (implícito no JSON fornecido)
+                                    // ou o campo 'status' que já é retornado pelo backend. 
+                                    // Vou usar 'status' por ser mais robusto, mas o campo booleano
+                                    // é mais direto para esta coluna. Usaremos uma verificação robusta.
+                                    medicamento.status === 'REVISAO_PENDENTE' ? (
+                                        <div title="Revisão Pendente (Sim)">
+                                            <CheckCircle className="h-5 w-5 text-red-500 mx-auto" />
+                                        </div>
+                                    ) : (
+                                        <div title="Revisão Pendente (Não)">
+                                            <XCircle className="h-5 w-5 text-green-500 mx-auto" />
+                                        </div>
+                                    )
+                                }
+                            </TableCell>
+
                             <TableCell className="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -170,12 +195,19 @@ export default function Medicamentos() {
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                         
-                                        {/* AÇÃO: Editar Uso Principal (AGORA ABRE O MODAL) */}
-                                        <DropdownMenuItem onClick={() => handleAbrirEdicaoUsoPrincipal(medicamento)}>
+                                        {/* AÇÃO: Editar Uso Principal */}
+                                        <DropdownMenuItem 
+                                            onClick={() => handleAbrirEdicaoUsoPrincipal(medicamento)}
+                                            disabled={medicamento.status === 'REVISAO_PENDENTE'} 
+                                        >
                                             <RefreshCcw className="mr-2 h-4 w-4" /> Editar Uso Principal
                                         </DropdownMenuItem>
                                         
-                                        <DropdownMenuItem onClick={() => handleAbrirSolicitarRevisao(medicamento)}>
+                                        {/* AÇÃO: Solicitar Revisão (AGORA DESABILITADA SE JÁ PENDENTE) */}
+                                        <DropdownMenuItem 
+                                            onClick={() => handleAbrirSolicitarRevisao(medicamento)}
+                                            disabled={medicamento.status === 'REVISAO_PENDENTE'}
+                                        >
                                             <CheckCircle className="mr-2 h-4 w-4" /> Solicitar Revisão
                                         </DropdownMenuItem>
                                         
@@ -192,9 +224,12 @@ export default function Medicamentos() {
                                             </DropdownMenuItem>
                                         )}
                                         
-                                        {/* AÇÕES DE REVISÃO */}
+                                        {/* AÇÕES DE REVISÃO (APROVAR / REJEITAR) */}
                                         {medicamento.status === 'REVISAO_PENDENTE' && (
                                             <>
+                                                <DropdownMenuSeparator /> 
+                                                <DropdownMenuLabel>Ações de Revisão</DropdownMenuLabel>
+
                                                 {/* AÇÃO: Aprovar Revisão */}
                                                 <DropdownMenuItem 
                                                     onClick={() => handleAcaoSimples(medicamento, aprovarMutation)}
@@ -219,7 +254,7 @@ export default function Medicamentos() {
                     ))}
                     {filteredMedicamentos.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 Nenhum medicamento encontrado.
                             </TableCell>
                         </TableRow>
