@@ -10,44 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
-const initialPatients = [
-  {
-    id: 1,
-    name: "Maria Silva Santos",
-    cpf: "123.456.789-00",
-    phone: "(11) 99999-9999",
-    email: "maria@email.com",
-    birthDate: "1985-03-15",
-    insurance: "Unimed",
-    plan: "Premium",
-    lastVisit: "2024-08-25",
-    status: "ativo" as const
-  },
-  {
-    id: 2,
-    name: "João Pedro Costa",
-    cpf: "987.654.321-00",
-    phone: "(11) 88888-8888",
-    email: "joao@email.com",
-    birthDate: "1990-07-22",
-    insurance: "Bradesco Saúde",
-    plan: "Essential",
-    lastVisit: "2024-08-28",
-    status: "ativo" as const
-  },
-  {
-    id: 3,
-    name: "Ana Carolina Lima",
-    cpf: "456.789.123-00",
-    phone: "(11) 77777-7777",
-    email: "ana@email.com",
-    birthDate: "1978-12-10",
-    insurance: "Particular",
-    plan: "-",
-    lastVisit: "2024-08-20",
-    status: "inativo" as const
-  },
-];
+// Dados mockados removidos - aguardando integração com backend
+const initialPatients: any[] = [];
 
 export default function Pacientes() {
   const { isMedico } = useAuth();
