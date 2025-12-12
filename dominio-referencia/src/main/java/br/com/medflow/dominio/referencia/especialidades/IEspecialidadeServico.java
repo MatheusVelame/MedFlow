@@ -31,6 +31,8 @@ public interface IEspecialidadeServico {
 
     Optional<Especialidade> buscarPorNome(String nome);
 
+    Optional<Especialidade> buscarPorId(Integer id);
+
     /**
      * Método de conveniência para criação a partir da camada de apresentação.
      * Internamente delega para 'cadastrar'.

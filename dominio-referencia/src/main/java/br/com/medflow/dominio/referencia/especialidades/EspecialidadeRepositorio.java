@@ -9,6 +9,8 @@ public interface EspecialidadeRepositorio {
 
     Optional<Especialidade> buscarPorNome(String nome);
 
+    Optional<Especialidade> buscarPorId(Integer id);
+
     boolean existePorNome(String nome);
 
     void remover(Especialidade especialidade);

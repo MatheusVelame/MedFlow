@@ -5,6 +5,7 @@ package br.com.medflow.dominio.referencia.especialidades;
  */
 public class Especialidade {
     
+    private Integer id; // Identificador persistente (estável)
     private String nome;
     private String descricao;
     private StatusEspecialidade status;
@@ -27,6 +28,10 @@ public class Especialidade {
         this.status = status;
         this.possuiVinculoHistorico = possuiVinculoHistorico;
     }
+
+    // Getter/Setter para ID (necessário para mapeamento JPA <-> DOMÍNIO)
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
     
     // Métodos de Regra de Negócio
 

@@ -83,6 +83,12 @@ public class EspecialidadeServicoProxy implements IEspecialidadeServico {
     }
 
     @Override
+    public Optional<Especialidade> buscarPorId(Integer id) {
+        log("BUSCAR_POR_ID", "Solicitação de busca pelo id: " + id);
+        return servicoReal.buscarPorId(id);
+    }
+
+    @Override
     public Especialidade criar(String nome, String descricao) {
         log("CRIAR", "Tentativa de criar especialidade: " + nome);
         return servicoReal.criar(nome, descricao);

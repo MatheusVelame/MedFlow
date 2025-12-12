@@ -31,9 +31,9 @@ public class EspecialidadeControlador {
                 .toList();
     }
 
-    @GetMapping("/{nome}")
-    public ResponseEntity<EspecialidadeDetalhes> buscarPorId(@PathVariable String nome) {
-        return servico.buscarPorNome(nome)
+    @GetMapping("/{id}")
+    public ResponseEntity<EspecialidadeDetalhes> buscarPorId(@PathVariable Integer id) {
+        return servico.buscarPorId(id)
                 .map(EspecialidadeDetalhes::new)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -55,12 +55,16 @@ public class EspecialidadeControlador {
     }
 
     @Transactional
-    @PatchMapping("/{nome}")
+    @PatchMapping("/{id}")
     public ResponseEntity<EspecialidadeResumo> atualizar(
-            @PathVariable String nome,
+            @PathVariable Integer id,
             @Valid @RequestBody AtualizarEspecialidadeFormulario form) {
         try {
-            Especialidade atualizada = servico.alterar(nome, form.getNovoNome(), form.getNovaDescricao());
+            var atualOpt = servico.buscarPorId(id);
+            if (atualOpt.isEmpty()) return ResponseEntity.notFound().build();
+            Especialidade atual = atualOpt.get();
+
+            Especialidade atualizada = servico.alterar(atual.getNome(), form.getNovoNome(), form.getNovaDescricao());
             return ResponseEntity.ok(new EspecialidadeResumo(atualizada));
         } catch (RegraNegocioException e) {
             return ResponseEntity.badRequest().build();
@@ -68,10 +72,13 @@ public class EspecialidadeControlador {
     }
 
     @Transactional
-    @DeleteMapping("/{nome}")
-    public ResponseEntity<Void> excluir(@PathVariable String nome) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Integer id) {
+        var atualOpt = servico.buscarPorId(id);
+        if (atualOpt.isEmpty()) return ResponseEntity.notFound().build();
+        Especialidade atual = atualOpt.get();
         try {
-            servico.excluir(nome);
+            servico.excluir(atual.getNome());
             return ResponseEntity.noContent().build();
         } catch (RegraNegocioException e) {
             return ResponseEntity.badRequest().build();

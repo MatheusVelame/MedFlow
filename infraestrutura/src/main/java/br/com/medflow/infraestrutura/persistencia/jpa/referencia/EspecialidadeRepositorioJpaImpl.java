@@ -44,23 +44,24 @@ public class EspecialidadeRepositorioJpaImpl
         notNull(especialidade, "A especialidade não pode ser nula");
         
         // Tenta buscar a entidade JPA existente pelo nome (Chave de Negócio)
-        // Nota: Como o domínio Especialidade não possui ID explícito, usamos o nome.
-        // Em caso de alteração de nome, o serviço deve garantir a consistência ou o domínio deve evoluir para ter ID.
         EspecialidadeJpa jpa = jpaRepository.findByNome(especialidade.getNome())
                 .orElse(null);
 
         if (jpa == null) {
             // Nova especialidade
             jpa = mapper.map(especialidade, EspecialidadeJpa.class);
+            jpa = jpaRepository.save(jpa);
+            // Atualiza o id no domínio após persistência
+            especialidade.setId(jpa.getId());
         } else {
             // Atualização de existente
             jpa.setDescricao(especialidade.getDescricao());
             jpa.setStatus(especialidade.getStatus());
             jpa.setPossuiVinculoHistorico(especialidade.isPossuiVinculoHistorico());
-            // Nome não precisa atualizar pois é a chave de busca, a menos que tenha mudado (caso complexo sem ID)
+            jpaRepository.save(jpa);
+            // Garante que o domínio tenha o id da JPA (caso não tenha)
+            especialidade.setId(jpa.getId());
         }
-
-        jpaRepository.save(jpa);
     }
 
     @Override

@@ -24,7 +24,7 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
 
         Especialidade novaEspecialidade = new Especialidade(nome, descricao);
         especialidadeRepositorio.salvar(novaEspecialidade);
-        return novaEspecialidade;
+        return novaEspecialidade; // repo deve ter setado o id
     }
 
     @Override
@@ -122,6 +122,11 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
     @Override
     public Optional<Especialidade> buscarPorNome(String nome) {
         return especialidadeRepositorio.buscarPorNome(nome);
+    }
+
+    @Override
+    public Optional<Especialidade> buscarPorId(Integer id) {
+        return especialidadeRepositorio.buscarPorId(id);
     }
 
     @Override
