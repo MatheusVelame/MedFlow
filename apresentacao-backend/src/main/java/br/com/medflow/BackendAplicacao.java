@@ -6,6 +6,10 @@ import static org.springframework.boot.SpringApplication.run;
 
 import java.io.IOException;
 
+import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoRepositorioAplicacao;
+import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoServicoAplicacao;
+import br.com.medflow.dominio.financeiro.folhapagamento.FolhaPagamentoRepositorio;
+import br.com.medflow.dominio.financeiro.folhapagamento.FolhaPagamentoServico;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
@@ -45,7 +49,7 @@ public class BackendAplicacao {
     public ConsultaServicoAplicacao consultaServicoAplicacao(ConsultaRepositorioAplicacao repositorio) {
         return new ConsultaServicoAplicacao(repositorio);
     }
-    
+
     // =====================================================================
     // NOVAS CONFIGURAÇÕES DE BEANS PARA MEDICAMENTOS
     // =====================================================================
@@ -89,6 +93,20 @@ public class BackendAplicacao {
 	@Bean
 	public ConvenioServicoAplicacao convenioServicoAplicacao(ConvenioRepositorioAplicacao repositorio) {
 		return new ConvenioServicoAplicacao(repositorio);
+	}
+
+	// Configuração do Serviço de Domínio de Folha de Pagamento
+	@Bean
+	public FolhaPagamentoServico folhaPagamentoServico(FolhaPagamentoRepositorio repositorio) {
+		return new FolhaPagamentoServico(repositorio);
+	}
+
+	// Configuração do Serviço de Aplicação de Folha de Pagamento
+	@Bean
+	public FolhaPagamentoServicoAplicacao folhaPagamentoServicoAplicacao(
+			FolhaPagamentoServico servicoDominio,
+			FolhaPagamentoRepositorioAplicacao repositorioAplicacao) {
+		return new FolhaPagamentoServicoAplicacao(servicoDominio, repositorioAplicacao);
 	}
 
 	public static void main(String[] args) throws IOException {
