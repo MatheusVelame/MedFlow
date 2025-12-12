@@ -20,56 +20,9 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-const mockExames = [
-  {
-    id: "1",
-    paciente: "Maria Silva Santos",
-    tipo: "Hemograma Completo",
-    solicitante: "Dr. Carlos Mendes",
-    dataSolicitacao: "2024-01-10",
-    status: "resultado",
-    prioridade: "normal",
-    laboratorio: "Lab Central"
-  },
-  {
-    id: "2",
-    paciente: "João Pedro Oliveira",
-    tipo: "Ressonância Magnética",
-    solicitante: "Dra. Ana Paula",
-    dataSolicitacao: "2024-01-09",
-    status: "pendente",
-    prioridade: "urgente",
-    laboratorio: "Clínica de Imagem"
-  },
-  {
-    id: "3",
-    paciente: "Ana Costa Ferreira",
-    tipo: "Raio-X Tórax",
-    solicitante: "Dr. Roberto Lima",
-    dataSolicitacao: "2024-01-08",
-    status: "aguardando",
-    prioridade: "normal",
-    laboratorio: "Lab Central"
-  },
-  {
-    id: "4",
-    paciente: "Pedro Henrique Santos",
-    tipo: "Ultrassom Abdominal",
-    solicitante: "Dra. Juliana Costa",
-    dataSolicitacao: "2024-01-05",
-    status: "cancelado",
-    prioridade: "normal",
-    laboratorio: "Clínica de Imagem"
-  }
-];
+const mockExames: any[] = [];
 
-const mockEspecialidades = [
-  { id: "1", nome: "Cardiologia" },
-  { id: "2", nome: "Clínico Geral" },
-  { id: "3", nome: "Radiologia" },
-  { id: "4", nome: "Laboratório" },
-  { id: "5", nome: "Imagem" },
-];
+const mockEspecialidades: any[] = [];
 
 interface TipoExame {
   id: string;
@@ -81,32 +34,7 @@ interface TipoExame {
   observacoes?: string;
 }
 
-const mockTiposExame: TipoExame[] = [
-  {
-    id: "1",
-    codigo: "HEMOG-001",
-    descricao: "Hemograma Completo",
-    especialidade: "Laboratório",
-    valor: 80.00,
-    status: "Ativo",
-  },
-  {
-    id: "2",
-    codigo: "RESM-001",
-    descricao: "Ressonância Magnética",
-    especialidade: "Imagem",
-    valor: 800.00,
-    status: "Ativo",
-  },
-  {
-    id: "3",
-    codigo: "RAIO-001",
-    descricao: "Raio-X Tórax",
-    especialidade: "Radiologia",
-    valor: 150.00,
-    status: "Ativo",
-  },
-];
+const mockTiposExame: TipoExame[] = [];
 
 export default function Exames() {
   const { isGestor } = useAuth();

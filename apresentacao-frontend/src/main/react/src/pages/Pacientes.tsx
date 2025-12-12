@@ -9,54 +9,19 @@ import { PatientForm } from "@/components/PatientForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-
-const initialPatients = [
-  {
-    id: 1,
-    name: "Maria Silva Santos",
-    cpf: "123.456.789-00",
-    phone: "(11) 99999-9999",
-    email: "maria@email.com",
-    birthDate: "1985-03-15",
-    insurance: "Unimed",
-    plan: "Premium",
-    lastVisit: "2024-08-25",
-    status: "ativo" as const
-  },
-  {
-    id: 2,
-    name: "João Pedro Costa",
-    cpf: "987.654.321-00",
-    phone: "(11) 88888-8888",
-    email: "joao@email.com",
-    birthDate: "1990-07-22",
-    insurance: "Bradesco Saúde",
-    plan: "Essential",
-    lastVisit: "2024-08-28",
-    status: "ativo" as const
-  },
-  {
-    id: 3,
-    name: "Ana Carolina Lima",
-    cpf: "456.789.123-00",
-    phone: "(11) 77777-7777",
-    email: "ana@email.com",
-    birthDate: "1978-12-10",
-    insurance: "Particular",
-    plan: "-",
-    lastVisit: "2024-08-20",
-    status: "inativo" as const
-  },
-];
+import { useListarPacientes, useExcluirPaciente, PacienteView } from "@/api/usePacientesApi";
 
 export default function Pacientes() {
   const { isMedico } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [patients, setPatients] = useState(initialPatients);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<typeof patients[0] | undefined>();
+  const [editingPatient, setEditingPatient] = useState<PacienteView | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<number | null>(null);
+
+  // ============ HOOKS DO REACT QUERY ============
+  const { data: patients = [], isLoading, error } = useListarPacientes();
+  const excluirMutation = useExcluirPaciente();
 
   const getInitials = (name: string) => {
     const names = name.split(" ");
@@ -75,24 +40,14 @@ export default function Pacientes() {
   };
 
   const handleSavePatient = (data: any) => {
-    if (editingPatient) {
-      setPatients(patients.map(p => 
-        p.id === editingPatient.id 
-          ? { ...p, ...data, lastVisit: p.lastVisit }
-          : p
-      ));
-      setEditingPatient(undefined);
-    } else {
-      const newPatient = {
-        ...data,
-        id: Math.max(...patients.map(p => p.id)) + 1,
-        lastVisit: new Date().toISOString().split('T')[0],
-      };
-      setPatients([...patients, newPatient]);
-    }
+    // TODO: Implementar cadastro/atualização usando mutations
+    // Por enquanto, apenas fecha o formulário
+    setIsFormOpen(false);
+    setEditingPatient(undefined);
+    toast.info("Funcionalidade de salvar será implementada em breve");
   };
 
-  const handleEditPatient = (patient: typeof patients[0]) => {
+  const handleEditPatient = (patient: PacienteView) => {
     setEditingPatient(patient);
     setIsFormOpen(true);
   };
@@ -109,8 +64,7 @@ export default function Pacientes() {
 
   const confirmDeletePatient = () => {
     if (patientToDelete) {
-      setPatients(patients.filter(p => p.id !== patientToDelete));
-      toast.success("Paciente excluído com sucesso!");
+      excluirMutation.mutate(patientToDelete);
     }
     setDeleteDialogOpen(false);
     setPatientToDelete(null);
@@ -120,6 +74,23 @@ export default function Pacientes() {
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.cpf.includes(searchTerm)
   );
+
+  // ============ ESTADOS DE CARREGAMENTO E ERRO ============
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Carregando pacientes...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">Erro ao carregar pacientes. Verifique se o backend está rodando.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -155,90 +126,105 @@ export default function Pacientes() {
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {filteredPatients.map((patient) => (
-          <Card key={patient.id} className="hover:shadow-medical transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <Avatar className="w-12 h-12">
-                    <AvatarFallback className="bg-gradient-primary text-white font-medium">
-                      {getInitials(patient.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold text-lg">{patient.name}</h3>
-                      <Badge variant={patient.status === "ativo" ? "default" : "secondary"}>
-                        {patient.status}
-                      </Badge>
-                    </div>
+      {filteredPatients.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <User className="w-12 h-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhum paciente encontrado</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              {searchTerm 
+                ? "Tente ajustar sua busca ou adicione um novo paciente."
+                : "Comece cadastrando o primeiro paciente no sistema."}
+            </p>
+            {!isMedico && !searchTerm && (
+              <Button onClick={handleNewPatient}>
+                <Plus className="w-4 h-4 mr-2" />
+                Cadastrar Primeiro Paciente
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {filteredPatients.map((patient) => (
+            <Card key={patient.id} className="hover:shadow-medical transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-12 h-12">
+                      <AvatarFallback className="bg-gradient-primary text-white font-medium">
+                        {getInitials(patient.name)}
+                      </AvatarFallback>
+                    </Avatar>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        CPF: {patient.cpf}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{patient.name}</h3>
+                        <Badge variant={patient.status === "ativo" ? "default" : "secondary"}>
+                          {patient.status}
+                        </Badge>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {calculateAge(patient.birthDate)} anos
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        {patient.phone}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        {patient.email}
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 pt-3 border-t">
-                      <div className="flex items-center justify-between text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Convênio: </span>
-                          <span className="font-medium">{patient.insurance}</span>
-                          {patient.plan !== "-" && (
-                            <span className="text-muted-foreground"> • {patient.plan}</span>
-                          )}
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          CPF: {patient.cpf}
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Última consulta: </span>
-                          <span className="font-medium">
-                            {new Date(patient.lastVisit).toLocaleDateString('pt-BR')}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          {calculateAge(patient.birthDate)} anos
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4" />
+                          {patient.phone}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4" />
+                          {patient.email}
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="flex items-center justify-between text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Última consulta: </span>
+                            <span className="font-medium">
+                              {patient.lastVisit !== "-" 
+                                ? new Date(patient.lastVisit).toLocaleDateString('pt-BR')
+                                : "Sem consultas"}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-2">
-                  {!isMedico && (
-                    <Button variant="outline" size="sm" onClick={() => handleEditPatient(patient)}>
-                      Editar
+                  <div className="flex gap-2">
+                    {!isMedico && (
+                      <Button variant="outline" size="sm" onClick={() => handleEditPatient(patient)}>
+                        Editar
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm">
+                      Prontuário
                     </Button>
-                  )}
-                  <Button variant="outline" size="sm">
-                    Prontuário
-                  </Button>
-                  {!isMedico && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleDeletePatient(patient.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                    {!isMedico && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleDeletePatient(patient.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

@@ -35,8 +35,8 @@ const patientFormSchema = z.object({
   phone: z.string().regex(/^\(\d{2}\) \d{4,5}-\d{4}$/, "Telefone inválido"),
   email: z.string().email("Email inválido").max(255),
   birthDate: z.string().min(1, "Data de nascimento é obrigatória"),
-  insurance: z.string().min(1, "Convênio é obrigatório"),
-  plan: z.string().optional(),
+ // insurance: z.string().min(1, "Convênio é obrigatório"),
+ // plan: z.string().optional(),
   status: z.enum(["ativo", "inativo"]),
 });
 
@@ -58,8 +58,8 @@ export function PatientForm({ open, onOpenChange, patient, onSave }: PatientForm
       phone: "",
       email: "",
       birthDate: "",
-      insurance: "",
-      plan: "",
+     // insurance: "",
+     // plan: "",
       status: "ativo",
     },
   });
@@ -163,7 +163,7 @@ export function PatientForm({ open, onOpenChange, patient, onSave }: PatientForm
                 )}
               />
             </div>
-
+			{/*
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -204,7 +204,7 @@ export function PatientForm({ open, onOpenChange, patient, onSave }: PatientForm
                 )}
               />
             </div>
-
+			*/}
             <FormField
               control={form.control}
               name="status"
