@@ -126,8 +126,8 @@ public class ExameServicoImpl implements IExameServico {
     
     @Override
     public Exame cancelarAgendamento(ExameId exameId, String motivo, UsuarioResponsavelId responsavel) {
-         Exame exame = repositorio.obterPorId(exameId)
-             .orElseThrow(() -> new EntidadeNaoEncontradaException("AGENDAMENTO_NAO_ENCONTRADO: Agendamento de exame não encontrado"));
+        Exame exame = repositorio.obterPorId(exameId)
+            .orElseThrow(() -> new EntidadeNaoEncontradaException("AGENDAMENTO_NAO_ENCONTRADO: Agendamento de exame não encontrado"));
             
         if (motivo == null || motivo.trim().isEmpty()) {
             throw new ValidacaoNegocioException("MOTIVO_OBRIGATORIO: É obrigatório informar o motivo do cancelamento");
@@ -135,17 +135,6 @@ public class ExameServicoImpl implements IExameServico {
         
         exame.cancelar(motivo, responsavel);
         
-        return repositorio.salvar(exame);
-    }
-
-    @Override
-    public Exame registrarResultado(ExameId exameId, String descricao, boolean vincularLaudo, boolean vincularProntuario, UsuarioResponsavelId responsavel) {
-        Exame exame = repositorio.obterPorId(exameId)
-            .orElseThrow(() -> new EntidadeNaoEncontradaException("AGENDAMENTO_NAO_ENCONTRADO: Agendamento de exame não encontrado"));
-
-        // registrar resultado no domínio (validações internas lançam ExcecaoDominio quando aplicável)
-        exame.registrarResultado(descricao, vincularLaudo, vincularProntuario, responsavel);
-
         return repositorio.salvar(exame);
     }
 }

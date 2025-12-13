@@ -15,7 +15,4 @@ public interface IExameServico {
 
     Exame cancelarAgendamento(ExameId exameId, String motivo, UsuarioResponsavelId responsavel);
 
-    // Registrar resultado do exame: pode marcar como PENDENTE_DE_RESULTADO ou REALIZADO, e opcionalmente vincular ao laudo/prontuario
-    Exame registrarResultado(ExameId exameId, String descricao, boolean vincularLaudo, boolean vincularProntuario, UsuarioResponsavelId responsavel);
-
 }

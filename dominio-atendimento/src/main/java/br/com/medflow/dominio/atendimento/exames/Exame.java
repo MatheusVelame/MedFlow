@@ -142,28 +142,6 @@ public class Exame {
         // O repositório irá remover/marcar como deletado.
     }
     
-    /**
-     * Registrar resultado do exame. Se vincularLaudo for true, marca vinculadoALaudo=true.
-     * Se vincularProntuario for true, marca vinculadoAProntuario=true.
-     * Se descricao for "PENDENTE", deixa status PENDENTE; caso contrário marca REALIZADO.
-     */
-    public void registrarResultado(String descricao, boolean vincularLaudo, boolean vincularProntuario, UsuarioResponsavelId responsavel) {
-        if (this.status == StatusExame.CANCELADO) {
-            throw new ExcecaoDominio("Não é possível registrar resultado em exame cancelado");
-        }
-
-        if (vincularLaudo) this.vinculadoALaudo = true;
-        if (vincularProntuario) this.vinculadoAProntuario = true;
-
-        if (descricao != null && descricao.trim().length() > 0 && !descricao.trim().equalsIgnoreCase("PENDENTE")) {
-            this.status = StatusExame.REALIZADO;
-            this.registrarHistorico(AcaoHistorico.RESULTADO, "Resultado registrado: " + descricao.trim(), responsavel);
-        } else {
-            this.status = StatusExame.PENDENTE;
-            this.registrarHistorico(AcaoHistorico.RESULTADO, "Resultado pendente registrado.", responsavel);
-        }
-    }
-
     // --- Getters e Setters de Repositório ---
     
     public ExameId getId() {

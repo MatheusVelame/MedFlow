@@ -4,6 +4,5 @@ public enum AcaoHistorico {
     CRIACAO,
     ATUALIZACAO,
     CANCELAMENTO,
-    RESULTADO,
     EXCLUSAO // Exclusão lógica ou física
 }
