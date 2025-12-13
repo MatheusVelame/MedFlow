@@ -90,21 +90,26 @@ export function useCancelarExame() {
   });
 }
 
+export function useRegistrarResultado() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { descricao?: string; vincularLaudo?: boolean; vincularProntuario?: boolean; responsavelId: number } }) => examesApi.registrarResultado(id, payload),
+    onSuccess: (updated) => {
+      qc.setQueryData<ExameResponse[] | undefined>(["exames"], (old) =>
+        old ? old.map((e) => (e.id === updated.id ? updated : e)) : [updated]
+      );
+      qc.invalidateQueries({ queryKey: ["exames"], exact: false });
+    }
+  });
+}
+
 export function useExcluirExame() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      responsavelId,
-    }: {
-      id: number;
-      responsavelId: number;
-    }) => examesApi.excluir(id, responsavelId),
-    onSuccess: (_data, variables) => {
-      qc.setQueryData<ExameResponse[] | undefined>(["exames"], (old) =>
-        old ? old.filter((e) => e.id !== variables.id) : []
-      );
+    mutationFn: ({ id, responsavelId }: { id: number; responsavelId: number }) => examesApi.excluir(id, responsavelId),
+    onSuccess: () => {
+      // invalidate exames queries so UI refreshes from server
       qc.invalidateQueries({ queryKey: ["exames"], exact: false });
-    },
+    }
   });
 }

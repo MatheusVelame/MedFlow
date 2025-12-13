@@ -37,7 +37,7 @@ import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
 import br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId;
 
 @RestController
-@RequestMapping("/exames")
+@RequestMapping("/api/exames")
 @Tag(name = "Exames", description = "Operações para gerenciamento de agendamentos de exames")
 public class ExameControlador {
 
@@ -201,14 +201,20 @@ public class ExameControlador {
     /**
      * Endpoint para exclusão.
      * Conforme a regra de negócio (RN12), pode resultar em exclusão física ou cancelamento lógico.
+     *
+     * Regras importantes (documentadas aqui e aplicadas no domínio):
+     * - RN: Não é permitido excluir exames já realizados ou em andamento (somente os com status "AGENDADO").
+     * - RN: Caso o exame já esteja vinculado a um laudo, não pode ser excluído; deve ser apenas marcado como "CANCELADO".
+     * - RN: A exclusão só é permitida se o exame ainda não estiver associado a nenhum registro clínico no prontuário do paciente.
      */
     @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir ou tentar excluir um agendamento", description = "Tenta excluir o agendamento. O domínio valida regras de negócio e registrará o histórico. Se a exclusão não for permitida por regras (ex.: já realizado, vinculado a laudo, vinculado ao prontuário), será lançada uma resposta 409 indicando o motivo.")
     @ApiResponse(responseCode = "204", description = "Exclusão efetuada (ou cancelamento lógico)")
     @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
     @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
     @ApiResponse(responseCode = "409", description = "Operação não permitida (ex: já realizou ou vinculado a prontuário)", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
     public ResponseEntity<?> tentarExcluir(@PathVariable Long id, 
-                                              @RequestParam(name = "responsavelId", required = true) Long responsavelId) {
+                                               @RequestParam(name = "responsavelId", required = true) Long responsavelId) {
         try {
             exameServico.tentarExcluirAgendamento(
                 new ExameId(id), 
@@ -228,12 +234,13 @@ public class ExameControlador {
      * Endpoint específico para cancelamento manual com motivo.
      */
     @PatchMapping("/{id}/cancelamento")
+    @Operation(summary = "Cancelar um agendamento", description = "Cancela um agendamento informando o motivo. A operação registra histórico e valida que o exame não esteja em status incompatível (ex.: já realizado). Motivo é obrigatório.")
     @ApiResponse(responseCode = "200", description = "Agendamento cancelado com sucesso", content = @Content(schema = @Schema(implementation = ExameResponse.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos (ex: motivo ausente)", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
     @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
     @ApiResponse(responseCode = "409", description = "Operação não permitida (ex: já realizou)", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
     public ResponseEntity<?> cancelar(@PathVariable Long id,
-                                                  @Valid @RequestBody CancelamentoExameRequest request) {
+                                                    @Valid @RequestBody CancelamentoExameRequest request) {
         try {
             Exame exameCancelado = exameServico.cancelarAgendamento(
                 new ExameId(id),
@@ -241,6 +248,32 @@ public class ExameControlador {
                 new UsuarioResponsavelId(request.responsavelId())
             );
             return ResponseEntity.ok(ExameResponse.de(exameCancelado));
+        } catch (br.com.medflow.dominio.atendimento.exames.EntidadeNaoEncontradaException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErroNegocioResponse(extractCode(ex.getMessage(), "ENTIDADE_NAO_ENCONTRADA"), extractUserMessage(ex.getMessage())));
+        } catch (br.com.medflow.dominio.atendimento.exames.ConflitoNegocioException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErroNegocioResponse(extractCode(ex.getMessage(), "CONFLITO_NEGOCIO"), extractUserMessage(ex.getMessage())));
+        } catch (br.com.medflow.dominio.atendimento.exames.ValidacaoNegocioException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErroNegocioResponse(extractCode(ex.getMessage(), "VALIDACAO_NEGOCIO"), extractUserMessage(ex.getMessage())));
+        }
+    }
+
+    /** Registrar resultado (gestor) */
+    @PatchMapping("/{id}/resultado")
+    @ApiResponse(responseCode = "200", description = "Resultado registrado com sucesso", content = @Content(schema = @Schema(implementation = ExameResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Dados inválidos", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
+    @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
+    @ApiResponse(responseCode = "409", description = "Operação não permitida (ex: exame cancelado)", content = @Content(schema = @Schema(implementation = ErroNegocioResponse.class)))
+    public ResponseEntity<?> registrarResultado(@PathVariable Long id,
+                                                @Valid @RequestBody RegistroResultadoRequest request) {
+        try {
+            Exame exame = exameServico.registrarResultado(
+                new ExameId(id),
+                request.descricao(),
+                request.vincularLaudo(),
+                request.vincularProntuario(),
+                new UsuarioResponsavelId(request.responsavelId())
+            );
+            return ResponseEntity.ok(ExameResponse.de(exame));
         } catch (br.com.medflow.dominio.atendimento.exames.EntidadeNaoEncontradaException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErroNegocioResponse(extractCode(ex.getMessage(), "ENTIDADE_NAO_ENCONTRADA"), extractUserMessage(ex.getMessage())));
         } catch (br.com.medflow.dominio.atendimento.exames.ConflitoNegocioException ex) {
