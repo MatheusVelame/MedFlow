@@ -7,10 +7,24 @@ import type {
   ExameResponse,
 } from "@/api/types";
 
-export function useExamesList() {
+export function useExamesList(status?: string | string[]) {
+  const queryKey = Array.isArray(status) ? ["exames", ...status] : (status ? ["exames", status] : ["exames"]);
+
   return useQuery<ExameResponse[]>({
-    queryKey: ["exames"],
-    queryFn: () => examesApi.listar(),
+    queryKey,
+    queryFn: async () => {
+      if (!status) return examesApi.listar();
+      if (Array.isArray(status)) {
+        // buscar múltiplos status e concatenar (evitar duplicados)
+        const results = await Promise.all(status.map(s => examesApi.listar({ status: s })).map(p => p.catch(() => [])));
+        const merged = ([] as ExameResponse[]).concat(...results);
+        // deduplicate by id
+        const byId = new Map<number, ExameResponse>();
+        merged.forEach(r => byId.set(r.id, r));
+        return Array.from(byId.values());
+      }
+      return examesApi.listar({ status });
+    },
     refetchOnWindowFocus: false,
   });
 }
@@ -32,7 +46,8 @@ export function useAgendarExame() {
       qc.setQueryData<ExameResponse[] | undefined>(["exames"], (old) =>
         old ? [data, ...old] : [data]
       );
-      qc.invalidateQueries({ queryKey: ["exames"] });
+      // invalidar todas as queries que começam por 'exames' (status variantes)
+      qc.invalidateQueries({ queryKey: ["exames"], exact: false });
     },
   });
 }
@@ -51,7 +66,7 @@ export function useAtualizarExame() {
       qc.setQueryData<ExameResponse[] | undefined>(["exames"], (old) =>
         old ? old.map((e) => (e.id === updated.id ? updated : e)) : [updated]
       );
-      qc.invalidateQueries({ queryKey: ["exames"] });
+      qc.invalidateQueries({ queryKey: ["exames"], exact: false });
     },
   });
 }
@@ -70,7 +85,7 @@ export function useCancelarExame() {
       qc.setQueryData<ExameResponse[] | undefined>(["exames"], (old) =>
         old ? old.map((e) => (e.id === updated.id ? updated : e)) : [updated]
       );
-      qc.invalidateQueries({ queryKey: ["exames"] });
+      qc.invalidateQueries({ queryKey: ["exames"], exact: false });
     },
   });
 }
@@ -89,7 +104,7 @@ export function useExcluirExame() {
       qc.setQueryData<ExameResponse[] | undefined>(["exames"], (old) =>
         old ? old.filter((e) => e.id !== variables.id) : []
       );
-      qc.invalidateQueries({ queryKey: ["exames"] });
+      qc.invalidateQueries({ queryKey: ["exames"], exact: false });
     },
   });
 }

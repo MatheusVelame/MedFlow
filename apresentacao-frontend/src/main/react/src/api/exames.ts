@@ -8,8 +8,11 @@ import type {
 } from "./types";
 
 export const examesApi = {
-  listar: async (): Promise<ExameResponse[]> =>
-    request<ExameResponse[]>(api.get(`/api/exames`)),
+  // listar aceita opcionalmente um filtro `status` (ex: 'AGENDADO', 'CANCELADO', 'PENDENTE', 'REALIZADO')
+  listar: async (opts?: { status?: string }): Promise<ExameResponse[]> => {
+    const config = opts && opts.status ? { params: { status: opts.status } } : undefined;
+    return request<ExameResponse[]>(api.get(`/api/exames`, config));
+  },
 
   obter: async (id: number): Promise<ExameDetalheResponse> =>
     request<ExameDetalheResponse>(api.get(`/api/exames/${id}`)),

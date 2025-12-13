@@ -65,7 +65,25 @@ export default function Exames() {
   // ========================================================================
   // EXAMES: hooks e UI state
   // ========================================================================
-  const { data: exames = [] } = useExamesList();
+  // Usar hooks com filtros adequados: por padrão mostramos agendados e futuros
+  const { data: examesAgendados = [] } = useExamesList('AGENDADO');
+  const { data: examesCancelados = [] } = useExamesList('CANCELADO');
+  const { data: examesResultado = [] } = useExamesList('REALIZADO');
+  // Para pendentes (status PENDENTE)
+  const { data: examesPendentes = [] } = useExamesList('PENDENTE');
+  // Fonte de exames depende do filtro atual para manter consistência entre operações (cancelar / excluir)
+  let sourceExames: any[] = [];
+  switch (filterStatus) {
+    case 'agendados': sourceExames = examesAgendados; break;
+    case 'cancelados': sourceExames = examesCancelados; break;
+    case 'resultado': sourceExames = examesResultado; break;
+    case 'resultado pendente': sourceExames = examesPendentes; break;
+    case 'todos':
+    default:
+      sourceExames = Array.from(new Map([...examesAgendados, ...examesPendentes, ...examesResultado].map((e:any) => [e.id, e])).values());
+      break;
+  }
+
   const agendar = useAgendarExame();
   const atualizarExame = useAtualizarExame();
   const cancelarExame = useCancelarExame();
@@ -285,7 +303,7 @@ export default function Exames() {
   };
 
   // Map exames para incluir nomes legíveis para paciente, tipo e médico
-  const mappedExames = exames.map((exame: any) => {
+  const mappedExames = sourceExames.map((exame: any) => {
     const paciente = pacientes.find((p: any) => p.id === Number(exame.pacienteId));
     const pacienteName = paciente ? paciente.name : String(exame.pacienteId ?? '');
 
@@ -302,40 +320,20 @@ export default function Exames() {
     return { ...exame, pacienteName, tipoLabel, medicoName, statusNormalized };
   });
 
-  const totalAgendados = mappedExames.filter((e: any) => e.statusNormalized !== 'cancelado').length;
+  const totalAgendados = examesAgendados.length;
 
-  // Gerenciamento do filtro 'historico' — carregamos detalhes para descobrir quais exames possuem histórico
-  const [historicoIds, setHistoricoIds] = useState<Set<number> | null>(null);
-  const [historicoLoading, setHistoricoLoading] = useState(false);
+  // ========================================================================
+  // EFFECTS
+  // ========================================================================
 
+  // Para os filtros principais não há necessidade de efeitos extras aqui.
   useEffect(() => {
-    let mounted = true;
-    if (filterStatus === 'historico') {
-      setHistoricoLoading(true);
-      // Carrega detalhes em paralelo (Promise.allSettled) e coleta ids com historico non-empty
-      Promise.allSettled((exames || []).map((e: any) => examesApi.obter(Number(e.id))))
-        .then(results => {
-          if (!mounted) return;
-          const ids = new Set<number>();
-          results.forEach((r: any, idx: number) => {
-            if (r.status === 'fulfilled') {
-              const resp = r.value as any;
-              if (resp && Array.isArray(resp.historico) && resp.historico.length > 0) {
-                ids.add(Number((exames || [])[idx].id));
-              }
-            }
-          });
-          setHistoricoIds(ids);
-        })
-        .catch(() => { if (mounted) setHistoricoIds(new Set()); })
-        .finally(() => { if (mounted) setHistoricoLoading(false); });
-    } else {
-      // limpar cache quando não estamos olhando o histórico
-      setHistoricoIds(null);
-      setHistoricoLoading(false);
-    }
-    return () => { mounted = false; };
-  }, [filterStatus, exames]);
+    // efeito reservado caso precisemos reagir a mudanças de filtro no futuro
+  }, [filterStatus]);
+
+  // ========================================================================
+  // FILTRO
+  // ========================================================================
 
   const filteredExames = mappedExames.filter((exame: any) => {
     const pacienteText = String(exame.pacienteName ?? exame.pacienteId ?? "");
@@ -352,14 +350,10 @@ export default function Exames() {
       case 'todos': matchesStatus = true; break;
       case 'agendados': matchesStatus = exame.statusNormalized === 'agendado'; break;
       case 'cancelados': matchesStatus = exame.statusNormalized === 'cancelado'; break;
-      case 'pendente': matchesStatus = exame.statusNormalized === 'pendente'; break;
-      case 'pendentesResultado':
-        // pendentes de resultado: status 'pendente' e data no passado (exame realizado mas sem resultado)
-        matchesStatus = exame.statusNormalized === 'pendente' && exameDate !== null && exameDate < now; break;
+      case 'resultado pendente':
+        // Unifica pendentes e pendentes de resultado: qualquer PENDENTE
+        matchesStatus = exame.statusNormalized === 'pendente'; break;
       case 'resultado': matchesStatus = exame.statusNormalized === 'resultado' || exame.statusNormalized === 'realizado'; break;
-      case 'historico':
-        matchesStatus = historicoIds ? historicoIds.has(exame.id) : false;
-        break;
       default: matchesStatus = true;
     }
 
@@ -423,13 +417,12 @@ export default function Exames() {
                   <Input placeholder="Pesquisar por paciente, tipo ou médico" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <div className="flex items-center gap-2 overflow-auto">
-                  <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
+                  
                   <Button variant={filterStatus === 'agendados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('agendados')}>Agendados</Button>
                   <Button variant={filterStatus === 'cancelados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('cancelados')}>Cancelados</Button>
-                  <Button variant={filterStatus === 'pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('pendente')}>Pendentes</Button>
-                  <Button variant={filterStatus === 'pendentesResultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('pendentesResultado')}>Pendentes de Resultado</Button>
+                  <Button variant={filterStatus === 'resultado pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado pendente')}>Resultado Pendente</Button>
                   <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultado</Button>
-                  <Button variant={filterStatus === 'historico' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('historico')}>Histórico</Button>
+				  <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
                 </div>
               </div>
             </CardHeader>
