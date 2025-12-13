@@ -186,7 +186,7 @@ O padrão Strategy é usado para encapsular diferentes algoritmos de cálculo (f
 
 ## 5. Template Method
 
-**Descrição:** O padrão Template Method define o esqueleto de um algoritmo em uma operação, adiando alguns passos para subclasses. Template Method permite que subclasses redefinam certos passos de um algoritmo sem alterar a estrutura do algoritmo.
+**Descrição:** O padrão Template Method define o esqueleto de um algoritmo em uma operação, delegando alguns passos para subclasses. Em outras palavras, este padrão permite que subclasses redefinam certos passos de um algoritmo sem alterar sua estrutura geral, promovendo reuso de código e garantindo consistência na execução de operações similares.
 
 **Classes Criadas/Modificadas:**
 
@@ -194,18 +194,26 @@ O padrão Strategy é usado para encapsular diferentes algoritmos de cálculo (f
   - Classe abstrata que define o template method para operações de repositório JPA
   - Métodos template: `buscarPorId()` e `buscarTodos()` que definem o algoritmo de busca e conversão
   - Métodos primitivos abstratos: `buscarEntidadeJpa()` e `buscarTodasEntidades()` implementados pelas subclasses
-  
-- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/referencia/EspecialidadeRepositorioJpaImpl.java`
-  - Subclasse que estende `RepositorioJpaTemplate` e implementa os métodos primitivos para Especialidade
-  
+
 - `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/referencia/TipoExameRepositorioJpaImpl.java`
   - Subclasse que estende `RepositorioJpaTemplate` e implementa os métodos primitivos para TipoExame
-  
+  - Usa conversão automática via ModelMapper nos métodos template herdados
+
 - `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/administracao/PacienteRepositorioJpaAdapter.java`
   - Subclasse que estende `RepositorioJpaTemplate` e implementa os métodos primitivos para Paciente
+  - **Abordagem híbrida:** Implementa os métodos abstratos (mantendo a estrutura do padrão), mas usa mapeamento manual (`PacienteJpaMapeador`) nas operações finais devido à ausência de construtor vazio na entidade de domínio
 
 **Como está sendo usado:**
+
 O padrão Template Method é usado para padronizar o algoritmo de busca e conversão de entidades JPA para entidades de domínio. O template define os passos fixos (conversão usando ModelMapper), enquanto as subclasses implementam apenas os passos variáveis (busca das entidades JPA específicas).
+
+**Benefícios:**
+
+- **Reuso de código:** O algoritmo de conversão é definido uma única vez na classe abstrata
+- **Consistência:** Todas as implementações seguem o mesmo padrão de busca e conversão
+- **Flexibilidade:** Subclasses podem adaptar o comportamento quando necessário (como demonstrado em Pacientes)
+- **Manutenibilidade:** Alterações no algoritmo de conversão afetam todas as implementações automaticamente
+- **Alinhamento com SOLID:** Open-Closed (aberto para extensão via herança, fechado para modificação), Single Responsibility (classe abstrata cuida da conversão, subclasses cuidam da busca específica)
 
 ---
 
