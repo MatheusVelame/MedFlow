@@ -118,13 +118,15 @@ Em síntese, o padrão Proxy é usado de duas formas:
 
 Arquivos relevantes (localizações no repositório)
 
-**Exames**
+**EXAMES - Domínio `atendimento`**
 
 - Interface (contrato): `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/IExameServico.java`
 - RealSubject (implementação): `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/ExameServicoImpl.java`
 - Proxy concreto: `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/ExameServicoProxy.java`
 - Registro do bean (onde o proxy é criado e exposto): `apresentacao-backend/src/main/java/br/com/medflow/apresentacao/config/AtendimentoConfig.java`
-- Especialidades:
+
+**ESPECIALIDADES - domínio `referencia`**
+
 - Interface (contrato): `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/IEspecialidadeServico.java`
 - RealSubject (implementação): `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/EspecialidadeServicoImpl.java` (implementação real — usada nos testes/instanciação)
 - Proxy concreto: `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/EspecialidadeServicoProxy.java`
