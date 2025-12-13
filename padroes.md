@@ -340,7 +340,7 @@ O padrão Template Method é usado para padronizar o algoritmo de busca e conver
 
 ---
 
-## 6. Iterator
+## 6. Iterator (Matheus Velame)
 
 **Descrição:** O padrão Iterator (ou Iterador) tem o propósito de "Prover uma maneira de acessar os elementos de um objeto agregado sequencialmente sem expor sua representação subjacente". No MedFlow, este padrão é fundamental para percorrer coleções internas de entidades de domínio (o Histórico), garantindo que o código cliente não dependa da estrutura interna (como uma List ou Map) do objeto agregado.
 
