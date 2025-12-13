@@ -25,9 +25,9 @@ public class ExameServicoProxy implements IExameServico {
     }
 
     @Override
-    public Exame atualizarAgendamento(ExameId exameId, Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel) {
-        log("ATUALIZAR_AGENDAMENTO", "ExameID: " + exameId + " -> Novos dados: MédicoID=" + novoMedicoId + ", Data=" + novaDataHora);
-        return servicoReal.atualizarAgendamento(exameId, novoMedicoId, novoTipoExame, novaDataHora, responsavel);
+    public Exame atualizarAgendamento(ExameId exameId, Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel, String observacoes) {
+        log("ATUALIZAR_AGENDAMENTO", "ExameID: " + exameId + " -> Novos dados: MédicoID=" + novoMedicoId + ", Data=" + novaDataHora + ", Observações=" + observacoes);
+        return servicoReal.atualizarAgendamento(exameId, novoMedicoId, novoTipoExame, novaDataHora, responsavel, observacoes);
     }
 
     @Override

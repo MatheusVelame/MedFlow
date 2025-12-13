@@ -239,7 +239,8 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
                 novoMedicoId, 
                 getExameEmTeste().getTipoExame(),
                 novaDataHora, 
-                getUsuarioResponsavelId("Funcionário")
+                getUsuarioResponsavelId("Funcionário"),
+                null // observacoes
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
@@ -256,7 +257,8 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
                 getExameEmTeste().getMedicoId(), 
                 getExameEmTeste().getTipoExame(), 
                 getExameEmTeste().getDataHora(), 
-                getUsuarioResponsavelId("Funcionário")
+                getUsuarioResponsavelId("Funcionário"),
+                null // observacoes
             );
             throw new RuntimeException("Simulação: Paciente não pode ser alterado"); 
         } catch (ExcecaoDominio e) {
@@ -278,7 +280,8 @@ public class ExamesFuncionalidade extends ExamesFuncionalidadeBase {
                 getExameEmTeste().getMedicoId(), 
                 getExameEmTeste().getTipoExame(), 
                 novaDataHora, 
-                getUsuarioResponsavelId("Funcionário")
+                getUsuarioResponsavelId("Funcionário"),
+                null // observacoes
             );
             setExameEmTeste(resultado);
         } catch (ExcecaoDominio e) {
