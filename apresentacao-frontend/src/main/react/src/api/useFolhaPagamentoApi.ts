@@ -9,12 +9,13 @@ import { toast } from "sonner";
 // =====================================================================
 
 export type StatusFolha = "PENDENTE" | "PAGO" | "CANCELADO";
-export type TipoRegistro = "MENSALISTA" | "HORISTA" | "COMISSIONADO";
+export type TipoRegistro = "PAGAMENTO" | "AJUSTE";
+export type TipoVinculo = "CLT" | "ESTAGIARIO" | "PJ";
 
 export interface FolhaPagamentoResumo {
   id: number;
   funcionarioId: number;
-  periodoReferencia: string;
+  periodoReferencia: string; // formato: MM/AAAA
   valorLiquido: number;
   status: StatusFolha;
 }
@@ -22,7 +23,7 @@ export interface FolhaPagamentoResumo {
 export interface FolhaPagamentoDetalhes {
   id: number;
   funcionarioId: number;
-  periodoReferencia: string;
+  periodoReferencia: string; // formato: MM/AAAA
   tipoRegistro: TipoRegistro;
   salarioBase: number;
   beneficios: number;
@@ -34,11 +35,12 @@ export interface FolhaPagamentoDetalhes {
 // Payloads para operações
 export interface RegistrarFolhaPayload {
   funcionarioId: number;
-  periodoReferencia: string;
+  periodoReferencia: string; // formato: MM/AAAA
   tipoRegistro: TipoRegistro;
   salarioBase: number;
   beneficios: number;
   metodoPagamento: string;
+  tipoVinculo: TipoVinculo;
   usuarioResponsavelId: number;
   funcionarioAtivo: boolean;
 }

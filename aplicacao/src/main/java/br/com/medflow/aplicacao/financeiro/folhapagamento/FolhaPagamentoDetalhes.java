@@ -5,7 +5,7 @@ import br.com.medflow.dominio.financeiro.folhapagamento.TipoRegistro;
 import java.math.BigDecimal;
 
 /**
- * DTO com detalhes completos de uma Folha de Pagamento.
+ * DTO com detalhes completos de Folha de Pagamento.
  */
 public class FolhaPagamentoDetalhes {
     private final int id;

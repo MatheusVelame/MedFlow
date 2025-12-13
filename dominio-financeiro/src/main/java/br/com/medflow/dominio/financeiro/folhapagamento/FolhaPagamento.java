@@ -17,11 +17,12 @@ public class FolhaPagamento {
     private BigDecimal salarioBase;
     private BigDecimal beneficios;
     private String metodoPagamento;
+    private TipoVinculo tipoVinculo;
     private StatusFolha status;
 
     public FolhaPagamento(int funcionarioId, String periodoReferencia, TipoRegistro tipoRegistro,
                           BigDecimal salarioBase, BigDecimal beneficios, String metodoPagamento,
-                          UsuarioResponsavelId responsavelId) {
+                          TipoVinculo tipoVinculo, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela criação não pode ser nulo.");
         validarFuncionarioAtivo(funcionarioId);
 
@@ -31,12 +32,13 @@ public class FolhaPagamento {
         setSalarioBase(salarioBase);
         setBeneficios(beneficios);
         setMetodoPagamento(metodoPagamento);
+        setTipoVinculo(tipoVinculo);
         this.status = StatusFolha.PENDENTE; // RN: Status padrão sempre é PENDENTE
     }
 
     public FolhaPagamento(FolhaPagamentoId id, int funcionarioId, String periodoReferencia,
                           TipoRegistro tipoRegistro, BigDecimal salarioBase, BigDecimal beneficios,
-                          String metodoPagamento, StatusFolha status) {
+                          String metodoPagamento, TipoVinculo tipoVinculo, StatusFolha status) {
         notNull(id, "O ID da folha de pagamento não pode ser nulo na reconstrução.");
         this.id = id;
         this.funcionarioId = funcionarioId;
@@ -45,6 +47,7 @@ public class FolhaPagamento {
         this.salarioBase = salarioBase;
         this.beneficios = beneficios;
         this.metodoPagamento = metodoPagamento;
+        this.tipoVinculo = tipoVinculo;
         this.status = status;
     }
 
@@ -85,6 +88,11 @@ public class FolhaPagamento {
     public void setMetodoPagamento(String metodoPagamento) {
         notBlank(metodoPagamento, "O método de pagamento é obrigatório.");
         this.metodoPagamento = metodoPagamento.trim();
+    }
+
+    public void setTipoVinculo(TipoVinculo tipoVinculo) {
+        notNull(tipoVinculo, "O tipo de vínculo é obrigatório.");
+        this.tipoVinculo = tipoVinculo;
     }
 
     public void atualizarValores(BigDecimal novoSalarioBase, BigDecimal novosBeneficios,
@@ -153,5 +161,6 @@ public class FolhaPagamento {
     public BigDecimal getSalarioBase() { return salarioBase; }
     public BigDecimal getBeneficios() { return beneficios; }
     public String getMetodoPagamento() { return metodoPagamento; }
+    public TipoVinculo getTipoVinculo() { return tipoVinculo; }
     public StatusFolha getStatus() { return status; }
 }

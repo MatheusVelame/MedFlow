@@ -35,6 +35,10 @@ public class FolhaPagamentoJpa {
     private String metodoPagamento;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_vinculo", nullable = false, length = 20)
+    private TipoVinculo tipoVinculo;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private StatusFolha status;
 
@@ -51,6 +55,7 @@ public class FolhaPagamentoJpa {
         this.salarioBase = dominio.getSalarioBase();
         this.beneficios = dominio.getBeneficios();
         this.metodoPagamento = dominio.getMetodoPagamento();
+        this.tipoVinculo = dominio.getTipoVinculo();
         this.status = dominio.getStatus();
     }
 
@@ -63,6 +68,7 @@ public class FolhaPagamentoJpa {
                 this.salarioBase,
                 this.beneficios,
                 this.metodoPagamento,
+                this.tipoVinculo,
                 this.status
         );
     }
@@ -74,6 +80,7 @@ public class FolhaPagamentoJpa {
         this.salarioBase = dominio.getSalarioBase();
         this.beneficios = dominio.getBeneficios();
         this.metodoPagamento = dominio.getMetodoPagamento();
+        this.tipoVinculo = dominio.getTipoVinculo();
         this.status = dominio.getStatus();
     }
 
@@ -84,5 +91,6 @@ public class FolhaPagamentoJpa {
     public BigDecimal getSalarioBase() { return salarioBase; }
     public BigDecimal getBeneficios() { return beneficios; }
     public String getMetodoPagamento() { return metodoPagamento; }
+    public TipoVinculo getTipoVinculo() { return tipoVinculo; }
     public StatusFolha getStatus() { return status; }
 }
