@@ -106,44 +106,165 @@ O padrão Observer é usado para implementar um sistema de eventos de domínio (
 
 ## 3. Proxy
 
-**Descrição:** O padrão Proxy fornece um substituto ou marcador de lugar para outro objeto para controlar o acesso a ele. Pode ser usado para adicionar funcionalidades como logging, auditoria, cache ou controle de acesso.
+**FUNCIONALIDADES — Exames e Especialidades**
+*Domínios - Referência e Atendimento*
 
-**Classes Criadas/Modificadas:**
+O padrão de projeto Proxy é aplicado no backend do sistema para as funcionalidades de Exames e de Especialidades. Abaixo, descreve-se onde proxies são instanciados, qual é o contrato (interfaces), responsabilidades do Proxy e do RealSubject, vantagens, cuidados (edge cases) e sugestões de melhoria e testes.
 
-### Proxy Estático:
-- `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/EspecialidadeServicoProxy.java`
-  - Proxy estático que intercepta chamadas ao serviço de especialidades para adicionar auditoria/log antes de repassar para a implementação real
-  
-- `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/IEspecialidadeServico.java`
-  - Interface comum implementada tanto pelo serviço real quanto pelo proxy
-  
-- `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/EspecialidadeServicoImpl.java`
-  - Implementação real do serviço (RealSubject)
+Em síntese, o padrão Proxy é usado de duas formas:
 
-- `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/ExameServicoProxy.java`
-  - Proxy estático que intercepta chamadas ao serviço de exames para adicionar auditoria/log
-  
-- `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/IExameServico.java`
-  - Interface comum para o serviço de exames
-  
-- `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/ExameServicoImpl.java`
-  - Implementação real do serviço de exames
-
-### Proxy Dinâmico (Java Dynamic Proxy):
-- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/financeiro/convenio/ConvenioRepositorioAplicacaoImpl.java`
-  - Usa `Proxy.newProxyInstance()` e `InvocationHandler` para criar proxies dinâmicos de DTOs (`ConvenioResumo`, `ConvenioDetalhes`, `HistoricoEntradaResumo`) que mapeiam chamadas de métodos para propriedades de entidades JPA
-
-### Configuração:
-- `apresentacao-backend/src/main/java/br/com/medflow/apresentacao/config/ReferenciaConfig.java`
-  - Configuração do bean que retorna o proxy em vez da implementação real para especialidades
-  
-- `apresentacao-backend/src/main/java/br/com/medflow/apresentacao/config/AtendimentoConfig.java`
-  - Configuração do bean que retorna o proxy em vez da implementação real para exames
-
-**Como está sendo usado:**
-O padrão Proxy é usado de duas formas:
 1. **Proxy Estático:** Para adicionar auditoria e logging aos serviços de domínio (Especialidades e Exames) sem modificar a implementação real.
 2. **Proxy Dinâmico:** Para criar DTOs dinâmicos que mapeiam automaticamente chamadas de métodos para propriedades de entidades JPA, evitando a necessidade de criar classes DTO explícitas.
+
+Arquivos relevantes (localizações no repositório)
+
+**Exames**
+
+- Interface (contrato): `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/IExameServico.java`
+- RealSubject (implementação): `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/ExameServicoImpl.java`
+- Proxy concreto: `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/exames/ExameServicoProxy.java`
+- Registro do bean (onde o proxy é criado e exposto): `apresentacao-backend/src/main/java/br/com/medflow/apresentacao/config/AtendimentoConfig.java`
+- Especialidades:
+- Interface (contrato): `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/IEspecialidadeServico.java`
+- RealSubject (implementação): `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/EspecialidadeServicoImpl.java` (implementação real — usada nos testes/instanciação)
+- Proxy concreto: `dominio-referencia/src/main/java/br/com/medflow/dominio/referencia/especialidades/EspecialidadeServicoProxy.java`
+- Registro do bean: `apresentacao-backend/src/main/java/br/com/medflow/apresentacao/config/ReferenciaConfig.java`
+- Exemplo de testes que usam o Proxy: `dominio-referencia/src/test/.../EspecialidadesFuncionalidadeBase.java`
+
+**Contexto e objetivo do Proxy no projeto**
+
+O padrão Proxy é usado aqui como um "wrapper" em torno dos serviços de domínio (Exames e Especialidades) para adicionar comportamento transversais (cross-cutting concerns), principalmente:
+
+- Auditoria / logging (prints no console atualmente)
+- Ponto único para eventualmente checar permissões, métricas ou validação antes de delegar ao serviço real
+
+Arquiteturalmente:
+
+- Tanto o Proxy quanto o RealSubject implementam a mesma interface (ex.: `IExameServico` e `IEspecialidadeServico`), permitindo que o bean exposto para a aplicação seja o proxy.
+- O proxy é construído programaticamente nas classes de configuração Spring (`AtendimentoConfig` e `ReferenciaConfig`) e devolvido como bean. Assim, o restante da aplicação só vê a interface.
+
+Como o Proxy é instanciado (ex.: Exames)
+
+No arquivo `AtendimentoConfig.java`:
+
+1. É criada a implementação real: Exemplo: `ExameServicoImpl servicoReal = new ExameServicoImpl(repositorio, verificadorExterno, eventoBarramento);`
+2. O bean retornado pelo método é uma nova instância de `ExameServicoProxy` que envolve `servicoReal`: Exemplo: `return new ExameServicoProxy(servicoReal);`
+
+**Fluxo de execução (sequência típica)**
+
+1. Chamador (controller, outro serviço, testes) injeta a interface `IExameServico`.
+2. Ao chamar, por exemplo, `agendarExame(...)`, a instância real será um `ExameServicoProxy`.
+3. `ExameServicoProxy.agendarExame(...)` executa lógica de proxy (no código atual, chama log(...)) — ponto onde se pode inserir checagens adicionais.
+4. Proxy delega a chamada para `servicoReal.agendarExame(...)` (o `ExameServicoImpl`), que contém toda a lógica de domínio (RNs — regras de negócio), persistência via repositório e publicação de eventos.
+5. Resultado (ou exceção) é retornado ao chamador; o proxy poderia também aplicar lógica após a chamada (post-processing, transações, métricas).
+
+**Contrato (inputs, outputs, erros)**
+
+- `IExameServico`:
+- Métodos principais: `agendarExame`, `atualizarAgendamento`, `tentarExcluirAgendamento`, `cancelarAgendamento`
+- Inputs: IDs (paciente, médico), tipo de exame (`String`), datas (`LocalDateTime`), `UsuarioResponsavelId`.
+- Outputs: Exame salvo ou void.
+- Erros esperados (lançados pelo `RealSubject`): `ExcecaoDominio` quando regras de negócio são violadas (datas passadas, médico inativo, conflito de horário etc.).
+- `IEspecialidadeServico`:
+- Comandos de domínio (cadastrar, alterar, excluir e variações), consultas (listar, `buscarPorNome/id`).
+- Outputs: `Especialidade`, `List<Especialidade>` ou void.
+- Erros esperados: `RegraNegocioException` / ExcecaoDominio conforme regras do domínio (por exemplo, não permitir exclusão quando houver vínculo).
+
+**Responsabilidades: Proxy vs `RealSubject`**
+
+- Proxy:
+  - Interceptar chamadas e adicionar comportamento transversal:
+    - Logging / auditoria (no código atual: `System.out.println("[AUDITORIA - PROXY] ...")`)
+    - Local para adicionar checagens de autorização antes de delegar
+    - Ponto para métricas (contadores, latências)
+    - Eventualmente, tratamento de retries, circuit-breakers, caching superficial
+  - Não deve conter a lógica de negócio (regras do domínio). Esta fica no RealSubject.
+- **RealSubject** (`ExameServicoImpl` / `EspecialidadeServicoImpl`):
+  - Implementa as regras de negócio (RNs) e interage com repositórios, serviços externos e barramento de eventos.
+  - Lança exceções de domínio quando regras são violadas.
+  - Responsável por persistir estado e emitir eventos de domínio.
+
+**Vantagens desta abordagem**
+
+- Separação de preocupações: lógica transversal desacoplada do core de domínio.
+- Fácil de colocar / remover comportamentos sem alterar a implementação do domínio.
+- Interface única visível para consumidores (inversão de controle via Spring DI).
+- Simplicidade: implementação do Proxy no código atual é direta e explícita, fácil de entender.
+
+Riscos e edge-cases (pontos de atenção)
+
+1. Transações e boundaries:
+2. Se a implementação do domínio usa transações declarativas (ex.: @Transactional em beans Spring), criar o Proxy manual pode interferir no comportamento das proxies do Spring (especialmente quando se usa proxies CGLIB/JDK).
+3. Recomenda-se garantir que o RealSubject (ou métodos que precisam de transação) estejam anotados/expandidos de modo que o container gerencie a transação corretamente. Testar se o bean retornado (proxy personalizado) ainda respeita a configuração transacional desejada.
+4. Tratamento de exceções:
+5. Se o Proxy lê ou transforma exceções, garanta que exceções de domínio não sejam silenciadas. Atualmente o Proxy apenas faz log e delega.
+6. Thread-safety / estado:
+7. O Proxy atual não mantém estado mutável, então é seguro como singleton. Evitar adicionar campos mutáveis ao Proxy sem sincronização.
+8. Performance:
+9. Logging síncrono no console pode ser custo; para produção, preferir um logger assíncrono/estruturado (SLF4J + Logback/Log4J2) e/ ou um coletor de métricas.
+10. Contract drift:
+11. Se a interface (IExameServico / IEspecialidadeServico) mudar, o Proxy precisa ser atualizado para expor todos os métodos. Ou usar técnicas (dynamic proxies) para reduzir repetição.
+12. Serialização / proxies dinâmicos:
+13. Se o proxy precisar ser serializável ou passível de proxying via reflection para frameworks, considerar suporte adicional.
+
+**Testes e validação**
+
+- Testes unitários:
+- Mockar o `servicoReal` e injetá-lo no `ServicoProxy`, verificar que:
+  - O proxy chama o método de log (poder verificar chamando/espionando o logger ou verificando que o método do `servicoReal` foi chamado).
+  - Em casos de exceção lançada pelo `servicoReal`, o proxy propaga a exceção.
+- Exemplos de foco:
+  - Happy path: proxy delega e retorna o mesmo resultado.
+  - Exceção: proxy não mascara exceção do `RealSubject`.
+  - Checagem de autorização (se implementada): quando negada, não deve delegar.
+- Testes de integração:
+- Testar o bean exposto na configuração Spring (`AtendimentoConfig` e `ReferenciaConfig`) para garantir que o proxy é o bean injetado e que todo o fluxo (proxy -> real -> repositório) funciona.
+- Verificar interação com o barramento de eventos (no caso de Exame: publicação de `ExameAgendadoEvent`).
+
+**Sugestões de implementação / melhorias**
+
+1. Centralizar logging/auditoria:
+2. Substituir `System.out.println` por logger (`org.slf4j.Logger`) com níveis e contexto estruturado (ex.: MDC com responsavel).
+3. Registrar identificadores importantes (ID do exame, paciente, usuário que chamou) para rastreabilidade.
+4. Usar Spring AOP (ou proxies dinâmicos) para reduzir código boilerplate:
+5. Em vez de escrever um proxy por serviço, aplicar um advice que intercepta chamadas de métodos anotados (ex.: `@Auditavel`) e faz logging/metrics. Isso evita duplicação e garante aplicação uniforme.
+6. Vantagens: menos código a manter; integrado ao container, respeitando aspectos como transação.
+7. Métricas e monitoramento:
+8. Adicionar contadores/latência (`Micrometer/Prometheus`) no proxy/advice para medir uso e latência de operações críticas (agendamento, cancelamento).
+9. Authorization / Permission checks:
+10. Se autorizado no escopo, adicionar verificação de permissões no Proxy (ou via AOP) antes de delegar ao `RealSubject`. Preferir extrair essa responsabilidade para componente dedicado de autorização se for complexo.
+11. Tratamento de falhas externas:
+12. Para chamadas que dependem de serviços externos (`verificadorExterno`), considerar padrões como circuit-breaker (`Resilience4j`) no nível do `RealSubject` ou em um decorator específico.
+13. Evitar duplicação:
+14. Se vários serviços precisam de comportamento semelhante, implementar um decorator genérico (ou usar AOP) para aplicar auditoria/métricas a múltiplos serviços.
+
+*Exemplo de transformação (opção leve)*
+
+- Se quiser manter controle manual, mas reduzir repetição:
+- Criar uma classe base abstrata `AbstractServicoProxy<TInterface>` com utilitários de log/metrics e estender nos proxies concretos.
+- Ou: migrar para um advice AOP:
+- Criar um `@Aspect` que aplica around-advice em beans que implementam `IExameServico` e `IEspecialidadeServico` ou que são anotados com uma anotação específica.
+
+**Checklist de qualidade / testes a executar**
+
+- [x] Verificar que o bean que é injetado é realmente o proxy (tests de integração ou debug).
+- [x] Cobrir unidade: proxy delega e propaga exceções.
+- [x] Cobrir integração: fluxo de agendamento publica evento (Exame) após persistência.
+- [ ] Confirmar comportamento transacional ao introduzir mudanças no proxy (se for necessário `@Transactional`, testar o cenário de rollback).
+
+**Exemplos de verificações rápidas (conceitual)**
+
+- Unit:
+- Criar `ExameServicoProxy` com um `servicoReal` mock e assertar que `servicoReal.agendarExame(...)` foi chamado.
+- Integration:
+- Iniciar contexto Spring que configura `exameServico(...)` em `AtendimentoConfig` e verificar que o bean obtido por `context.getBean(IExameServico.class)` é instância de `ExameServicoProxy` e que o fluxo completo salva e publica evento.
+
+**Observações finais e recomendações práticas**
+
+- A implementação atual é clara e funcional: proxies explícitos dão visibilidade e controle.
+- Para produção, trocar prints por logs estruturados e avaliar migração para AOP quando o comportamento transversal se multiplicar.
+- Verificar interações com transações e proxies do Spring (testes de integração) antes de adicionar lógica dependente de transação no Proxy.
+- Documentar se a intenção do Proxy é somente auditoria (simples) ou se servirá também para autorização, métricas, caching, retries etc. A escolha afeta a implementação (proxy manual vs AOP vs dynamic proxy vs middleware).
 
 ---
 
