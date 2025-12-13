@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, DollarSign, Clock, CheckCircle, Edit, Trash2, Filter, Loader2 } from "lucide-react";
+import { FileText, DollarSign, Clock, CheckCircle, Edit, Trash2, Filter, Loader2, Eye, Plus } from "lucide-react";
 import { FaturamentoForm } from "@/components/FaturamentoForm";
+import { FaturamentoDetalhesDialog } from "@/components/FaturamentoDetalhesDialog";
 import {
   Select,
   SelectContent,
@@ -22,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useListarFaturamentos,
@@ -38,10 +37,12 @@ import {
 import { useListarPacientes } from "@/api/usePacientesApi";
 
 export default function Faturamentos() {
-  const { isGestor } = useAuth();
+  const { user, isGestor, isAtendente } = useAuth();
   const [editingFaturamento, setEditingFaturamento] = useState<FaturamentoResumo | null>(null);
   const [faturamentoToCancelar, setFaturamentoToCancelar] = useState<string | null>(null);
+  const [faturamentoToView, setFaturamentoToView] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Queries
   const { data: faturamentos = [], isLoading: isLoadingFaturamentos, error: errorFaturamentos } = useListarFaturamentos();
@@ -78,20 +79,20 @@ export default function Faturamentos() {
   }, [faturamentos, faturamentosPorStatus, statusFilter, pacientesMap]);
 
   const handleNovoFaturamento = (data: any) => {
-    const { user } = useAuth();
     const payload: RegistrarFaturamentoPayload = {
       pacienteId: data.pacienteId,
       tipoProcedimento: data.procedimentoTipo.toUpperCase() as "CONSULTA" | "EXAME",
       descricaoProcedimento: data.procedimentoDescricao,
       valor: data.valor,
       metodoPagamento: data.metodoPagamento.toUpperCase().replace(/\s+/g, "_"),
-      usuarioResponsavel: user?.id || "user-123",
+      usuarioResponsavel: user?.id || "1",
       observacoes: data.observacoes,
     };
 
     registrarFaturamentoMutation.mutate(payload, {
       onSuccess: () => {
         setEditingFaturamento(null);
+        setIsFormOpen(false);
       }
     });
   };
@@ -101,24 +102,22 @@ export default function Faturamentos() {
   };
 
   const handleCancelar = (id: string) => {
-    const { user } = useAuth();
     cancelarFaturamentoMutation.mutate({
       id,
       payload: {
         motivo: "Cancelamento solicitado pelo usuário",
-        usuarioResponsavel: user?.id || "user-123",
+        usuarioResponsavel: user?.id || "1",
       }
     });
     setFaturamentoToCancelar(null);
   };
 
   const handleStatusChange = (id: string, newStatus: string) => {
-    const { user } = useAuth();
     if (newStatus === "PAGO") {
       marcarComoPagoMutation.mutate({
         id,
         payload: {
-          usuarioResponsavel: user?.id || "user-123",
+          usuarioResponsavel: user?.id || "1",
         }
       });
     } else if (newStatus === "CANCELADO") {
@@ -207,66 +206,40 @@ export default function Faturamentos() {
         </Card>
         </div>
 
-        <Tabs defaultValue="novo" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="novo">Novo Faturamento</TabsTrigger>
-            <TabsTrigger value="lista">Lista de Faturamentos</TabsTrigger>
-          </TabsList>
+      <div className="flex justify-end mb-4">
+        {(isGestor || isAtendente) && (
+          <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Novo Faturamento
+          </Button>
+        )}
+      </div>
 
-        <TabsContent value="novo" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {editingFaturamento ? "Editar Faturamento" : "Registrar Novo Faturamento"}
-              </CardTitle>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Faturamentos Registrados</CardTitle>
               <CardDescription>
-                Preencha os dados do procedimento realizado para registrar o faturamento
+                Histórico de todos os faturamentos da clínica
               </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FaturamentoForm 
-                onSubmit={handleNovoFaturamento} 
-                initialData={editingFaturamento ? {
-                  pacienteId: editingFaturamento.pacienteId,
-                  pacienteNome: faturamentosEnriquecidos.find(f => f.id === editingFaturamento.id)?.pacienteNome || "",
-                  procedimentoTipo: editingFaturamento.tipoProcedimento.toLowerCase() as "consulta" | "exame",
-                  procedimentoDescricao: editingFaturamento.descricaoProcedimento,
-                  valor: Number(editingFaturamento.valor),
-                  metodoPagamento: editingFaturamento.metodoPagamento,
-                  observacoes: ""
-                } : undefined}
-                onCancel={() => setEditingFaturamento(null)}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="lista" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Faturamentos Registrados</CardTitle>
-                  <CardDescription>
-                    Histórico de todos os faturamentos da clínica
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filtrar por status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="PENDENTE">Pendente</SelectItem>
-                      <SelectItem value="PAGO">Pago</SelectItem>
-                      <SelectItem value="CANCELADO">Cancelado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="PENDENTE">Pendente</SelectItem>
+                  <SelectItem value="PAGO">Pago</SelectItem>
+                  <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {isLoadingFaturamentos || isLoadingPorStatus ? (
@@ -305,7 +278,7 @@ export default function Faturamentos() {
                               {Number(faturamento.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </div>
                             
-                            {faturamento.status === "PENDENTE" && (
+                            {isGestor && faturamento.status === "PENDENTE" && (
                               <Select 
                                 value={faturamento.status} 
                                 onValueChange={(value: string) => handleStatusChange(faturamento.id, value)}
@@ -322,15 +295,28 @@ export default function Faturamentos() {
                               </Select>
                             )}
 
-                            {isGestor && faturamento.status === "PENDENTE" && (
-                              <div className="flex gap-2">
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setFaturamentoToView(faturamento.id)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                              {isGestor && faturamento.status === "PENDENTE" && (
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => handleEdit(faturamento)}
+                                  onClick={() => {
+                                    setEditingFaturamento(faturamento);
+                                    setIsFormOpen(true);
+                                  }}
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
+                              )}
+                              {(isGestor || isAtendente) && faturamento.status === "PENDENTE" && (
                                 <Button 
                                   variant="outline" 
                                   size="sm"
@@ -338,8 +324,8 @@ export default function Faturamentos() {
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -349,8 +335,36 @@ export default function Faturamentos() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+      <FaturamentoForm
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingFaturamento(null);
+          }
+          setIsFormOpen(open);
+        }}
+        onSubmit={handleNovoFaturamento}
+        initialData={editingFaturamento ? {
+          pacienteId: editingFaturamento.pacienteId,
+          pacienteNome: faturamentosEnriquecidos.find(f => f.id === editingFaturamento.id)?.pacienteNome || "",
+          procedimentoTipo: editingFaturamento.tipoProcedimento.toLowerCase() as "consulta" | "exame",
+          procedimentoDescricao: editingFaturamento.descricaoProcedimento,
+          valor: Number(editingFaturamento.valor),
+          metodoPagamento: editingFaturamento.metodoPagamento,
+          observacoes: ""
+        } : undefined}
+        onCancel={() => {
+          setEditingFaturamento(null);
+          setIsFormOpen(false);
+        }}
+      />
+
+      <FaturamentoDetalhesDialog
+        open={faturamentoToView !== null}
+        onOpenChange={(open) => !open && setFaturamentoToView(null)}
+        faturamentoId={faturamentoToView}
+      />
 
       <AlertDialog open={!!faturamentoToCancelar} onOpenChange={() => setFaturamentoToCancelar(null)}>
         <AlertDialogContent>
