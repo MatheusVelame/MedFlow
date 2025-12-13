@@ -125,6 +125,23 @@ public class BackendAplicacao {
     }
     
     @Bean
+    public ListarHistoricoAtualizacoesQuery listarHistoricoAtualizacoesQuery(ProntuarioServicoAplicacao servicoAplicacao) {
+        return new ListarHistoricoAtualizacoesQuery(servicoAplicacao);
+    }
+
+    @Bean
+    public ExcluirProntuarioUseCase excluirProntuarioUseCase(
+            ProntuarioRepositorioImpl repositorio) {
+        return new ExcluirProntuarioUseCase(repositorio);
+    }
+
+    @Bean
+    public InativarProntuarioUseCase inativarProntuarioUseCase(
+            ProntuarioRepositorioImpl repositorio) {
+        return new InativarProntuarioUseCase(repositorio);
+    }
+    
+    @Bean
     public ProntuarioRepositorioBase prontuarioRepositorioBase(
             ProntuarioJpaRepository jpaRepository,
             HistoricoClinicoJpaRepository historicoClinicoJpaRepository,
@@ -136,6 +153,12 @@ public class BackendAplicacao {
     public AdicionarHistoricoClinicoUseCase adicionarHistoricoClinicoUseCase(
             ProntuarioRepositorioImpl repositorio) {
         return new AdicionarHistoricoClinicoUseCase(repositorio);
+    }
+    
+    @Bean
+    public CriarProntuarioUseCase criarProntuarioUseCase(
+            ProntuarioRepositorioImpl repositorio) {
+        return new CriarProntuarioUseCase(repositorio);
     }
 
     // =====================================================================

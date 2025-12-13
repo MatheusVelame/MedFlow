@@ -31,4 +31,13 @@ public class ProntuarioServicoAplicacao {
     public List<HistoricoItemResponse> listarHistoricoClinico(String prontuarioId) {
         return repositorio.listarHistoricoClinico(prontuarioId);
     }
+
+    public List<ProntuarioResumo> buscarPorPaciente(String pacienteId) {
+        notNull(pacienteId, "O ID do paciente não pode ser nulo");
+        return repositorio.buscarPorPacienteAplicacao(pacienteId);
+    }
+
+    public List<AtualizacaoItemResponse> listarHistoricoAtualizacoes(String prontuarioId) {
+        return repositorio.listarHistoricoAtualizacoes(prontuarioId);
+    }
 }

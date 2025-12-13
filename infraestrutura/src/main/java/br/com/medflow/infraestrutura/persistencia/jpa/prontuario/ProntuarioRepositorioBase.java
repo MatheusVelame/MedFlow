@@ -123,8 +123,7 @@ public class ProntuarioRepositorioBase implements ProntuarioRepositorio {
                 .collect(Collectors.toList());
 
         List<HistoricoAtualizacao> historicoAtualizacoes = historicoAtualizacaoJpaRepository
-                .findAll().stream()
-                .filter(h -> h.getProntuarioId().equals(jpa.getId()))
+                .findByProntuarioId(jpa.getId()).stream()
                 .map(this::toDomainAtualizacao)
                 .collect(Collectors.toList());
 

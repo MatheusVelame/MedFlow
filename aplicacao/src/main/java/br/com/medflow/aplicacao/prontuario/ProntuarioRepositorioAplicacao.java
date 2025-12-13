@@ -29,5 +29,24 @@ public interface ProntuarioRepositorioAplicacao {
      */
     List<HistoricoItemResponse> listarHistoricoClinico(String prontuarioId);
 
-    boolean existePorMedicoId(Integer medicoId); // Ou String, dependendo de como você mapeou o ID do médico lá
+    /**
+     * Verifica se existe prontuário por ID do médico.
+     * @param medicoId O ID do médico.
+     * @return true se existe, false caso contrário.
+     */
+    boolean existePorMedicoId(Integer medicoId);
+
+    /**
+     * Busca prontuários por paciente.
+     * @param pacienteId O ID do paciente.
+     * @return Lista de ProntuarioResumo do paciente.
+     */
+    List<ProntuarioResumo> buscarPorPacienteAplicacao(String pacienteId);
+
+    /**
+     * Lista o histórico de atualizações de um prontuário.
+     * @param prontuarioId O ID do prontuário.
+     * @return Lista de AtualizacaoItemResponse.
+     */
+    List<AtualizacaoItemResponse> listarHistoricoAtualizacoes(String prontuarioId);
 }

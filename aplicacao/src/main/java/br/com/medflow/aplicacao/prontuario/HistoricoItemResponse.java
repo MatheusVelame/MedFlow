@@ -14,10 +14,18 @@ public class HistoricoItemResponse {
     private final LocalDateTime dataHoraRegistro;
     private final String profissionalResponsavel;
     private final List<String> anexosReferenciados;
+    private final String prontuarioId; // Adicionado para identificar o prontuário
+    private final String pacienteId; // Adicionado para identificar o paciente
 
     public HistoricoItemResponse(String id, String sintomas, String diagnostico, String conduta,
                                 LocalDateTime dataHoraRegistro, String profissionalResponsavel,
                                 List<String> anexosReferenciados) {
+        this(id, sintomas, diagnostico, conduta, dataHoraRegistro, profissionalResponsavel, anexosReferenciados, null, null);
+    }
+
+    public HistoricoItemResponse(String id, String sintomas, String diagnostico, String conduta,
+                                LocalDateTime dataHoraRegistro, String profissionalResponsavel,
+                                List<String> anexosReferenciados, String prontuarioId, String pacienteId) {
         this.id = id;
         this.sintomas = sintomas;
         this.diagnostico = diagnostico;
@@ -25,6 +33,8 @@ public class HistoricoItemResponse {
         this.dataHoraRegistro = dataHoraRegistro;
         this.profissionalResponsavel = profissionalResponsavel;
         this.anexosReferenciados = anexosReferenciados;
+        this.prontuarioId = prontuarioId;
+        this.pacienteId = pacienteId;
     }
 
     // Getters
@@ -35,4 +45,6 @@ public class HistoricoItemResponse {
     public LocalDateTime getDataHoraRegistro() { return dataHoraRegistro; }
     public String getProfissionalResponsavel() { return profissionalResponsavel; }
     public List<String> getAnexosReferenciados() { return anexosReferenciados; }
+    public String getProntuarioId() { return prontuarioId; }
+    public String getPacienteId() { return pacienteId; }
 }

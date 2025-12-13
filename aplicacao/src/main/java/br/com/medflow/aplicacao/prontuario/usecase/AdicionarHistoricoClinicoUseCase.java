@@ -40,6 +40,23 @@ public class AdicionarHistoricoClinicoUseCase {
         );
 
         prontuario.adicionarHistoricoClinico(novoHistorico);
+        
+        // Registrar no histórico de atualizações
+        // Como não temos atendimentoId na request, usamos null ou geramos um ID temporário
+        // Na prática, isso deveria vir do contexto do atendimento
+        String atendimentoId = prontuario.getAtendimentoId() != null ? prontuario.getAtendimentoId() : "SISTEMA";
+        com.medflow.dominio.prontuario.HistoricoAtualizacao atualizacao = 
+            new com.medflow.dominio.prontuario.HistoricoAtualizacao(
+                UUID.randomUUID().toString(),
+                prontuario.getId(),
+                atendimentoId,
+                LocalDateTime.now(),
+                request.getProfissionalResponsavel(),
+                "Nova evolução clínica registrada: " + request.getDiagnostico(),
+                prontuario.getStatus()
+            );
+        prontuario.adicionarAtualizacao(atualizacao);
+        
         repositorio.salvar(prontuario);
     }
 }

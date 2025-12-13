@@ -1,37 +1,83 @@
-import { useState, useMemo } from "react";
-import { FileText, Search, Eye, Plus, Download, Clock, Loader2 } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { FileText, Search, Eye, Plus, Download, Clock, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EvolucaoForm } from "@/components/EvolucaoForm";
+import { ProntuarioForm } from "@/components/ProntuarioForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   useListarProntuarios, 
   useObterProntuario, 
   useListarHistoricoClinico,
+  useListarHistoricoAtualizacoes,
   useAdicionarHistoricoClinico,
+  useCriarProntuario,
+  useInativarProntuario,
+  useExcluirProntuario,
   type ProntuarioResumo,
-  type HistoricoItem
+  type HistoricoItem,
+  type AtualizacaoItem
 } from "@/api/useProntuariosApi";
 import { useListarPacientes } from "@/api/usePacientesApi";
+import { toast } from "sonner";
 
 export default function Prontuarios() {
-  const { isGestor } = useAuth();
+  const { isGestor, isMedico, user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProntuario, setSelectedProntuario] = useState<string | null>(null);
   const [isEvolucaoFormOpen, setIsEvolucaoFormOpen] = useState(false);
+  const [isProntuarioFormOpen, setIsProntuarioFormOpen] = useState(false);
   const [prontuarioIdParaEvolucao, setProntuarioIdParaEvolucao] = useState<string | null>(null);
+  const [prontuarioParaInativar, setProntuarioParaInativar] = useState<ProntuarioResumo | null>(null);
+  const [prontuarioParaExcluir, setProntuarioParaExcluir] = useState<ProntuarioResumo | null>(null);
+  const listaRef = useRef<HTMLDivElement>(null);
+
+  // Handler para deselecionar ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (listaRef.current && !listaRef.current.contains(event.target as Node)) {
+        // Verifica se não está clicando em botões ou outros elementos interativos
+        const target = event.target as HTMLElement;
+        if (!target.closest('button') && !target.closest('[role="dialog"]') && !target.closest('[role="tab"]')) {
+          setSelectedProntuario(null);
+        }
+      }
+    };
+
+    if (selectedProntuario) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedProntuario]);
 
   // Queries
   const { data: prontuarios = [], isLoading: isLoadingProntuarios, error: errorProntuarios } = useListarProntuarios();
   const { data: pacientes = [] } = useListarPacientes();
   const { data: prontuarioDetalhes, isLoading: isLoadingDetalhes } = useObterProntuario(selectedProntuario);
   const { data: historicoClinico = [], isLoading: isLoadingHistorico } = useListarHistoricoClinico(selectedProntuario);
+  const { data: historicoAtualizacoes = [], isLoading: isLoadingAtualizacoes } = useListarHistoricoAtualizacoes(selectedProntuario);
   
-  // Mutation
+  // Mutations
   const adicionarHistoricoMutation = useAdicionarHistoricoClinico();
+  const criarProntuarioMutation = useCriarProntuario();
+  const inativarProntuarioMutation = useInativarProntuario();
+  const excluirProntuarioMutation = useExcluirProntuario();
 
   // Mapear pacientes para lookup rápido
   const pacientesMap = useMemo(() => {
@@ -43,16 +89,19 @@ export default function Prontuarios() {
   }, [pacientes]);
 
   const handleSaveEvolucao = (data: any) => {
-    if (!prontuarioIdParaEvolucao) return;
+    if (!data.prontuarioId) {
+      toast.error("Nenhum prontuário selecionado.");
+      return;
+    }
     
     adicionarHistoricoMutation.mutate({
-      prontuarioId: prontuarioIdParaEvolucao,
+      prontuarioId: data.prontuarioId,
       payload: {
-        sintomas: data.queixa || data.sintomas,
+        sintomas: data.sintomas,
         diagnostico: data.diagnostico,
         conduta: data.conduta,
-        profissionalResponsavel: data.medico || data.profissionalResponsavel,
-        anexosReferenciados: []
+        profissionalResponsavel: data.profissionalResponsavel,
+        anexosReferenciados: data.anexosReferenciados || []
       }
     });
     setIsEvolucaoFormOpen(false);
@@ -62,9 +111,19 @@ export default function Prontuarios() {
   const handleOpenEvolucaoForm = () => {
     if (selectedProntuario) {
       setProntuarioIdParaEvolucao(selectedProntuario);
+      setIsEvolucaoFormOpen(true);
     }
-    setIsEvolucaoFormOpen(true);
   };
+
+  const handleSaveProntuario = (data: any) => {
+    criarProntuarioMutation.mutate({
+      pacienteId: data.pacienteId,
+      atendimentoId: null,
+      profissionalResponsavel: data.profissionalResponsavel,
+      observacoesIniciais: data.observacoesIniciais || null,
+    });
+  };
+
 
   // Enriquecer prontuários com dados do paciente
   const prontuariosEnriquecidos = useMemo(() => {
@@ -92,17 +151,37 @@ export default function Prontuarios() {
           <h1 className="text-3xl font-bold text-foreground">Prontuários</h1>
           <p className="text-muted-foreground">Histórico médico completo dos pacientes</p>
         </div>
-        {!isGestor && (
+        <div className="flex gap-2">
           <Button 
-            className="bg-gradient-primary text-white hover:opacity-90" 
-            onClick={handleOpenEvolucaoForm}
-            disabled={!selectedProntuario}
+            variant="outline"
+            disabled={!!selectedProntuario}
+            onClick={() => {
+              if (!selectedProntuario) {
+                setIsProntuarioFormOpen(true);
+              }
+            }}
+            className={selectedProntuario ? "opacity-50 cursor-not-allowed" : ""}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Nova Evolução
+            Novo Prontuário
           </Button>
-        )}
+          {!isGestor && selectedProntuario && (
+            <Button 
+              className="bg-gradient-primary text-white hover:opacity-90" 
+              onClick={handleOpenEvolucaoForm}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Evolução
+            </Button>
+          )}
+        </div>
       </div>
+
+      <ProntuarioForm
+        open={isProntuarioFormOpen}
+        onOpenChange={setIsProntuarioFormOpen}
+        onSave={handleSaveProntuario}
+      />
 
       <EvolucaoForm
         open={isEvolucaoFormOpen}
@@ -111,7 +190,7 @@ export default function Prontuarios() {
           if (!open) setProntuarioIdParaEvolucao(null);
         }}
         onSave={handleSaveEvolucao}
-        prontuarioId={prontuarioIdParaEvolucao}
+        prontuarioIdInicial={selectedProntuario || prontuarioIdParaEvolucao}
       />
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -167,11 +246,12 @@ export default function Prontuarios() {
         </Card>
       </div>
 
-      <Tabs defaultValue="lista" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="lista">Lista de Prontuários</TabsTrigger>
-          <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="lista" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="lista">Lista de Prontuários</TabsTrigger>
+            <TabsTrigger value="detalhes">Evolução Clínica</TabsTrigger>
+            <TabsTrigger value="atualizacoes">Histórico de Alterações</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="lista" className="space-y-4">
           <div className="relative">
@@ -197,7 +277,7 @@ export default function Prontuarios() {
               {searchTerm ? "Nenhum prontuário encontrado com os filtros aplicados." : "Nenhum prontuário cadastrado."}
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div ref={listaRef} className="grid gap-4">
               {filteredProntuarios.map((prontuario) => (
                 <Card
                   key={prontuario.id}
@@ -236,13 +316,41 @@ export default function Prontuarios() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button variant="outline" size="sm">
                           <Eye className="w-4 h-4" />
                         </Button>
                         <Button variant="outline" size="sm">
                           <Download className="w-4 h-4" />
                         </Button>
+                        {(isGestor || isMedico) && prontuario.status === "ATIVO" && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProntuarioParaInativar(prontuario);
+                            }}
+                            title="Inativar prontuário"
+                          >
+                            <Clock className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {(isGestor || isMedico) && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProntuarioParaExcluir(prontuario);
+                            }}
+                            title="Excluir prontuário permanentemente"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -253,14 +361,23 @@ export default function Prontuarios() {
         </TabsContent>
 
         <TabsContent value="detalhes" className="space-y-4">
-          {isLoadingDetalhes || isLoadingHistorico ? (
+          {!selectedProntuario ? (
+            <Card className="shadow-card">
+              <CardContent className="p-12 text-center">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  Selecione um prontuário para poder visualizar seu histórico
+                </p>
+              </CardContent>
+            </Card>
+          ) : isLoadingDetalhes || isLoadingHistorico ? (
             <Card className="shadow-card">
               <CardContent className="p-12 text-center">
                 <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-4" />
                 <p className="text-muted-foreground">Carregando detalhes...</p>
               </CardContent>
             </Card>
-          ) : selectedProntuario && prontuarioDetalhes ? (
+          ) : prontuarioDetalhes ? (
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle>Evolução Clínica</CardTitle>
@@ -322,13 +439,166 @@ export default function Prontuarios() {
               <CardContent className="p-12 text-center">
                 <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
-                  Selecione um prontuário para ver os detalhes
+                  Selecione um prontuário para poder visualizar seu histórico
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="atualizacoes" className="space-y-4">
+          {!selectedProntuario ? (
+            <Card className="shadow-card">
+              <CardContent className="p-12 text-center">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  Selecione um prontuário para poder visualizar seu histórico
+                </p>
+              </CardContent>
+            </Card>
+          ) : isLoadingAtualizacoes ? (
+            <Card className="shadow-card">
+              <CardContent className="p-12 text-center">
+                <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Carregando histórico de alterações...</p>
+              </CardContent>
+            </Card>
+          ) : prontuarioDetalhes ? (
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Histórico de Alterações</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Prontuário: {prontuarioDetalhes.id} | Registro de todas as alterações realizadas
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {historicoAtualizacoes.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhuma alteração registrada para este prontuário.
+                  </div>
+                ) : (
+                  historicoAtualizacoes.map((atualizacao) => (
+                    <div
+                      key={atualizacao.id}
+                      className="p-4 border border-border rounded-lg space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-foreground">{atualizacao.profissionalResponsavel}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Atendimento: {atualizacao.atendimentoId || "N/A"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={atualizacao.status === "ATIVO" ? "default" : "secondary"}>
+                            {atualizacao.status}
+                          </Badge>
+                          <Badge variant="outline">
+                            {new Date(atualizacao.dataHoraAtualizacao).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm">
+                        <span className="font-medium text-foreground">Observações: </span>
+                        <span className="text-muted-foreground">{atualizacao.observacoes}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="shadow-card">
+              <CardContent className="p-12 text-center">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  Selecione um prontuário para poder visualizar seu histórico
                 </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Dialog de confirmação para inativar */}
+      <AlertDialog open={!!prontuarioParaInativar} onOpenChange={(open) => !open && setProntuarioParaInativar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar inativação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja inativar o prontuário de {prontuarioParaInativar?.pacienteNome}? 
+              O prontuário ficará inativo mas permanecerá no sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (prontuarioParaInativar) {
+                  const profissionalNome = user?.nome || "Usuário";
+                  inativarProntuarioMutation.mutate({
+                    prontuarioId: prontuarioParaInativar.id,
+                    profissionalResponsavel: profissionalNome
+                  }, {
+                    onSuccess: () => {
+                      setProntuarioParaInativar(null);
+                      if (selectedProntuario === prontuarioParaInativar.id) {
+                        setSelectedProntuario(null);
+                      }
+                    }
+                  });
+                }
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog de confirmação para excluir */}
+      <AlertDialog open={!!prontuarioParaExcluir} onOpenChange={(open) => !open && setProntuarioParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão permanente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir permanentemente o prontuário de {prontuarioParaExcluir?.pacienteNome}? 
+              Esta ação não pode ser desfeita e o prontuário será removido do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (prontuarioParaExcluir) {
+                  const profissionalNome = user?.nome || "Usuário";
+                  excluirProntuarioMutation.mutate({
+                    prontuarioId: prontuarioParaExcluir.id,
+                    profissionalResponsavel: profissionalNome
+                  }, {
+                    onSuccess: () => {
+                      setProntuarioParaExcluir(null);
+                      if (selectedProntuario === prontuarioParaExcluir.id) {
+                        setSelectedProntuario(null);
+                      }
+                    }
+                  });
+                }
+              }}
+            >
+              Excluir Permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
