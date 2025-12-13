@@ -97,18 +97,13 @@ public class ConvenioServico {
 
 		convenio.validarExclusao(temProcedimentoAtivo, responsavelId);
 
-		// Capturar informações antes da exclusão
+		// Capturar informações antes da exclusão (para o evento de auditoria)
 		ConvenioId convenioId = convenio.getId();
 		String nome = convenio.getNome();
 		String codigo = convenio.getCodigoIdentificacao();
 		StatusConvenio statusAntesExclusao = convenio.getStatus();
 
-		convenio.adicionarEntradaHistorico(AcaoHistorico.EXCLUSAO,
-				"Convênio excluído permanentemente.", responsavelId);
-
-		repositorio.remover(convenio.getId());
-
-		// Postar evento de domínio após a exclusão
+		// Postar evento de domínio ANTES da exclusão (para auditoria)
 		if (barramento != null) {
 			barramento.postar(new ConvenioExcluidoEvent(
 				convenioId,
@@ -118,6 +113,9 @@ public class ConvenioServico {
 				responsavelId
 			));
 		}
+
+		// Remove permanentemente do banco de dados
+		repositorio.remover(convenio.getId());
 	}
 
 	// Método sobrecarregado para compatibilidade com código existente
@@ -132,18 +130,13 @@ public class ConvenioServico {
 
 		convenio.validarExclusao(temProcedimentoAtivo, responsavelId);
 
-		// Capturar informações antes da exclusão
+		// Capturar informações antes da exclusão (para o evento de auditoria)
 		ConvenioId convenioId = convenio.getId();
 		String nome = convenio.getNome();
 		String codigo = convenio.getCodigoIdentificacao();
 		StatusConvenio statusAntesExclusao = convenio.getStatus();
 
-		convenio.adicionarEntradaHistorico(AcaoHistorico.EXCLUSAO,
-				"Convênio excluído permanentemente.", responsavelId);
-
-		repositorio.remover(convenio.getId());
-
-		// Postar evento de domínio após a exclusão
+		// Postar evento de domínio ANTES da exclusão (para auditoria)
 		if (barramentoParaUsar != null) {
 			barramentoParaUsar.postar(new ConvenioExcluidoEvent(
 				convenioId,
@@ -153,6 +146,9 @@ public class ConvenioServico {
 				responsavelId
 			));
 		}
+
+		// Remove permanentemente do banco de dados
+		repositorio.remover(convenio.getId());
 	}
 
 	public Optional<Convenio> pesquisarNome(String nome) {

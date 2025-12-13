@@ -205,7 +205,21 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 
 	@Override
 	public void remover(ConvenioId id) {
-		jpaRepository.deleteById(id.getId());
+		// Carrega a entidade para garantir que o histórico seja gerenciado corretamente
+		Optional<ConvenioJpa> convenioOptional = jpaRepository.findById(id.getId());
+		if (convenioOptional.isPresent()) {
+			ConvenioJpa convenioJpa = convenioOptional.get();
+			// Limpa o histórico antes de deletar (orphanRemoval cuida disso, mas é melhor ser explícito)
+			convenioJpa.getHistorico().clear();
+			jpaRepository.flush(); // Força a sincronização do histórico antes de deletar
+			// Deleta a entidade permanentemente do banco de dados
+			jpaRepository.delete(convenioJpa);
+			jpaRepository.flush(); // Força o commit da exclusão
+		} else {
+			// Se não encontrou, tenta deletar por ID mesmo (caso não tenha histórico)
+			jpaRepository.deleteById(id.getId());
+			jpaRepository.flush(); // Força o commit da exclusão
+		}
 	}
 }
 
