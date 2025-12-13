@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Calendar,
+  CalendarCheck,
   Users,
   FileText,
   TestTube,
@@ -52,7 +53,7 @@ const managementItems: NavItem[] = [
   { title: "Estoque", url: "/estoque", icon: Package, roles: ['gestor'] },
   { title: "Medicamentos", url: "/medicamentos", icon: Pill, roles: ['gestor'] },
   { title: "Medicamentos", url: "/medicamentos-medico", icon: Pill, roles: ['medico'] },
-  { title: "Consultas", url: "/consultas", icon: Pill, roles: ['gestor', 'medico'] },
+  { title: "Consultas", url: "/consultas", icon: CalendarCheck, roles: ['gestor', 'medico'] },
   { title: "Profissionais", url: "/profissionais", icon: Stethoscope, roles: ['gestor'] },
   { title: "Especialidades", url: "/especialidades", icon: Activity, roles: ['gestor'] },
   { title: "Tipos de Exame", url: "/tipos-exames", icon: Microscope, roles: ['gestor'] },
