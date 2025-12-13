@@ -1,4 +1,4 @@
-export type StatusConsulta = 'AGENDADA' | 'REALIZADA' | 'CANCELADA';
+export type StatusConsulta = 'EM_ANDAMENTO' | 'REALIZADA' | 'CANCELADA';
 
 /**
  * Representa os dados resumidos de uma consulta.

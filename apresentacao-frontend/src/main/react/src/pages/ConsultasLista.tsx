@@ -14,14 +14,14 @@ import {
 } from '../components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDataHora } from '../lib/utils'; // NOVO IMPORT: Importa a função de formatação segura
+import { formatDataHora } from '../lib/utils'; // Importa a função de formatação segura
 
 // Mock do ID do usuário responsável pela ação de alteração de status
 const MOCK_USUARIO_ID = 100; 
 
 // Mapeamento de cores para os Status
 const statusColors: Record<StatusConsulta, string> = {
-    AGENDADA: "bg-blue-500 hover:bg-blue-600",
+    EM_ANDAMENTO: "bg-blue-500 hover:bg-blue-600",
     REALIZADA: "bg-green-500 hover:bg-green-600",
     CANCELADA: "bg-red-500 hover:bg-red-600",
 };
@@ -126,12 +126,21 @@ export const ConsultasLista: React.FC<{ refreshToggle: number }> = ({ refreshTog
                             <TableRow key={consulta.id}>
                                 <TableCell className="font-medium">{consulta.id}</TableCell>
                                 <TableCell>
-                                    {/* CORREÇÃO APLICADA AQUI: Usa a função formatDataHora para lidar com strings de data inválidas/nulas */}
+                                    {/* Usa a função formatDataHora para lidar com strings de data inválidas/nulas */}
                                     {formatDataHora(consulta.dataHora)}
                                 </TableCell>
-                                <TableCell className="text-sm text-gray-500">{consulta.descricao}</TableCell>
-                                <TableCell>{consulta.pacienteId}</TableCell>
-                                <TableCell>{consulta.medicoId}</TableCell>
+                                <TableCell className="text-sm text-gray-500">
+                                    {/* CORREÇÃO APLICADA: Tratamento para campos vazios ou nulos */}
+                                    {consulta.descricao || '-'}
+                                </TableCell>
+                                <TableCell>
+                                    {/* CORREÇÃO APLICADA: Tratamento para campos vazios ou nulos */}
+                                    {consulta.pacienteId ?? '-'}
+                                </TableCell>
+                                <TableCell>
+                                    {/* CORREÇÃO APLICADA: Tratamento para campos vazios ou nulos */}
+                                    {consulta.medicoId ?? '-'}
+                                </TableCell>
                                 <TableCell>
                                     <Badge className={`${statusColors[consulta.status]}`}>{consulta.status}</Badge>
                                 </TableCell>
