@@ -217,28 +217,45 @@ O padrão Template Method é usado para padronizar o algoritmo de busca e conver
 
 ---
 
-## 6. Adapter
+## 6. Iterator
 
-**Descrição:** O padrão Adapter converte a interface de uma classe em outra interface esperada pelo cliente. Adapter permite que classes com interfaces incompatíveis trabalhem juntas.
+**Descrição:** O padrão Iterator (ou Iterador) tem o propósito de "Prover uma maneira de acessar os elementos de um objeto agregado sequencialmente sem expor sua representação subjacente". No MedFlow, este padrão é fundamental para percorrer coleções internas de entidades de domínio (o Histórico), garantindo que o código cliente não dependa da estrutura interna (como uma List ou Map) do objeto agregado.
 
 **Classes Criadas/Modificadas:**
 
-- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/administracao/PacienteRepositorioJpaAdapter.java`
-  - Adapter que adapta a interface do repositório JPA (`PacienteJpaRepository`) para a interface de domínio (`PacienteRepositorio`)
+***Módulo de Atendimento (Consultas):***
+
+- `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/consultas/IteradorHistorico.java`
+  - Interface do Iterator (Iterador): Define o contrato para a navegação sequencial, com temProximo() (análogo a hasNext()) e proximo() (análogo a next()).
   
-- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/atendimento/ConsultaRepositorioImpl.java`
-  - Adapter que implementa tanto a porta de Escrita (Domain Repository) quanto a porta de Leitura (Application Repository)
+- `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/consultas/ColecaoHistorico.java`
+  - Interface do Aggregate (Coleção): Define o método de fábrica para criar uma instância do iterador (criarIterador()).
   
-- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/catalogo/MedicamentoRepositorioImpl.java`
-  - Adapter que adapta a interface JPA para as interfaces de domínio e aplicação
+- `dominio-atendimento/src/main/java/br/com/medflow/dominio/atendimento/consultas/ConsultaHistoricoIterator.java`
+  - Iterator Concreto: Implementa a lógica de iteração sobre o List<HistoricoConsultaEntrada> interno da Consulta, rastreando a posição atual com o campo posicao.
+ 
+
+***Módulo de Catálogo (Medicamentos):***
   
-- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/administracao/FuncionarioRepositorioAplicacaoImpl.java`
-  - Adapter que implementa a porta de leitura (Application Repository) para Funcionários
+- `dominio-catalogo/src/main/java/br/com/medflow/dominio/catalogo/medicamentos/IteradorHistorico.java`
+  - Interface do Iterator (Iterador): Contrato para navegação, permitindo percorrimento sem expor a estrutura.
   
-- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/financeiro/convenio/ConvenioRepositorioAplicacaoImpl.java`
-  - Adapter que adapta entidades JPA para DTOs de aplicação
+- `dominio-catalogo/src/main/java/br/com/medflow/dominio/catalogo/medicamentos/ColecaoHistorico.java`
+  - Interface do Aggregate (Coleção): Define o método criarIterador().
+ 
+- `dominio-catalogo/src/main/java/br/com/medflow/dominio/catalogo/medicamentos/MedicamentoHistoricoIterator.java`
+  - Iterator Concreto: Implementa a lógica para iterar o histórico do Medicamento, com checagem de robustez para lançar IndexOutOfBoundsException.
 
 **Como está sendo usado:**
-O padrão Adapter é usado extensivamente na camada de infraestrutura para adaptar interfaces de frameworks externos (como Spring Data JPA) para as interfaces definidas nas camadas de domínio e aplicação, seguindo os princípios da Clean Architecture.
+O padrão Iterator é empregado nos Agregados de Domínio (Consulta e Medicamento) para gerenciar a travessia de seus históricos internos.
+
+1. **Encapsulamento e Estado:** As classes de Iterador Concreto recebem a coleção interna (List) no construtor e gerenciam o estado de iteração através do campo posicao, garantindo que o cliente não precise manipular a coleção diretamente.
+2. **Lógica de Navegação:** Os métodos de interface (temProximo(), proximo()) encapsulam a lógica de avanço (posicao++), abstraindo a complexidade de percorrimento do código que utiliza o iterador.
+3. **Princípio da Responsabilidade Única (SOLID):** A responsabilidade de armazenar os dados pertence à entidade Agregada (ex: Consulta), e a responsabilidade de percorrer os dados pertence à classe do Iterador Concreto (ex: ConsultaHistoricoIterator), promovendo baixo acoplamento.
+
+**Benefícios:**
+- **Baixo Acoplamento:** O cliente interage com a interface IteradorHistorico, sendo imune a mudanças na estrutura interna da coleção subjacente (ex: trocar List por outra estrutura de dados), fortalecendo o limite do Agregado.
+- **Transparência:** O cliente obtém os dados do histórico sequencialmente sem saber como eles são armazenados.
+- **Reuso:** O mesmo padrão de iteração (sequencial) é aplicado em diferentes agregados de domínio (Consulta e Medicamento) que precisam expor seus históricos de forma segura e padronizada.
 
 ---
