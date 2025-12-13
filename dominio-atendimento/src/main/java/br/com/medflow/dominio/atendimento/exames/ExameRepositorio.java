@@ -45,4 +45,6 @@ public interface ExameRepositorio {
      */
     List<Exame> listarTodos();
 
+    boolean existePorMedicoId(Integer medicoId);
+
 }

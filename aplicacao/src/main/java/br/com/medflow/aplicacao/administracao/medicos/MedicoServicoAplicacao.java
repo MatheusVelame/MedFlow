@@ -3,7 +3,10 @@ package br.com.medflow.aplicacao.administracao.medicos;
 import static org.apache.commons.lang3.Validate.notEmpty;
 import static org.apache.commons.lang3.Validate.notNull;
 
+import br.com.medflow.aplicacao.atendimento.consultas.ConsultaRepositorioAplicacao;
+import br.com.medflow.aplicacao.prontuario.ProntuarioRepositorioAplicacao;
 import br.com.medflow.dominio.administracao.funcionarios.*;
+import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
 import br.com.medflow.dominio.referencia.especialidades.Especialidade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,19 +28,33 @@ public class MedicoServicoAplicacao {
     private final FuncionarioRepositorio medicoRepositorioEscrita;
     private final MedicoConversaoStrategy strategy;
 
+    // Dependências para verificação de integridade referencial
+    private final ConsultaRepositorioAplicacao consultaRepositorio;
+    private final ProntuarioRepositorioAplicacao prontuarioRepositorio;
+    private final ExameRepositorio exameRepositorio;
+
     @Autowired
     public MedicoServicoAplicacao(
             @Qualifier("medicoRepositorioAplicacaoImpl") MedicoRepositorioAplicacao medicoRepositorioLeitura,
             @Qualifier("medicoRepositorioImpl") FuncionarioRepositorio medicoRepositorioEscrita,
-            MedicoConversaoStrategy strategy) {
+            MedicoConversaoStrategy strategy,
+            ConsultaRepositorioAplicacao consultaRepositorio,
+            ProntuarioRepositorioAplicacao prontuarioRepositorio,
+            ExameRepositorio exameRepositorio) {
 
         notNull(medicoRepositorioLeitura, "O repositório de leitura não pode ser nulo");
         notNull(medicoRepositorioEscrita, "O repositório de escrita não pode ser nulo");
         notNull(strategy, "A estratégia de conversão não pode ser nula");
+        notNull(consultaRepositorio, "O repositório de consultas não pode ser nulo");
+        notNull(prontuarioRepositorio, "O repositório de prontuários não pode ser nulo");
+        notNull(exameRepositorio, "O repositório de exames não pode ser nulo");
 
         this.medicoRepositorioLeitura = medicoRepositorioLeitura;
         this.medicoRepositorioEscrita = medicoRepositorioEscrita;
         this.strategy = strategy;
+        this.consultaRepositorio = consultaRepositorio;
+        this.prontuarioRepositorio = prontuarioRepositorio;
+        this.exameRepositorio = exameRepositorio;
     }
 
     // ========== QUERIES (LEITURA) ==========
@@ -89,8 +106,6 @@ public class MedicoServicoAplicacao {
 
     // ========== COMMANDS (ESCRITA) ==========
 
-    // Substitua o método cadastrar() no MedicoServicoAplicacao.java
-
     /**
      * Cadastra novo médico.
      * VERSÃO SIMPLIFICADA: Salva diretamente no JPA.
@@ -120,19 +135,9 @@ public class MedicoServicoAplicacao {
         // 1. CONVERSÃO: Converte o Integer para o Value Object Medico.EspecialidadeId
         Medico.EspecialidadeId especialidadeId = new Medico.EspecialidadeId(request.getEspecialidadeId());
 
-        // 2. Cria a entrada inicial de histórico
-        List<Funcionario.HistoricoEntrada> historico = java.util.Collections.singletonList(
-                new Funcionario.HistoricoEntrada(
-                        AcaoHistorico.CRIACAO, // Assumindo o ENUM AcaoHistorico.CADASTRO
-                        "Médico cadastrado no sistema",
-                        new UsuarioResponsavelId(1), // ID de exemplo do responsável
-                        LocalDateTime.now()
-                )
-        );
-
         UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(1); // ID de exemplo do responsável
 
-        // 3. Cria a entidade de domínio Medico
+        // 2. Cria a entidade de domínio Medico (o histórico de criação é gerado pelo construtor/Funcionario)
         Medico novoMedico = new Medico(
                 null, // FuncionarioId id (Nulo para que o JPA gere)
                 request.getNome(),
@@ -142,20 +147,19 @@ public class MedicoServicoAplicacao {
                 especialidadeId,
                 responsavelId
         );
-        // 4. Salva o médico no repositório de escrita (FIX: O passo que estava faltando!)
+        // 3. Salva o médico no repositório de escrita
         medicoRepositorioEscrita.salvar(novoMedico);
 
         System.out.println("Médico salvo no banco com sucesso."); // Confirmação
 
-        // 5. Busca o médico recém-salvo (agora com o ID gerado) e retorna o DTO
+        // 4. Busca o médico recém-salvo (agora com o ID gerado) e retorna o DTO
         return medicoRepositorioLeitura.obterPorCrm(crm)
                 .map(strategy::converterParaDetalhes)
-                .orElse(null); // Não deve ser nulo se o salvar for bem-sucedido
+                .orElse(null);
     }
 
     /**
      * Atualiza médico existente.
-     *
      * Usa AcaoHistorico.ATUALIZACAO do domínio.
      */
     @Transactional
@@ -184,7 +188,7 @@ public class MedicoServicoAplicacao {
         // Adiciona entrada de atualização no histórico
         List<Funcionario.HistoricoEntrada> historicoAtualizado = new ArrayList<>(medicoExistente.getHistorico());
         historicoAtualizado.add(new Funcionario.HistoricoEntrada(
-                AcaoHistorico.ATUALIZACAO, // ← ENUM CORRETO!
+                AcaoHistorico.ATUALIZACAO,
                 "Dados atualizados",
                 new UsuarioResponsavelId(1),
                 LocalDateTime.now()
@@ -212,15 +216,17 @@ public class MedicoServicoAplicacao {
     }
 
     /**
-     * Remove médico (inativa).
-     *
-     * Usa AcaoHistorico.EXCLUSAO do domínio.
+     * Remove médico do sistema.
+     * LÓGICA ROBUSTA:
+     * 1. Verifica vínculos externos (Consultas, Exames, Prontuários).
+     * 2. Se houver vínculo ou histórico relevante -> Inativa (Soft Delete).
+     * 3. Se não houver vínculo e for um registro limpo -> Exclui permanentemente (Hard Delete).
      */
     @Transactional
     public boolean remover(Integer id) {
         notNull(id, "O ID não pode ser nulo");
 
-        // Busca médico
+        // 1. Busca médico
         FuncionarioId medicoId = new FuncionarioId(id.toString());
         Medico medicoExistente = medicoRepositorioLeitura.obterPorId(medicoId)
                 .orElse(null);
@@ -229,29 +235,53 @@ public class MedicoServicoAplicacao {
             return false;
         }
 
-        // Adiciona entrada de exclusão no histórico
-        List<Funcionario.HistoricoEntrada> historicoAtualizado = new ArrayList<>(medicoExistente.getHistorico());
-        historicoAtualizado.add(new Funcionario.HistoricoEntrada(
-                AcaoHistorico.EXCLUSAO, // ← ENUM CORRETO!
-                "Médico inativado",
-                new UsuarioResponsavelId(1),
-                LocalDateTime.now()
-        ));
+        // 2. VERIFICAÇÃO DE VÍNCULOS
+        boolean temConsultas = consultaRepositorio.existePorMedicoId(id);
+        boolean temProntuarios = prontuarioRepositorio.existePorMedicoId(id);
+        boolean temExames = exameRepositorio.existePorMedicoId(id);
 
-        // Recria médico com status INATIVO
-        Medico medicoInativo = new Medico(
-                medicoExistente.getId(),
-                medicoExistente.getNome(),
-                medicoExistente.getFuncao(),
-                medicoExistente.getContato(),
-                "INATIVO",
-                historicoAtualizado,
-                medicoExistente.getCrm(),
-                medicoExistente.getEspecialidade()
-        );
+        // Verifica se houve alterações cadastrais anteriores (histórico > 1 indica que não é apenas a criação)
+        boolean temHistoricoInterno = medicoExistente.getHistorico().size() > 1;
 
-        // Salva
-        medicoRepositorioEscrita.salvar(medicoInativo);
+        boolean possuiVinculosRelevantes = temConsultas || temProntuarios || temExames || temHistoricoInterno;
+
+        if (possuiVinculosRelevantes) {
+            // --- SOFT DELETE (Inativação) ---
+            System.out.println("Médico possui vínculos. Realizando Inativação.");
+
+            List<Funcionario.HistoricoEntrada> historicoAtualizado = new ArrayList<>(medicoExistente.getHistorico());
+
+            // Monta string descrevendo o motivo
+            String motivo = "Médico inativado. Vínculos detectados: " +
+                    (temConsultas ? "[Consultas] " : "") +
+                    (temProntuarios ? "[Prontuários] " : "") +
+                    (temExames ? "[Exames] " : "") +
+                    (temHistoricoInterno ? "[Histórico Cadastral]" : "");
+
+            historicoAtualizado.add(new Funcionario.HistoricoEntrada(
+                    AcaoHistorico.EXCLUSAO,
+                    motivo.trim(),
+                    new UsuarioResponsavelId(1),
+                    LocalDateTime.now()
+            ));
+
+            Medico medicoInativo = new Medico(
+                    medicoExistente.getId(),
+                    medicoExistente.getNome(),
+                    medicoExistente.getFuncao(),
+                    medicoExistente.getContato(),
+                    "INATIVO",
+                    historicoAtualizado,
+                    medicoExistente.getCrm(),
+                    medicoExistente.getEspecialidade()
+            );
+
+            medicoRepositorioEscrita.salvar(medicoInativo);
+        } else {
+            // --- HARD DELETE (Exclusão Física) ---
+            System.out.println("Médico sem vínculos. Realizando Exclusão Física.");
+            medicoRepositorioEscrita.remover(medicoExistente.getId());
+        }
 
         return true;
     }

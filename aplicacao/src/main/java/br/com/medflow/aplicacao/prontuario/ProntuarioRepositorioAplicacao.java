@@ -28,4 +28,6 @@ public interface ProntuarioRepositorioAplicacao {
      * @return Lista de HistoricoItemResponse.
      */
     List<HistoricoItemResponse> listarHistoricoClinico(String prontuarioId);
+
+    boolean existePorMedicoId(Integer medicoId); // Ou String, dependendo de como você mapeou o ID do médico lá
 }

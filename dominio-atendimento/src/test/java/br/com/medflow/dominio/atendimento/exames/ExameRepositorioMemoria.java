@@ -47,7 +47,19 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
                 .filter(exame -> idExcluido == null || !exame.getId().equals(idExcluido))
                 .findFirst();
     }
-    
+
+    @Override
+    public boolean existePorMedicoId(Integer medicoId) {
+        if (medicoId == null) return false;
+
+        return exames.values().stream()
+                .anyMatch(exame ->
+                        exame.getMedicoId() != null &&
+                                // Conversão necessária: Exame usa Long, mas o parâmetro veio como Integer
+                                exame.getMedicoId().equals(medicoId.longValue())
+                );
+    }
+
     public void limpar() {
         exames.clear();
         sequenciaId = 0;
