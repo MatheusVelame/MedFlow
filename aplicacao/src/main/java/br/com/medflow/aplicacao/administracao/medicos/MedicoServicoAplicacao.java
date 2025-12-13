@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.Validate.notEmpty;
 import static org.apache.commons.lang3.Validate.notNull;
 
 import br.com.medflow.dominio.administracao.funcionarios.*;
+import br.com.medflow.dominio.referencia.especialidades.Especialidade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -116,29 +117,40 @@ public class MedicoServicoAplicacao {
             throw new IllegalArgumentException("CRM já cadastrado: " + crmCompleto);
         }
 
-        // SOLUÇÃO TEMPORÁRIA: Retorna um DTO sem salvar
-        // (Até implementarmos corretamente o save no repositório)
-        System.out.println("AVISO: Médico NÃO foi salvo no banco (método temporário)");
+        // 1. CONVERSÃO: Converte o Integer para o Value Object Medico.EspecialidadeId
+        Medico.EspecialidadeId especialidadeId = new Medico.EspecialidadeId(request.getEspecialidadeId());
 
-        return new MedicoDetalhes(
-                "TEMP-" + System.currentTimeMillis(), // ID temporário
-                request.getNome(),
-                "Médico",
-                request.getContato(),
-                StatusFuncionario.ATIVO,
-                java.util.Collections.singletonList(
-                        new MedicoDetalhes.HistoricoDetalhes(
-                                "CRIACAO",
-                                "Médico cadastrado (temporário)",
-                                "1",
-                                java.time.LocalDateTime.now()
-                        )
-                ),
-                crmCompleto,
-                "Especialidade " + request.getEspecialidadeId(),
-                request.getDataNascimento(),
-                java.util.Collections.emptyList()
+        // 2. Cria a entrada inicial de histórico
+        List<Funcionario.HistoricoEntrada> historico = java.util.Collections.singletonList(
+                new Funcionario.HistoricoEntrada(
+                        AcaoHistorico.CRIACAO, // Assumindo o ENUM AcaoHistorico.CADASTRO
+                        "Médico cadastrado no sistema",
+                        new UsuarioResponsavelId(1), // ID de exemplo do responsável
+                        LocalDateTime.now()
+                )
         );
+
+        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(1); // ID de exemplo do responsável
+
+        // 3. Cria a entidade de domínio Medico
+        Medico novoMedico = new Medico(
+                null, // FuncionarioId id (Nulo para que o JPA gere)
+                request.getNome(),
+                "Médico", // Função padrão
+                request.getContato(),
+                crm,
+                especialidadeId,
+                responsavelId
+        );
+        // 4. Salva o médico no repositório de escrita (FIX: O passo que estava faltando!)
+        medicoRepositorioEscrita.salvar(novoMedico);
+
+        System.out.println("Médico salvo no banco com sucesso."); // Confirmação
+
+        // 5. Busca o médico recém-salvo (agora com o ID gerado) e retorna o DTO
+        return medicoRepositorioLeitura.obterPorCrm(crm)
+                .map(strategy::converterParaDetalhes)
+                .orElse(null); // Não deve ser nulo se o salvar for bem-sucedido
     }
 
     /**

@@ -20,6 +20,8 @@ import br.com.medflow.dominio.referencia.tiposExames.TipoExameId;
 import br.com.medflow.dominio.administracao.funcionarios.FuncionarioId;
 // Não importar UsuarioResponsavelId de funcionários para evitar conflito - usar nome completo
 
+import br.com.medflow.dominio.administracao.funcionarios.Medico;
+
 @Component
 public class BackendMapeador extends ModelMapper {
 
@@ -89,6 +91,13 @@ public class BackendMapeador extends ModelMapper {
 				return new br.com.medflow.dominio.administracao.funcionarios.UsuarioResponsavelId(source);
 			}
 		});
+
+        addConverter(new AbstractConverter<Integer, Medico.EspecialidadeId>() {
+            @Override
+            protected Medico.EspecialidadeId convert(Integer source) {
+                return new Medico.EspecialidadeId(source);
+            }
+        });
         
         // [Outros conversores para Value Objects de outros domínios]
     }
