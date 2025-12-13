@@ -1,60 +1,99 @@
 import { useState } from "react";
-import { User, Plus, Search, Phone, Mail, Calendar, Trash2 } from "lucide-react";
+import { User, Plus, Search, Phone, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PatientForm } from "@/components/PatientForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useListarPacientes, useExcluirPaciente, PacienteView } from "@/api/usePacientesApi";
+// Importamos o novo hook useBuscarPacientePorId
+import { 
+  useListarPacientes, 
+  useBuscarPacientePorId, 
+  useExcluirPaciente, 
+  useCadastrarPaciente, 
+  useAtualizarPaciente, 
+  PacienteView 
+} from "@/api/usePacientesApi";
 
 export default function Pacientes() {
   const { isMedico } = useAuth();
+  
+  // Estado local
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<PacienteView | undefined>();
+  
+  // Guardamos o resumo do paciente selecionado (vindo da lista)
+  const [selectedPatientSummary, setSelectedPatientSummary] = useState<PacienteView | undefined>();
+  
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<number | null>(null);
 
-  // ============ HOOKS DO REACT QUERY ============
+  // === HOOKS ===
+  // 1. Lista Geral
   const { data: patients = [], isLoading, error } = useListarPacientes();
+  
+  // 2. Busca Detalhada (Só roda quando temos um ID selecionado)
+  const { data: pacienteDetalhado } = useBuscarPacientePorId(selectedPatientSummary?.id);
+
   const excluirMutation = useExcluirPaciente();
+  const cadastrarMutation = useCadastrarPaciente();
+  const atualizarMutation = useAtualizarPaciente();
 
   const getInitials = (name: string) => {
     const names = name.split(" ");
     return names.length > 1 ? `${names[0][0]}${names[1][0]}` : names[0][0];
   };
 
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
+  const formatarDataParaBackend = (dataIso: string) => {
+    if (!dataIso) return "";
+    if (dataIso.includes("/")) return dataIso;
+    const [ano, mes, dia] = dataIso.split("-");
+    return `${dia}/${mes}/${ano}`;
+  };
+  
+  const handleSavePatient = async (data: any) => {
+    try {
+      const dadosParaEnviar = {
+        nome: data.name,
+        cpf: data.cpf.replace(/\D/g, ""),
+        telefone: data.phone.replace(/\D/g, ""), // Limpa telefone
+        endereco: data.address,
+        dataNascimento: formatarDataParaBackend(data.birthDate),
+        responsavelId: 1
+      };
+
+      if (selectedPatientSummary) {
+        await atualizarMutation.mutateAsync({ 
+          id: selectedPatientSummary.id, 
+          payload: dadosParaEnviar 
+        });
+      } else {
+        await cadastrarMutation.mutateAsync(dadosParaEnviar);
+      }
+      
+      closeForm();
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
     }
-    return age;
   };
 
-  const handleSavePatient = (data: any) => {
-    // TODO: Implementar cadastro/atualização usando mutations
-    // Por enquanto, apenas fecha o formulário
-    setIsFormOpen(false);
-    setEditingPatient(undefined);
-    toast.info("Funcionalidade de salvar será implementada em breve");
-  };
-
+  // Abre Modal de Edição
   const handleEditPatient = (patient: PacienteView) => {
-    setEditingPatient(patient);
+    setSelectedPatientSummary(patient); // Define quem estamos editando
     setIsFormOpen(true);
   };
 
+  // Abre Modal Novo
   const handleNewPatient = () => {
-    setEditingPatient(undefined);
+    setSelectedPatientSummary(undefined); // Limpa seleção
     setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setSelectedPatientSummary(undefined); // Limpa ao fechar
   };
 
   const handleDeletePatient = (id: number) => {
@@ -71,26 +110,17 @@ export default function Pacientes() {
   };
 
   const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.cpf.includes(searchTerm)
+    patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.cpf?.includes(searchTerm)
   );
 
-  // ============ ESTADOS DE CARREGAMENTO E ERRO ============
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Carregando pacientes...</p>
-      </div>
-    );
-  }
+  // COMBINAÇÃO DE DADOS:
+  // Se 'pacienteDetalhado' (da busca nova) existir, usamos ele (tem endereço).
+  // Se ainda estiver carregando, usamos 'selectedPatientSummary' (tem nome/cpf).
+  const dadosParaOFormulario = pacienteDetalhado || selectedPatientSummary;
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-destructive">Erro ao carregar pacientes. Verifique se o backend está rodando.</p>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex justify-center h-64 items-center">Carregando pacientes...</div>;
+  if (error) return <div className="flex justify-center h-64 items-center text-red-500">Erro ao carregar o sistema.</div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -107,10 +137,11 @@ export default function Pacientes() {
         )}
       </div>
 
+      {/* Passamos 'dadosParaOFormulario' que agora pode conter o endereço vindo do fetch */}
       <PatientForm
         open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        patient={editingPatient}
+        onOpenChange={(isOpen) => !isOpen && closeForm()}
+        patient={dadosParaOFormulario}
         onSave={handleSavePatient}
       />
 
@@ -129,19 +160,7 @@ export default function Pacientes() {
       {filteredPatients.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <User className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum paciente encontrado</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              {searchTerm 
-                ? "Tente ajustar sua busca ou adicione um novo paciente."
-                : "Comece cadastrando o primeiro paciente no sistema."}
-            </p>
-            {!isMedico && !searchTerm && (
-              <Button onClick={handleNewPatient}>
-                <Plus className="w-4 h-4 mr-2" />
-                Cadastrar Primeiro Paciente
-              </Button>
-            )}
+            <h3 className="text-lg font-semibold">Nenhum paciente encontrado</h3>
           </CardContent>
         </Card>
       ) : (
@@ -158,42 +177,18 @@ export default function Pacientes() {
                     </Avatar>
                     
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="mb-2">
                         <h3 className="font-semibold text-lg">{patient.name}</h3>
-                        <Badge variant={patient.status === "ativo" ? "default" : "secondary"}>
-                          {patient.status}
-                        </Badge>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          CPF: {patient.cpf}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          {calculateAge(patient.birthDate)} anos
+                          <span>CPF: {patient.cpf}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Phone className="w-4 h-4" />
-                          {patient.phone}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          {patient.email}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex items-center justify-between text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Última consulta: </span>
-                            <span className="font-medium">
-                              {patient.lastVisit !== "-" 
-                                ? new Date(patient.lastVisit).toLocaleDateString('pt-BR')
-                                : "Sem consultas"}
-                            </span>
-                          </div>
+                          <span>{patient.phone}</span>
                         </div>
                       </div>
                     </div>
@@ -205,9 +200,7 @@ export default function Pacientes() {
                         Editar
                       </Button>
                     )}
-                    <Button variant="outline" size="sm">
-                      Prontuário
-                    </Button>
+                    <Button variant="outline" size="sm">Prontuário</Button>
                     {!isMedico && (
                       <Button 
                         variant="outline" 
@@ -226,13 +219,12 @@ export default function Pacientes() {
         </div>
       )}
 
+      {/* Dialog Delete mantido */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Paciente</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Esta ação é irreversível.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>

@@ -1,48 +1,44 @@
-// src/api/usePacientesApi.ts
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
 
-axios.defaults.baseURL = '';
+// ================= HELPERS =================
+const limparFormatacao = (valor: string) => valor.replace(/\D/g, "");
 
-// =====================================================================
-// TIPAGENS (ALINHADAS COM SEUS DTOs REAIS)
-// =====================================================================
+const formatarDataParaJava = (dataIso: string) => {
+  if (!dataIso) return "";
+  if (dataIso.includes("/")) return dataIso; 
+  const [ano, mes, dia] = dataIso.split("-");
+  return `${dia}/${mes}/${ano}`;
+};
 
-// O que o backend retorna (PacienteResumo ou PacienteDetalhes)
+
+// ================= TIPAGENS =================
 export interface PacienteApi {
   id: number;
-  nome: string; // Backend retorna "nome" de getNome()
+  nome: string; 
   cpf: string;
-  dataNascimento?: string | null; // Pode não estar presente em PacienteResumo
   telefone: string;
-  email?: string | null; // Pode não estar presente em PacienteResumo
-  status?: string | null; // Pode não estar presente em PacienteResumo
-  dataUltimaConsulta?: string | null;
+  dataNascimento?: string; 
+  endereco?: string;
 }
 
-// O que o frontend usa na tela
 export interface PacienteView {
   id: number;
   name: string;
   cpf: string;
-  birthDate: string;
   phone: string;
-  email: string;
-  status: string;
-  lastVisit: string;
+  birthDate?: string; 
+  address?: string;   
 }
 
-// Payload esperado pelo backend (CadastrarPacienteRequest / AtualizarPacienteRequest)
 export interface SalvarPacientePayload {
-  nomeCompleto: string;
+  nome: string;
   cpf: string;
-  dataNascimento: string;
   telefone: string;
-  email: string;
-  status: string;
-  responsavelId: number; // OBRIGATÓRIO no backend
+  endereco: string;
+  dataNascimento: string;
+  responsavelId: number;
 }
 
 interface PacienteIdPayload {
@@ -50,33 +46,25 @@ interface PacienteIdPayload {
   payload: SalvarPacientePayload;
 }
 
-// =====================================================================
-// CONFIGURAÇÃO API (USANDO PROXY DO VITE)
-// =====================================================================
-
-const API_BASE_URL = "/api/pacientes"; // Proxy redireciona para http://localhost:8080/api/pacientes
+// ================= CONFIGURAÇÃO =================
+const API_BASE_URL = "/api/pacientes";
 
 function mapApiToView(p: PacienteApi): PacienteView {
   return {
     id: p.id,
-    name: p.nome, // Backend retorna "nome", não "nomeCompleto"
+    name: p.nome,
     cpf: p.cpf,
-    birthDate: p.dataNascimento ?? "",
     phone: p.telefone,
-    email: p.email ?? "",
-    status: p.status ?? "ATIVO",
-    lastVisit: p.dataUltimaConsulta ?? "-", // caso venha null
+    birthDate: p.dataNascimento, 
+    address: p.endereco
   };
 }
 
-// =====================================================================
-// QUERIES
-// =====================================================================
+// ================= QUERIES =================
 
+// 1. LISTA (Resumo)
 const fetchPacientes = async (): Promise<PacienteView[]> => {
-  console.log('🔍 Buscando pacientes em:', API_BASE_URL);
   const response = await axios.get<PacienteApi[]>(API_BASE_URL);
-  console.log('✅ Resposta do backend:', response.data);
   return response.data.map(mapApiToView);
 };
 
@@ -88,32 +76,64 @@ export function useListarPacientes() {
   });
 }
 
-// =====================================================================
-// MUTATIONS
-// =====================================================================
+// 2. DETALHE (Completo) - ADICIONADO AGORA
+const fetchPacientePorId = async (id: number): Promise<PacienteView> => {
+  const response = await axios.get<PacienteApi>(`${API_BASE_URL}/${id}`);
+  return mapApiToView(response.data);
+};
 
+export function useBuscarPacientePorId(id?: number) {
+  return useQuery({
+    queryKey: ["paciente", id],
+    queryFn: () => fetchPacientePorId(id!),
+    enabled: !!id, // Só busca se tiver ID selecionado
+    staleTime: 0,  // Sempre pega dados frescos ao abrir edição
+  });
+}
+
+// ================= MUTATIONS =================
 const createPacienteApi = async (payload: SalvarPacientePayload) => {
-  await axios.post(API_BASE_URL, payload);
+  const payloadParaJava = {
+    nome: payload.nome,
+    cpf: limparFormatacao(payload.cpf),
+    telefone: payload.telefone,
+    responsavelId: payload.responsavelId,
+    endereco: payload.endereco, 
+    dataNascimento: formatarDataParaJava(payload.dataNascimento)
+  };
+  const response = await axios.post(API_BASE_URL, payloadParaJava);
+  return response.data;
 };
 
 const updatePacienteApi = async ({ id, payload }: PacienteIdPayload) => {
-  await axios.put(`${API_BASE_URL}/${id}`, payload); // CORRIGIDO: template literal
+  const payloadParaJava = {
+    nome: payload.nome,
+    cpf: limparFormatacao(payload.cpf),
+    telefone: payload.telefone,
+    responsavelId: payload.responsavelId,
+    endereco: payload.endereco,
+    dataNascimento: formatarDataParaJava(payload.dataNascimento)
+  };
+  const response = await axios.put(`${API_BASE_URL}/${id}`, payloadParaJava);
+  return response.data;
 };
 
 const deletePacienteApi = async (id: number) => {
-  await axios.delete(`${API_BASE_URL}/${id}`); // CORRIGIDO: template literal
+  await axios.delete(`${API_BASE_URL}/${id}?responsavelId=1&temProntuario=false&temConsulta=false&temExame=false`);
 };
 
+// --- HOOKS ---
 export function useCadastrarPaciente() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createPacienteApi,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pacientes"] });
-      toast.success("Paciente cadastrado com sucesso!");
+      toast.success("Paciente cadastrado!");
     },
-    onError: () => {
-      toast.error("Erro ao cadastrar paciente.");
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || "Erro ao cadastrar.";
+      toast.error(msg);
     },
   });
 }
@@ -124,10 +144,13 @@ export function useAtualizarPaciente() {
     mutationFn: updatePacienteApi,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pacientes"] });
-      toast.success("Paciente atualizado com sucesso!");
+      // Invalida também o detalhe específico para atualizar o cache
+      qc.invalidateQueries({ queryKey: ["paciente"] }); 
+      toast.success("Atualizado!");
     },
-    onError: () => {
-      toast.error("Erro ao atualizar paciente.");
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || "Erro ao atualizar.";
+      toast.error(msg);
     },
   });
 }
@@ -138,10 +161,11 @@ export function useExcluirPaciente() {
     mutationFn: deletePacienteApi,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pacientes"] });
-      toast.success("Paciente excluído com sucesso!");
+      toast.success("Excluído!");
     },
-    onError: () => {
-      toast.error("Erro ao excluir paciente.");
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || "Erro ao excluir.";
+      toast.error(msg);
     },
   });
 }
