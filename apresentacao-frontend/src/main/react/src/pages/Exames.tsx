@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TestTube, Search, Upload, Download, Clock, CheckCircle, XCircle, AlertCircle, Plus, Edit, Trash2, List, Loader2, Users, BarChart2 } from "lucide-react";
+import { TestTube, Search, Upload, Download, Clock, CheckCircle, XCircle, AlertCircle, Plus, Edit, Trash2, List, History, Loader2, Users, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -863,7 +863,7 @@ export default function Exames() {
 					          title="Histórico"
 					          onClick={() => setHistoricoOpenFor(exame.id)}
 					        >
-					          <List className="h-4 w-4" />
+					          <History className="h-4 w-4" />
 					        </Button>
 					      </div>
 					    </div>

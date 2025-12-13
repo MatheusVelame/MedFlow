@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, Stethoscope, List } from "lucide-react";
+import { Plus, Edit, Trash2, Stethoscope, List, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -262,7 +262,7 @@ export default function Especialidades() {
                     className="flex-1"
                     onClick={() => openHistorico(especialidade.id)}
                   >
-                    <List className="h-4 w-4" />
+                    <History className="h-4 w-4" />
                   </Button>
                 )}
                 {/* New: toggle status button visible to gestor */}
@@ -331,7 +331,7 @@ export default function Especialidades() {
           </AlertDialogHeader>
           <div className="px-6 pb-4">
             {historicoItems == null ? (
-              <div className="py-6">Carregando...</div>
+              <div className="py-6"></div>
             ) : !Array.isArray(historicoItems) ? (
               <div className="py-6 text-sm text-muted-foreground">Histórico indisponível.</div>
             ) : historicoItems.length === 0 ? (
