@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TestTube, Search, Upload, Download, Clock, CheckCircle, XCircle, AlertCircle, Plus, Edit, Trash2, List, Loader2 } from "lucide-react";
+import { TestTube, Search, Upload, Download, Clock, CheckCircle, XCircle, AlertCircle, Plus, Edit, Trash2, List, Loader2, Users, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -72,7 +72,7 @@ export default function Exames() {
   // Para pendentes (status PENDENTE)
   const { data: examesPendentes = [] } = useExamesList('PENDENTE');
   // HISTÓRICO GERAL: incluir também EXCLUIDOS e CANCELADOS
-  const { data: examesHistorico = [] } = useExamesList(['AGENDADO','PENDENTE','REALIZADO','CANCELADO']);
+  const { data: examesHistorico = [] } = useExamesList(['AGENDADO','PENDENTE','REALIZADO','CANCELADO','EXCLUIDO']);
   // Fonte de exames depende do filtro atual para manter consistência entre operações (cancelar / excluir)
   let sourceExames: any[] = [];
   switch (filterStatus) {
@@ -347,7 +347,51 @@ export default function Exames() {
     return { ...exame, pacienteName, tipoLabel, medicoName, statusNormalized };
   });
 
+  // Total correto de solicitações: buscar todos os exames (sem filtro) e deduplicar por id
+  const { data: examesTodos = [] } = useExamesList();
+  const { data: examesExcluidos = [] } = useExamesList('EXCLUIDO');
+
+  // garantir deduplicação por id caso múltiplas queries retornem dados sobre as mesmas entradas
+  const uniqueIds = new Set<number>();
+  examesTodos.forEach((e: any) => e && e.id && uniqueIds.add(e.id));
+  const totalSolicitados = uniqueIds.size;
+
   const totalAgendados = examesAgendados.length;
+  const totalPendentes = examesPendentes.length;
+  const totalResultado = examesResultado.length;
+  const totalCancelados = examesCancelados.length;
+  const totalExcluidos = examesExcluidos.length || 0;
+
+  // Estatísticas: tipos mais solicitados (top 5)
+  const tipoCounts: Record<string, number> = {};
+  examesTodos.forEach((e: any) => {
+    // Evita erro do parser: parentizar a expressão que usa nullish coalescing junto com ||
+    const tipoKeySource = (e.tipoExame ?? e.tipo);
+    const key = String(tipoKeySource || 'Desconhecido');
+    tipoCounts[key] = (tipoCounts[key] || 0) + 1;
+  });
+  const tiposMaisSolicitados = Object.entries(tipoCounts)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0,5)
+    .map(([tipo, count]) => ({ tipo, count }));
+
+  // Estatísticas: pacientes mais frequentes (top 5)
+  const pacienteCounts: Record<string, number> = {};
+  examesTodos.forEach((e: any) => {
+    const pid = String(e.pacienteId ?? '');
+    pacienteCounts[pid] = (pacienteCounts[pid] || 0) + 1;
+  });
+  const pacientesMaisFrequentes = Object.entries(pacienteCounts)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0,5)
+    .map(([pid, count]) => ({
+      id: pid,
+      name: (pacientes.find((p: any) => String(p.id) === pid)?.name) || `Paciente ${pid}`,
+      count
+    }));
+
+  // resultados pendentes (contagem) — já temos examesPendentes
+  const resultadosPendentes = totalPendentes;
 
   // ========================================================================
   // EFFECTS
@@ -424,11 +468,85 @@ export default function Exames() {
             <TestTube className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{totalAgendados}</div>
-            <p className="text-xs text-muted-foreground">Este mês</p>
+            <div className="text-2xl font-bold text-foreground">{totalSolicitados}</div>
+            <p className="text-xs text-muted-foreground">Total (todos os status)</p>
           </CardContent>
         </Card>
-        {/* Cards adicionais podem ser inseridos aqui se necessário */}
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Resultados Pendentes</CardTitle>
+            <Clock className="w-4 h-4 text-amber-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{resultadosPendentes}</div>
+            <p className="text-xs text-muted-foreground">Exames sem resultado</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Cancelados</CardTitle>
+            <XCircle className="w-4 h-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{totalCancelados}</div>
+            <p className="text-xs text-muted-foreground">Agendamentos cancelados</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Excluídos</CardTitle>
+            <AlertCircle className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{totalExcluidos}</div>
+            <p className="text-xs text-muted-foreground">Registros excluídos</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tipos mais solicitados</CardTitle>
+            <BarChart2 className="w-4 h-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            {tiposMaisSolicitados.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Sem dados</div>
+            ) : (
+              <ul className="text-sm space-y-1">
+                {tiposMaisSolicitados.slice(0,3).map((t: any, idx: number) => (
+                  <li key={idx} className="flex justify-between">
+                    <span className="truncate">{t.tipo}</span>
+                    <span className="font-medium">{t.count}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pacientes mais frequentes</CardTitle>
+            <Users className="w-4 h-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            {pacientesMaisFrequentes.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Sem dados</div>
+            ) : (
+              <ul className="text-sm space-y-1">
+                {pacientesMaisFrequentes.slice(0,3).map((p: any, idx: number) => (
+                  <li key={idx} className="flex justify-between">
+                    <span className="truncate">{p.name}</span>
+                    <span className="font-medium">{p.count}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="exames" className="space-y-4">
