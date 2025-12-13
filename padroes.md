@@ -104,7 +104,7 @@ O padrão Observer é usado para implementar um sistema de eventos de domínio (
 
 ---
 
-## 3. Proxy
+## 3. Proxy - Thaís Aguiar
 
 **FUNCIONALIDADES — Exames e Especialidades**
 *Domínios - Referência e Atendimento*
@@ -223,50 +223,12 @@ Riscos e edge-cases (pontos de atenção)
 - Testar o bean exposto na configuração Spring (`AtendimentoConfig` e `ReferenciaConfig`) para garantir que o proxy é o bean injetado e que todo o fluxo (proxy -> real -> repositório) funciona.
 - Verificar interação com o barramento de eventos (no caso de Exame: publicação de `ExameAgendadoEvent`).
 
-**Sugestões de implementação / melhorias**
-
-1. Centralizar logging/auditoria:
-2. Substituir `System.out.println` por logger (`org.slf4j.Logger`) com níveis e contexto estruturado (ex.: MDC com responsavel).
-3. Registrar identificadores importantes (ID do exame, paciente, usuário que chamou) para rastreabilidade.
-4. Usar Spring AOP (ou proxies dinâmicos) para reduzir código boilerplate:
-5. Em vez de escrever um proxy por serviço, aplicar um advice que intercepta chamadas de métodos anotados (ex.: `@Auditavel`) e faz logging/metrics. Isso evita duplicação e garante aplicação uniforme.
-6. Vantagens: menos código a manter; integrado ao container, respeitando aspectos como transação.
-7. Métricas e monitoramento:
-8. Adicionar contadores/latência (`Micrometer/Prometheus`) no proxy/advice para medir uso e latência de operações críticas (agendamento, cancelamento).
-9. Authorization / Permission checks:
-10. Se autorizado no escopo, adicionar verificação de permissões no Proxy (ou via AOP) antes de delegar ao `RealSubject`. Preferir extrair essa responsabilidade para componente dedicado de autorização se for complexo.
-11. Tratamento de falhas externas:
-12. Para chamadas que dependem de serviços externos (`verificadorExterno`), considerar padrões como circuit-breaker (`Resilience4j`) no nível do `RealSubject` ou em um decorator específico.
-13. Evitar duplicação:
-14. Se vários serviços precisam de comportamento semelhante, implementar um decorator genérico (ou usar AOP) para aplicar auditoria/métricas a múltiplos serviços.
-
-*Exemplo de transformação (opção leve)*
-
-- Se quiser manter controle manual, mas reduzir repetição:
-- Criar uma classe base abstrata `AbstractServicoProxy<TInterface>` com utilitários de log/metrics e estender nos proxies concretos.
-- Ou: migrar para um advice AOP:
-- Criar um `@Aspect` que aplica around-advice em beans que implementam `IExameServico` e `IEspecialidadeServico` ou que são anotados com uma anotação específica.
-
-**Checklist de qualidade / testes a executar**
-
-- [x] Verificar que o bean que é injetado é realmente o proxy (tests de integração ou debug).
-- [x] Cobrir unidade: proxy delega e propaga exceções.
-- [x] Cobrir integração: fluxo de agendamento publica evento (Exame) após persistência.
-- [ ] Confirmar comportamento transacional ao introduzir mudanças no proxy (se for necessário `@Transactional`, testar o cenário de rollback).
-
-**Exemplos de verificações rápidas (conceitual)**
-
+****Exemplos de verificações rápidas (conceitual)**
 - Unit:
 - Criar `ExameServicoProxy` com um `servicoReal` mock e assertar que `servicoReal.agendarExame(...)` foi chamado.
 - Integration:
 - Iniciar contexto Spring que configura `exameServico(...)` em `AtendimentoConfig` e verificar que o bean obtido por `context.getBean(IExameServico.class)` é instância de `ExameServicoProxy` e que o fluxo completo salva e publica evento.
 
-**Observações finais e recomendações práticas**
-
-- A implementação atual é clara e funcional: proxies explícitos dão visibilidade e controle.
-- Para produção, trocar prints por logs estruturados e avaliar migração para AOP quando o comportamento transversal se multiplicar.
-- Verificar interações com transações e proxies do Spring (testes de integração) antes de adicionar lógica dependente de transação no Proxy.
-- Documentar se a intenção do Proxy é somente auditoria (simples) ou se servirá também para autorização, métricas, caching, retries etc. A escolha afeta a implementação (proxy manual vs AOP vs dynamic proxy vs middleware).
 
 ---
 
