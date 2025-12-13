@@ -47,6 +47,22 @@ Toda a documentação do sistema está na pasta `docs/`:
 - `docs/requisitos/` → Funcionalidades detalhadas e Regras de Negócio
 - `docs/diagramas/` → Diagramas ERD e outros diagramas visuais
 
+- ## Como rodar
+
+**Backend:** Ao clonar o repositorio, acesse o arquivo **BackendAplicação.java** localizado em MedFlow\apresentacao-backend\src\main\java\br\com\medflow\BackendAplicacao.java, e rode.
+**Frontend:** No terminal digite:
+
+```bash
+cd /medflow-modulos/apresentacao-frontend/src/main/react
+npm install
+````
+
+e rode:
+
+```bash
+npm run dev
+````
+
 ## Links Relevantes
 
 [Apresentação](https://www.canva.com/design/DAG2SOGRfNA/2dYa-JtEtf6IzFEaxkcMcg/edit?utm_content=DAG2SOGRfNA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
