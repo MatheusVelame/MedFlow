@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TestTube, Search, Upload, Download, Clock, CheckCircle, XCircle, AlertCircle, Plus, Edit, Trash2, List, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, 
 import { useListarPacientes } from "@/api/usePacientesApi";
 // Novo: Funcionários (médicos)
 import { useListarFuncionarios } from "@/api/useFuncionariosApi";
+import { examesApi } from "@/api";
 
 export default function Exames() {
   const { isGestor, isMedico } = useAuth();
@@ -303,13 +304,65 @@ export default function Exames() {
 
   const totalAgendados = mappedExames.filter((e: any) => e.statusNormalized !== 'cancelado').length;
 
+  // Gerenciamento do filtro 'historico' — carregamos detalhes para descobrir quais exames possuem histórico
+  const [historicoIds, setHistoricoIds] = useState<Set<number> | null>(null);
+  const [historicoLoading, setHistoricoLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    if (filterStatus === 'historico') {
+      setHistoricoLoading(true);
+      // Carrega detalhes em paralelo (Promise.allSettled) e coleta ids com historico non-empty
+      Promise.allSettled((exames || []).map((e: any) => examesApi.obter(Number(e.id))))
+        .then(results => {
+          if (!mounted) return;
+          const ids = new Set<number>();
+          results.forEach((r: any, idx: number) => {
+            if (r.status === 'fulfilled') {
+              const resp = r.value as any;
+              if (resp && Array.isArray(resp.historico) && resp.historico.length > 0) {
+                ids.add(Number((exames || [])[idx].id));
+              }
+            }
+          });
+          setHistoricoIds(ids);
+        })
+        .catch(() => { if (mounted) setHistoricoIds(new Set()); })
+        .finally(() => { if (mounted) setHistoricoLoading(false); });
+    } else {
+      // limpar cache quando não estamos olhando o histórico
+      setHistoricoIds(null);
+      setHistoricoLoading(false);
+    }
+    return () => { mounted = false; };
+  }, [filterStatus, exames]);
+
   const filteredExames = mappedExames.filter((exame: any) => {
     const pacienteText = String(exame.pacienteName ?? exame.pacienteId ?? "");
     const tipoText = String(exame.tipoLabel ?? exame.tipoExame ?? "");
     const matchesSearch = pacienteText.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tipoText.toLowerCase().includes(searchTerm.toLowerCase()) ||
       String(exame.medicoName ?? '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "todos" || exame.statusNormalized === filterStatus;
+
+    const now = new Date();
+    const exameDate = exame.dataHora ? new Date(exame.dataHora) : (exame.datahora ? new Date(exame.datahora) : null);
+
+    let matchesStatus = true;
+    switch (filterStatus) {
+      case 'todos': matchesStatus = true; break;
+      case 'agendados': matchesStatus = exame.statusNormalized === 'agendado'; break;
+      case 'cancelados': matchesStatus = exame.statusNormalized === 'cancelado'; break;
+      case 'pendente': matchesStatus = exame.statusNormalized === 'pendente'; break;
+      case 'pendentesResultado':
+        // pendentes de resultado: status 'pendente' e data no passado (exame realizado mas sem resultado)
+        matchesStatus = exame.statusNormalized === 'pendente' && exameDate !== null && exameDate < now; break;
+      case 'resultado': matchesStatus = exame.statusNormalized === 'resultado' || exame.statusNormalized === 'realizado'; break;
+      case 'historico':
+        matchesStatus = historicoIds ? historicoIds.has(exame.id) : false;
+        break;
+      default: matchesStatus = true;
+    }
+
     return matchesSearch && matchesStatus;
   });
 
@@ -369,10 +422,14 @@ export default function Exames() {
                 <div className="flex-1 pr-4">
                   <Input placeholder="Pesquisar por paciente, tipo ou médico" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 overflow-auto">
                   <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
-                  <Button variant={filterStatus === 'pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('pendente')}>Pendente</Button>
+                  <Button variant={filterStatus === 'agendados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('agendados')}>Agendados</Button>
+                  <Button variant={filterStatus === 'cancelados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('cancelados')}>Cancelados</Button>
+                  <Button variant={filterStatus === 'pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('pendente')}>Pendentes</Button>
+                  <Button variant={filterStatus === 'pendentesResultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('pendentesResultado')}>Pendentes de Resultado</Button>
                   <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultado</Button>
+                  <Button variant={filterStatus === 'historico' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('historico')}>Histórico</Button>
                 </div>
               </div>
             </CardHeader>

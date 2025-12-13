@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useListarPacientes } from "@/api/usePacientesApi";
 import { useListarFuncionarios } from "@/api/useFuncionariosApi";
-import { tiposExamesApi } from "@/api";
+import { tiposExamesApi, examesApi } from "@/api";
 
 const exameSchema = z.object({
   pacienteId: z.number().min(1, "Paciente é obrigatório"),
@@ -47,6 +47,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
 
   // carregar tipos de exames para seleção
   const [tipos, setTipos] = useState<any[]>((window as any)._tiposExamesCache || []);
+  const [historico, setHistorico] = useState<any[] | null>(null);
   useEffect(() => {
     let mounted = true;
     tiposExamesApi.listar().then(data => { if(mounted){ setTipos(data); (window as any)._tiposExamesCache = data; } });
@@ -81,6 +82,15 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
         setValue('dataHora', v);
       }
       if ((initialData as any).observacoes !== undefined) setValue('observacoes', (initialData as any).observacoes);
+    }
+    // Se estivermos em modo de edição e tivermos um id, carregar o histórico de alterações
+    const id = (initialData as any)?.id;
+    if (id) {
+      let mounted = true;
+      examesApi.obter(Number(id))
+        .then(resp => { if (mounted) setHistorico(resp.historico || []); })
+        .catch(() => { if (mounted) setHistorico([]); });
+      return () => { mounted = false; };
     }
   }, [initialData, setValue]);
 
@@ -240,7 +250,22 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+        {/* Histórico de alterações (apenas em edição) */}
+        {historico && historico.length > 0 && (
+          <div className="mt-6 p-4 border-t">
+            <h4 className="font-semibold mb-2">Histórico de Alterações</h4>
+            <ul className="space-y-2 text-sm">
+              {historico.map((h: any, idx: number) => (
+                <li key={idx} className="p-2 rounded bg-muted/5">
+                  <div className="text-xs text-muted-foreground">{new Date(h.dataHora).toLocaleString()} — <span className="font-medium">{h.acao}</span></div>
+                  <div className="mt-1">{h.descricao}</div>
+                  {h.responsavelId && <div className="text-xs text-muted-foreground mt-1">Responsável: {h.responsavelId}</div>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+       </DialogContent>
+     </Dialog>
+   );
+ }
