@@ -22,6 +22,20 @@ public class EspecialidadesRepositorioMemoria implements EspecialidadeRepositori
         // Atribui id se necessário
         if (especialidade.getId() == null) {
             especialidade.setId(nextId.getAndIncrement());
+        } else {
+            // Se a especialidade já tem ID, pode ser uma atualização
+            // Verifica se existe uma entrada antiga com o mesmo ID mas nome diferente
+            // Isso é necessário porque o Map usa o nome como chave
+            // Compara a chave (nome antigo) com o nome novo do objeto sendo salvo
+            for (Map.Entry<String, Especialidade> entry : especialidades.entrySet()) {
+                Especialidade existente = entry.getValue();
+                if (existente.getId() != null && existente.getId().equals(especialidade.getId()) 
+                    && !entry.getKey().equals(especialidade.getNome())) {
+                    // Remove a entrada antiga que usa o nome antigo como chave
+                    especialidades.remove(entry.getKey());
+                    break; // Só pode haver uma entrada com o mesmo ID
+                }
+            }
         }
         // O nome é a chave única (simulando a PK ou índice de unicidade)
         especialidades.put(especialidade.getNome(), especialidade);
