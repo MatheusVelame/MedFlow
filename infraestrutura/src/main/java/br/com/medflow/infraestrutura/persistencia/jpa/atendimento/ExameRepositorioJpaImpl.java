@@ -47,9 +47,7 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
     @Override
     public Optional<Exame> obterAgendamentoConflitante(Long pacienteId, java.time.LocalDateTime dataHora, ExameId idExcluido) {
         Long idIgnorar = (idExcluido != null) ? idExcluido.getValor() : null;
-        
         var conflitos = jpaRepository.encontrarConflitos(pacienteId, dataHora, idIgnorar);
-        
         return conflitos.stream().findFirst().map(this::paraDominio);
     }
     
@@ -66,7 +64,6 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
     @Override
     public boolean existePorMedicoId(Integer medicoId) {
         if (medicoId == null) return false;
-        // Adicionado .longValue() para corrigir o erro de tipo
         return jpaRepository.existsByMedicoId(medicoId.longValue());
     }
 
@@ -75,19 +72,41 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
     private ExameJpa paraJpa(Exame dominio) {
         if (dominio == null) return null;
 
-        ExameJpa exameJpa = mapeador.map(dominio, ExameJpa.class);
+        // Construção manual do JPA a partir do domínio para evitar conversões ambíguas do ModelMapper
+        Long id = (dominio.getId() != null) ? dominio.getId().getValor() : null;
+        ExameJpa exameJpa = new ExameJpa(
+            id,
+            dominio.getPacienteId(),
+            dominio.getMedicoId(),
+            dominio.getTipoExame(),
+            dominio.getDataHora(),
+            dominio.getStatus(),
+            null // responsavelId será calculado a partir do histórico abaixo
+        );
 
         // Mapear histórico: converter cada entrada de domínio em JPA e associar ao exameJpa
         var historicoDominio = dominio.getHistorico();
-        if (historicoDominio != null) {
+        if (historicoDominio != null && !historicoDominio.isEmpty()) {
             var historicoJpa = historicoDominio.stream()
                 .map(h -> {
-                    var he = mapeador.map(h, HistoricoExameJpa.class);
+                    var he = new HistoricoExameJpa();
+                    he.setAcao(h.getAcao());
+                    he.setDescricao(h.getDescricao());
+                    he.setDataHora(h.getDataHora());
+                    if (h.getUsuario() != null && h.getUsuario().getValor() != null) {
+                        he.setResponsavelId(h.getUsuario().getValor());
+                    }
                     he.setExame(exameJpa);
                     return he;
                 })
                 .collect(Collectors.toList());
             exameJpa.setHistorico(historicoJpa);
+
+            // Extrair responsavelId do último histórico, se presente
+            var ultima = historicoDominio.get(historicoDominio.size() - 1);
+            if (ultima != null && ultima.getUsuario() != null) {
+                exameJpa.setResponsavelId(ultima.getUsuario().getValor());
+            }
         }
 
         return exameJpa;

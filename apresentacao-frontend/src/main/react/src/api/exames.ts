@@ -13,8 +13,40 @@ export const examesApi = {
   obter: async (id: number): Promise<ExameResponse> =>
     request<ExameResponse>(api.get(`/api/exames/${id}`)),
 
-  agendar: async (payload: AgendamentoExameRequest): Promise<ExameResponse> =>
-    request<ExameResponse>(api.post(`/api/exames`, payload)),
+  agendar: async (payload: AgendamentoExameRequest): Promise<ExameResponse> => {
+    // Sanitização defensiva: converte arrays para primeiro elemento e garante IDs numéricos.
+    const sanitize = (p: any) => {
+      if (!p) return p;
+      const out: any = {};
+      Object.entries(p).forEach(([k, v]) => {
+        let val = v;
+        if (Array.isArray(val)) val = val[0];
+        // valores de id podem chegar como string -> converter para number
+        if (
+          (k === "pacienteId" ||
+            k === "medicoId" ||
+            k === "responsavelId") &&
+          val != null
+        ) {
+          const n = Number(val);
+          val = Number.isNaN(n) ? val : n;
+        }
+        out[k] = val;
+      });
+      return out;
+    };
+
+    const sanitized = sanitize(payload);
+    // Log para facilitar diagnóstico no browser (remova em produção se necessário)
+    console.debug(
+      "[examesApi] POST /api/exames payload (sanitized):",
+      sanitized,
+      " raw:",
+      payload
+    );
+
+    return request<ExameResponse>(api.post(`/api/exames`, sanitized));
+  },
 
   atualizar: async (
     id: number,

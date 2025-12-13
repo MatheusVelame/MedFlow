@@ -26,7 +26,7 @@ type ExameFormData = z.infer<typeof exameSchema>;
 interface ExameFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: ExameFormData) => Promise<any> | void;
+  onSave: (data: ExameFormData & { responsavelId?: number }) => Promise<any> | void;
   initialData?: Partial<ExameFormData> | null;
 }
 
@@ -91,9 +91,26 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
       return v.length >= 19 ? v.slice(0, 19) : `${v}:00`;
     };
 
-    const payload: ExameFormData = {
-      ...data,
+    // Sanitização: alguns componentes de Select podem, em casos extremos, fornecer arrays.
+    // Garante que enviamos primitivos (number|string) ao backend, evitando que o JSON contenha arrays
+    const firstValue = (v: any) => Array.isArray(v) ? v[0] : v;
+
+    const pacienteId = Number(firstValue((data as any).pacienteId));
+    const medicoId = Number(firstValue((data as any).medicoId));
+    const tipoExame = String(firstValue((data as any).tipoExame));
+
+    const responsavelFallback = (window as any)._currentUserId ? Number((window as any)._currentUserId) : 1;
+    const responsavelIdRaw = (window as any)._currentUserId ?? responsavelFallback;
+    const responsavelId = Number(Array.isArray(responsavelIdRaw) ? responsavelIdRaw[0] : responsavelIdRaw);
+
+    const payload: ExameFormData & { responsavelId?: number } = {
+      pacienteId,
+      tipoExame,
+      medicoId,
+      laboratorio: String(data.laboratorio || ""),
+      prioridade: String(data.prioridade) as any,
       dataHora: formatDataHora(data.dataHora),
+      responsavelId,
     };
     try {
       await onSave(payload);

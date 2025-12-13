@@ -178,11 +178,30 @@ export default function Exames() {
 
     const dataHoraComSegundos = ensureSeconds(data.dataHora);
 
+    // Sanitização defensiva: alguns valores podem, por causa do componente Select, vir como array.
+    const firstValue = (v: any) => Array.isArray(v) ? v[0] : v;
+    const pacienteId = Number(firstValue(data.pacienteId));
+    const medicoId = Number(firstValue(data.medicoId));
+    const tipoExame = String(firstValue(data.tipoExame));
+    const responsavelId = Number(firstValue((data.responsavelId ?? (window as any)._currentUserId ?? 1)));
+
+    const payloadCreate = {
+      pacienteId,
+      medicoId,
+      tipoExame,
+      dataHora: dataHoraComSegundos,
+      responsavelId,
+    };
+
+    // Log do payload para facilitar diagnóstico no browser
+    console.debug("[Exames] Payload para agendamento/atualização:", payloadCreate);
+
     if (editingExame) {
-      return atualizarExame.mutateAsync({ id: editingExame.id, payload: { medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: dataHoraComSegundos, responsavelId: Number(data.responsavelId) } })
+      const payloadUpdate = { medicoId, tipoExame, dataHora: dataHoraComSegundos, responsavelId };
+      return atualizarExame.mutateAsync({ id: editingExame.id, payload: payloadUpdate })
         .then((res) => { setEditingExame(null); return res; });
     } else {
-      return agendar.mutateAsync({ pacienteId: Number(data.pacienteId), medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: dataHoraComSegundos, responsavelId: Number(data.responsavelId) });
+      return agendar.mutateAsync(payloadCreate);
     }
   };
 

@@ -195,33 +195,38 @@ public class JpaMapeador extends ModelMapper {
 
         // === 7. Mapeamento de DOMÍNIO (HistoricoEntrada de Exame) para JPA ===
         try {
+            // Usar provider manual para evitar que o ModelMapper tente converter valores ambíguos
             createTypeMap(
                 br.com.medflow.dominio.atendimento.exames.HistoricoEntrada.class,
                 br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa.class)
-                .addMappings(mapper -> {
-                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setId);
-                    mapper.skip(br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setExame);
-
-                    mapper.map(
-                        br.com.medflow.dominio.atendimento.exames.HistoricoEntrada::getAcao,
-                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setAcao
-                    );
-
-                    mapper.map(
-                        br.com.medflow.dominio.atendimento.exames.HistoricoEntrada::getDescricao,
-                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setDescricao
-                    );
-
-                    // Mapeia responsavel.getValor() (Long)
-                    mapper.map(
-                        src -> src.getUsuario().getValor(),
-                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setResponsavelId
-                    );
-
-                    mapper.map(
-                        br.com.medflow.dominio.atendimento.exames.HistoricoEntrada::getDataHora,
-                        br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa::setDataHora
-                    );
+                .setProvider(request -> {
+                    var src = (br.com.medflow.dominio.atendimento.exames.HistoricoEntrada) request.getSource();
+                    var jpa = new br.com.medflow.infraestrutura.persistencia.jpa.atendimento.HistoricoExameJpa();
+                    // id e exame são gerenciados pelo JPA/repositório
+                    jpa.setAcao(src.getAcao());
+                    jpa.setDescricao(src.getDescricao());
+                    // defensiva: extrair o valor do usuario de forma segura
+                    try {
+                        var usuario = src.getUsuario();
+                        if (usuario != null) {
+                            Object valor = null;
+                            try {
+                                valor = usuario.getValor();
+                            } catch (Exception e) {
+                                // caso atípico: se getValor lançar ou retornar tipo inesperado, tentamos converter
+                                valor = null;
+                            }
+                            if (valor instanceof Number) {
+                                jpa.setResponsavelId(((Number) valor).longValue());
+                            } else if (valor instanceof String) {
+                                try { jpa.setResponsavelId(Long.parseLong((String) valor)); } catch (Exception ex) { /* ignore */ }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // protege contra qualquer objeto inesperado vindo do domínio
+                    }
+                    jpa.setDataHora(src.getDataHora());
+                    return jpa;
                 });
 
             // Mapeamento inverso: JPA -> Domínio
