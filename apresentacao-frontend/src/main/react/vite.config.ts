@@ -25,10 +25,20 @@ export default defineConfig(({ mode }) => ({
 	      secure: false,
 	    },
 	  
-	   '/backend': {
+	  	 '/backend': {
         target: 'http://localhost:8080', // Porta onde seu Spring Boot está rodando
         changeOrigin: true, // Necessário para evitar problemas de CORS
         secure: false,      // Usar 'false' se estiver rodando o backend em HTTP (padrão)
+      },
+
+      // --- NOVO: proxy para /exames ---
+      // O backend expõe o controller em '/exames' (sem /api), então o Vite estava servindo a SPA
+      // quando você acessava http://localhost:8090/exames. Encaminhamos essas requisições ao backend.
+      '/exames': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        // Não reescrevemos o caminho: backend já espera '/exames'
       },
     },
     // --- FIM DO BLOCO ADICIONADO ---
