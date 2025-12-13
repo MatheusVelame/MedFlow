@@ -87,6 +87,55 @@ export default function Exames() {
       break;
   }
 
+  // === DEDUPLICAÇÃO POR ID (CORREÇÃO) ===
+  // Em algumas condições de cache/invalidade (setQueryData + invalidateQueries) a UI pode terminar
+  // com múltiplas instâncias do mesmo exame vindo de queries diferentes com status discrepantes
+  // (por exemplo: AGENDADO + CANCELADO). Para evitar renderização duplicada, fazemos uma
+  // deduplicação determinística por id escolhendo a versão com maior prioridade de status.
+  const deduplicateByIdWithStatusPriority = (items: any[]) => {
+    const priority: Record<string, number> = {
+      excluido: 6,
+      excluído: 6, // tolerate accent
+      cancelado: 5,
+      realizado: 4,
+      resultado: 4,
+      pendente: 3,
+      agendado: 2,
+      aguardando: 1,
+    };
+
+    const map = new Map<number, any>();
+
+    const pick = (existing: any, candidate: any) => {
+      const s1 = normalizeStatus(existing?.status || existing?.situation || existing?.statusName || existing?.state || '');
+      const s2 = normalizeStatus(candidate?.status || candidate?.situation || candidate?.statusName || candidate?.state || '');
+      const p1 = priority[s1] ?? 0;
+      const p2 = priority[s2] ?? 0;
+      // Prefer higher priority; if equal prefer the candidate if it has a historico (more recent),
+      // otherwise keep existing.
+      if (p2 > p1) return candidate;
+      if (p2 < p1) return existing;
+      // Tie-breaker: prefer object with more properties (likely more complete) or with historico
+      const exScore = (existing && existing.historico ? existing.historico.length : 0) + Object.keys(existing || {}).length;
+      const caScore = (candidate && candidate.historico ? candidate.historico.length : 0) + Object.keys(candidate || {}).length;
+      return caScore >= exScore ? candidate : existing;
+    };
+
+    for (const it of items) {
+      if (!it || it.id == null) continue;
+      const id = Number(it.id);
+      if (!map.has(id)) map.set(id, it);
+      else map.set(id, pick(map.get(id), it));
+    }
+
+    return Array.from(map.values());
+  };
+
+  // Apply dedup only once to avoid unnecessary allocations when not needed
+  if (sourceExames && sourceExames.length > 1) {
+    sourceExames = deduplicateByIdWithStatusPriority(sourceExames);
+  }
+
   const agendar = useAgendarExame();
   const atualizarExame = useAtualizarExame();
   const cancelarExame = useCancelarExame();
@@ -606,7 +655,6 @@ export default function Exames() {
                   <Button variant={filterStatus === 'cancelados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('cancelados')}>Cancelados</Button>
                   <Button variant={filterStatus === 'resultado pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado pendente')}>Pendentes</Button>
                   <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultados</Button>
-			  <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
                   <Button variant={filterStatus === 'historico' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('historico')}>Histórico</Button>
                 </div>
               </div>
