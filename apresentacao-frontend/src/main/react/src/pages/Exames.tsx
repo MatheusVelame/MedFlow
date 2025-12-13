@@ -205,7 +205,7 @@ export default function Exames() {
     console.debug("[Exames] Payload para agendamento/atualização:", payloadCreate);
 
     if (editingExame) {
-      const payloadUpdate = { medicoId, tipoExame, dataHora: dataHoraComSegundos, responsavelId };
+      const payloadUpdate = { medicoId, tipoExame, dataHora: dataHoraComSegundos, responsavelId, observacoes: (data as any).observacoes };
       return atualizarExame.mutateAsync({ id: editingExame.id, payload: payloadUpdate })
         .then((res) => { setEditingExame(null); return res; });
     } else {

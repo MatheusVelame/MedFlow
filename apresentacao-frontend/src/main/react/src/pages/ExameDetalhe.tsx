@@ -26,7 +26,7 @@ export default function ExameDetalhe() {
     try {
       const dataHora = formData.dataHora.length === 16 ? `${formData.dataHora}:00` : formData.dataHora;
       const responsavelId = Number(user?.id || 1);
-      await atualizar.mutateAsync({ id: exame.id, payload: { medicoId: Number(formData.medicoId), tipoExame: formData.tipoExame, dataHora, responsavelId } });
+      await atualizar.mutateAsync({ id: exame.id, payload: { medicoId: Number(formData.medicoId), tipoExame: formData.tipoExame, dataHora, responsavelId, observacoes: formData.observacoes } });
       toast({ title: 'Exame atualizado', description: 'Agendamento atualizado.' });
       navigate('/exames');
     } catch (e: any) {
@@ -64,7 +64,7 @@ export default function ExameDetalhe() {
       <h1 className="text-3xl font-bold mb-2">Detalhes do Exame</h1>
       <p className="text-muted-foreground mb-6">Visualize e edite as informações do exame</p>
 
-      <ExameForm open={true} onOpenChange={() => navigate('/exames')} onSave={handleSave} initialData={{ pacienteId: exame.pacienteId, tipoExame: exame.tipoExame, medicoId: exame.medicoId, dataHora: exame.dataHora }} />
+      <ExameForm open={true} onOpenChange={() => navigate('/exames')} onSave={handleSave} initialData={{ pacienteId: exame.pacienteId, tipoExame: exame.tipoExame, medicoId: exame.medicoId, dataHora: exame.dataHora, observacoes: exame.observacoes }} />
 
       <div className="mt-4 flex gap-2">
         <Button variant="outline" onClick={() => handleCancel('Cancelado via UI')} disabled={cancelling}>{cancelling ? 'Cancelando...' : 'Cancelar Exame'}</Button>

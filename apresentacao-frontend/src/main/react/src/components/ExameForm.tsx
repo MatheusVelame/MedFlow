@@ -19,6 +19,7 @@ const exameSchema = z.object({
   laboratorio: z.string().min(1, "Laboratório é obrigatório"),
   prioridade: z.enum(["normal", "urgente"]),
   dataHora: z.string().min(1, "Data e hora é obrigatória"),
+  observacoes: z.string().max(2000).optional()
 });
 
 type ExameFormData = z.infer<typeof exameSchema>;
@@ -37,6 +38,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
       prioridade: "normal",
       dataHora: new Date().toISOString().slice(0,16), // datetime-local value
       laboratorio: "",
+      observacoes: undefined
     }
   });
 
@@ -60,6 +62,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
         laboratorio: "",
         prioridade: "normal",
         dataHora: new Date().toISOString().slice(0,16),
+        observacoes: undefined
       });
     }
   }, [open, reset]);
@@ -77,6 +80,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
         const v = initialData.dataHora.length === 19 ? initialData.dataHora.slice(0,16) : initialData.dataHora;
         setValue('dataHora', v);
       }
+      if ((initialData as any).observacoes !== undefined) setValue('observacoes', (initialData as any).observacoes);
     }
   }, [initialData, setValue]);
 
@@ -111,6 +115,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
       prioridade: String(data.prioridade) as any,
       dataHora: formatDataHora(data.dataHora),
       responsavelId,
+      observacoes: data.observacoes
     };
     try {
       await onSave(payload);
@@ -210,6 +215,12 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
               <Input id="dataHora" type="datetime-local" {...register("dataHora")} />
               {errors.dataHora && <p className="text-sm text-destructive">{errors.dataHora.message}</p>}
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="observacoes">Observações (opcional)</Label>
+            <textarea id="observacoes" {...register("observacoes") as any} className="w-full p-2 border rounded-md min-h-[80px]" />
+            {errors.observacoes && <p className="text-sm text-destructive">{errors.observacoes.message}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
