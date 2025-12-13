@@ -71,15 +71,11 @@ public class EspecialidadeRepositorioJpaImpl
             // Nova especialidade
             jpa = mapper.map(especialidade, EspecialidadeJpa.class);
 
-            // Workaround: sincronizar id com máximo atual para evitar conflitos em bancos embutidos
-            Integer maxId = jpaRepository.findMaxId();
-            if (maxId == null) maxId = 0;
-            jpa.setId(maxId + 1);
-
             try {
                 // force flush to trigger constraint violations inside this method
-                LOGGER.info("Inserting new Especialidade JPA provisional id=" + jpa.getId() + " nome='" + jpa.getNome() + "'");
+                LOGGER.info("Inserting new Especialidade JPA nome='" + jpa.getNome() + "'");
                 jpa = jpaRepository.saveAndFlush(jpa);
+                LOGGER.info("Inserted Especialidade JPA assigned id=" + jpa.getId());
             } catch (DataIntegrityViolationException e) {
                 // Provável violação de unique: normalizamos para fornecer error map amigável para camada superior
                 throw new RegraNegocioException("Já existe uma especialidade com este nome", java.util.Map.of("nome", "Já existe uma especialidade com este nome"));
