@@ -113,10 +113,14 @@ public class JpaMapeador extends ModelMapper {
                                 return null;
                             }
                             String codigo = src.getResponsavel().getCodigo();
+                            if (codigo == null) return null;
                             try {
                                 return Integer.parseInt(codigo);
                             } catch (NumberFormatException e) {
-                                throw new RuntimeException("Erro ao converter código do responsável para Integer: " + codigo, e);
+                                // Proteção defensiva: se o código não for numérico, evita lançar exceção de conversão
+                                // e retorna null (campo será ignorado). Isso evita falhas em mapeamentos ambíguos
+                                // onde um objeto com formato inesperado poderia chegar aqui.
+                                return null;
                             }
                         }, 
                         br.com.medflow.infraestrutura.persistencia.jpa.administracao.HistoricoEntradaJpa::setResponsavelId
