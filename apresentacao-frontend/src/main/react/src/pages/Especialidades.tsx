@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Plus, Edit, Trash2, Stethoscope, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,12 +39,16 @@ export default function Especialidades() {
   const [editingEspecialidade, setEditingEspecialidade] = useState<Especialidade | null>(null);
   const [especialidadeToDelete, setEspecialidadeToDelete] = useState<number | null>(null);
   const [historicoOpenFor, setHistoricoOpenFor] = useState<number | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
+  const closeHistoricoBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const { data: historicoItems, refetch: refetchHistorico } = useHistoricoEspecialidade(historicoOpenFor ?? undefined);
 
   useEffect(() => {
     if (historicoOpenFor != null) {
       refetchHistorico();
+      // give modal time to render then focus close button to avoid aria-hidden focus issues
+      setTimeout(() => { closeHistoricoBtnRef.current?.focus(); }, 100);
     }
   }, [historicoOpenFor, refetchHistorico]);
 
@@ -79,14 +83,30 @@ export default function Especialidades() {
     }
   };
 
-  // New: toggle status handler
+  const openHistorico = (id: number | null) => {
+    try {
+      const active = document.activeElement as HTMLElement | null;
+      if (active && typeof active.blur === 'function') {
+        active.blur();
+      }
+    } catch (e) {
+      // ignore
+    }
+    setHistoricoOpenFor(id);
+  };
+
+  // Updated: use togglingId to disable per-button while mutation runs
   const handleToggleStatus = async (id: number) => {
     try {
+      setTogglingId(id);
       const responsavelId = Number((window as any)._currentUserId ?? 1);
       await toggleStatus.mutateAsync({ id, payload: { responsavelId } });
       toast({ title: 'Status atualizado', description: 'Status da especialidade atualizado.' });
     } catch (err: any) {
-      toast({ title: 'Erro ao alterar status', description: err?.message ?? 'Não foi possível alterar o status', variant: 'destructive' });
+      const serverMsg = err?.response?.data?.message || err?.message;
+      toast({ title: 'Erro ao alterar status', description: serverMsg ?? 'Não foi possível alterar o status', variant: 'destructive' });
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -239,8 +259,8 @@ export default function Especialidades() {
                   <Button
                     variant="outline"
                     size="sm"
-                    title="Histórico"
-                    onClick={() => setHistoricoOpenFor(especialidade.id)}
+                    className="flex-1"
+                    onClick={() => openHistorico(especialidade.id)}
                   >
                     <List className="h-4 w-4" />
                   </Button>
@@ -252,6 +272,7 @@ export default function Especialidades() {
                     size="sm"
                     className="flex-1"
                     onClick={() => handleToggleStatus(especialidade.id)}
+                    disabled={togglingId === especialidade.id}
                   >
                     <List className="h-4 w-4 mr-1" />
                     { (especialidade.status === "ATIVA" || especialidade.status === "Ativa") ? "Inativar" : "Ativar" }
@@ -311,6 +332,8 @@ export default function Especialidades() {
           <div className="px-6 pb-4">
             {historicoItems == null ? (
               <div className="py-6">Carregando...</div>
+            ) : !Array.isArray(historicoItems) ? (
+              <div className="py-6 text-sm text-muted-foreground">Histórico indisponível.</div>
             ) : historicoItems.length === 0 ? (
               <div className="py-6">Nenhum histórico encontrado para esta especialidade.</div>
             ) : (
@@ -323,6 +346,9 @@ export default function Especialidades() {
                 ))}
               </ul>
             )}
+            <div className="pt-4 text-right">
+              <Button ref={closeHistoricoBtnRef} size="sm" onClick={() => setHistoricoOpenFor(null)}>Fechar</Button>
+            </div>
           </div>
         </AlertDialogContent>
       </AlertDialog>
