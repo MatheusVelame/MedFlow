@@ -41,4 +41,10 @@ public class ExameServicoProxy implements IExameServico {
         log("CANCELAR_AGENDAMENTO", "Alvo ExameID: " + exameId + " | Motivo: " + motivo);
         return servicoReal.cancelarAgendamento(exameId, motivo, responsavel);
     }
+
+    @Override
+    public Exame registrarResultado(ExameId exameId, String descricao, boolean vincularLaudo, boolean vincularProntuario, UsuarioResponsavelId responsavel) {
+        log("REGISTRAR_RESULTADO", "ExameID: " + exameId + " | descricao=" + descricao + " | vincularLaudo=" + vincularLaudo + " | vincularProntuario=" + vincularProntuario);
+        return servicoReal.registrarResultado(exameId, descricao, vincularLaudo, vincularProntuario, responsavel);
+    }
 }

@@ -30,7 +30,7 @@ import {
 
 // IMPORTS NOVOS: Exame hooks e form
 import { ExameForm } from "@/components/ExameForm";
-import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList } from "@/hooks/useExames";
+import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList, useRegistrarResultado } from "@/hooks/useExames";
 
 // Novo: Patients list for displaying names
 import { useListarPacientes } from "@/api/usePacientesApi";
@@ -87,6 +87,7 @@ export default function Exames() {
   const agendar = useAgendarExame();
   const atualizarExame = useAtualizarExame();
   const cancelarExame = useCancelarExame();
+  const registrarResultado = useRegistrarResultado();
   const excluirExame = useExcluirExame();
 
   const { data: pacientes = [] } = useListarPacientes();
@@ -98,6 +99,13 @@ export default function Exames() {
   const [exameToCancel, setExameToCancel] = useState<number | null>(null);
   // motivo obrigatório para cancelamento
   const [cancelReason, setCancelReason] = useState<string>("");
+
+  // Modal de resultado
+  const [resultadoModal, setResultadoModal] = useState<{ open: boolean; exame?: any }>({ open: false });
+  const [resultadoDescricao, setResultadoDescricao] = useState<string>("");
+  const [resultadoPendente, setResultadoPendente] = useState<boolean>(false);
+  const [vincularLaudo, setVincularLaudo] = useState<boolean>(false);
+  const [vincularProntuario, setVincularProntuario] = useState<boolean>(false);
 
   // ========================================================================
   // HANDLERS
@@ -225,12 +233,75 @@ export default function Exames() {
     // Log do payload para facilitar diagnóstico no browser
     console.debug("[Exames] Payload para agendamento/atualização:", payloadCreate);
 
+    // VALIDAÇÕES LOCAIS BASEADAS NAS RNs (pré-checks para evitar chamadas desnecessárias ao backend):
+    // RN: paciente e médico devem existir -> aqui checamos se foram selecionados na UI (IDs válidos)
+    if (!pacienteId || Number.isNaN(pacienteId)) {
+      const msg = "Selecione um paciente válido antes de agendar o exame.";
+      toast({ title: 'Erro de validação', description: msg, variant: 'destructive' });
+      return Promise.reject(new Error(msg));
+    }
+    if (!medicoId || Number.isNaN(medicoId)) {
+      const msg = "Selecione um médico válido antes de agendar o exame.";
+      toast({ title: 'Erro de validação', description: msg, variant: 'destructive' });
+      return Promise.reject(new Error(msg));
+    }
+
+    // RN: tipo de exame deve existir (verificar se o código/id está presente nos tipos carregados)
+    const tipoExiste = tiposExame.some((t: any) => (String(t.codigo) === String(tipoExame) || String(t.id) === String(tipoExame)));
+    if (!tipoExiste) {
+      const msg = "Tipo de exame não cadastrado. Selecione um tipo válido.";
+      toast({ title: 'Erro de validação', description: msg, variant: 'destructive' });
+      return Promise.reject(new Error(msg));
+    }
+
+    // RN: data/hora obrigatória
+    if (!dataHoraComSegundos) {
+      const msg = "Informe data e horário do exame.";
+      toast({ title: 'Erro de validação', description: msg, variant: 'destructive' });
+      return Promise.reject(new Error(msg));
+    }
+
+    // RN: médico deve estar ativo no sistema (podemos validar localmente se o frontend carrega esse dado)
+    const medicoObj = funcionarios.find((f: any) => Number(f.id) === Number(medicoId));
+    const medicoAtivo = (() => {
+      if (!medicoObj) return false;
+      // checar campos comuns que representam atividade/estado
+      if (typeof medicoObj.ativo === 'boolean') return medicoObj.ativo;
+      if (typeof medicoObj.active === 'boolean') return medicoObj.active;
+      if (typeof medicoObj.status === 'string') return /ativ/i.test(medicoObj.status);
+      if (typeof medicoObj.situacao === 'string') return /ativ/i.test(medicoObj.situacao);
+      // fallback: se não soubermos, assumimos ativo (para não bloquear sem dados)
+      return true;
+    })();
+
+    if (medicoObj && !medicoAtivo) {
+      const msg = "Médico selecionado está inativo. Selecione um médico ativo.";
+      toast({ title: 'Erro de validação', description: msg, variant: 'destructive' });
+      return Promise.reject(new Error(msg));
+    }
+
+    // Despacha para backend (criar ou atualizar) com tratamento de erros mais informativo
     if (editingExame) {
       const payloadUpdate = { medicoId, tipoExame, dataHora: dataHoraComSegundos, responsavelId, observacoes: (data as any).observacoes };
       return atualizarExame.mutateAsync({ id: editingExame.id, payload: payloadUpdate })
-        .then((res) => { setEditingExame(null); return res; });
+        .then((res) => { setEditingExame(null); return res; })
+        .catch((err: any) => {
+          console.error("Erro ao atualizar exame:", err);
+          // Mostrar mensagem do servidor quando disponível
+          const serverMsg = err?.message || err?.response?.data?.message || err?.response?.data?.erro || err?.response?.data?.mensagem;
+          toast({ title: 'Erro', description: serverMsg ?? 'Erro ao atualizar exame', variant: 'destructive' });
+          return Promise.reject(new Error(serverMsg ?? 'Erro ao atualizar exame'));
+        });
     } else {
-      return agendar.mutateAsync(payloadCreate);
+      return agendar.mutateAsync(payloadCreate)
+        .then((res) => res)
+        .catch((err: any) => {
+          console.error("Erro ao agendar exame:", err, err?.response);
+          // Se o backend retornou um corpo com mensagem, tentar extrair
+          const serverMsg = err?.message || err?.response?.data?.message || err?.response?.data?.erro || err?.response?.data?.mensagem;
+          toast({ title: 'Erro ao agendar', description: serverMsg ?? 'Erro ao agendar exame', variant: 'destructive' });
+          return Promise.reject(new Error(serverMsg ?? 'Erro ao agendar exame'));
+        });
     }
   };
 
@@ -322,7 +393,11 @@ export default function Exames() {
     return { ...exame, pacienteName, tipoLabel, medicoName, statusNormalized };
   });
 
+  // Cards métricas
   const totalAgendados = examesAgendados.length;
+  const totalCancelados = examesCancelados.length;
+  const totalPendentesResultado = examesPendentes.length;
+  const totalRealizados = examesResultado.length;
 
   // ========================================================================
   // EFFECTS
@@ -394,15 +469,47 @@ export default function Exames() {
       <div className="grid gap-6 md:grid-cols-4">
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Solicitados</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Agendados</CardTitle>
             <TestTube className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{totalAgendados}</div>
-            <p className="text-xs text-muted-foreground">Este mês</p>
+            <p className="text-xs text-muted-foreground">Ativos</p>
           </CardContent>
         </Card>
-        {/* Cards adicionais podem ser inseridos aqui se necessário */}
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Cancelados</CardTitle>
+            <XCircle className="w-4 h-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{totalCancelados}</div>
+            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Resultado Pendente</CardTitle>
+            <Clock className="w-4 h-4 text-warning" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{totalPendentesResultado}</div>
+            <p className="text-xs text-muted-foreground">Aguardando resultado</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Realizados</CardTitle>
+            <CheckCircle className="w-4 h-4 text-success" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{totalRealizados}</div>
+            <p className="text-xs text-muted-foreground">Total</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="exames" className="space-y-4">
@@ -462,7 +569,7 @@ export default function Exames() {
                               <Trash2 className="h-4 w-4" />
                             )}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleUploadResult(exame.id)}>
+                          <Button size="sm" variant="outline" onClick={() => setResultadoModal({ open: true, exame })}>
                             <Upload className="h-4 w-4" />
                           </Button>
                         </div>
@@ -636,6 +743,62 @@ export default function Exames() {
               disabled={cancelReason.trim().length === 0 || (cancelarExame.isLoading && exameToCancel !== null)}
             >
               {cancelarExame.isLoading && exameToCancel ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal para registrar resultado */}
+      <AlertDialog open={resultadoModal.open} onOpenChange={(open) => { if (!open) { setResultadoModal({ open: false }); setResultadoDescricao(""); setResultadoPendente(false); setVincularLaudo(false); setVincularProntuario(false); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar Resultado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Informe o resultado do exame ou marque como pendente; opcionalmente vincule ao laudo/prontuário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="px-6 pb-4 space-y-3">
+            <div>
+              <label className="text-sm font-medium">Descrição do resultado</label>
+              <textarea value={resultadoDescricao} onChange={(e) => setResultadoDescricao(e.target.value)} className="w-full mt-2 p-2 border rounded-md min-h-[80px]" placeholder="Descreva o resultado (ou deixe vazio e marque como pendente)"></textarea>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input id="pendente" type="checkbox" checked={resultadoPendente} onChange={(e) => setResultadoPendente(e.target.checked)} />
+              <label htmlFor="pendente" className="text-sm">Marcar como pendente</label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input id="vLaudo" type="checkbox" checked={vincularLaudo} onChange={(e) => setVincularLaudo(e.target.checked)} />
+              <label htmlFor="vLaudo" className="text-sm">Vincular ao laudo</label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input id="vPront" type="checkbox" checked={vincularProntuario} onChange={(e) => setVincularProntuario(e.target.checked)} />
+              <label htmlFor="vPront" className="text-sm">Vincular ao prontuário</label>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setResultadoModal({ open: false }); setResultadoDescricao(""); setResultadoPendente(false); setVincularLaudo(false); setVincularProntuario(false); }}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!resultadoModal.exame) return;
+                const id = resultadoModal.exame.id;
+                const responsavelId = (window as any)._currentUserId ?? 1;
+                try {
+                  await registrarResultado.mutateAsync({ id, payload: { descricao: resultadoPendente ? 'PENDENTE' : resultadoDescricao, vincularLaudo, vincularProntuario, responsavelId } });
+                  toast({ title: 'Resultado registrado', description: 'Resultado registrado com sucesso.' });
+                  setResultadoModal({ open: false });
+                  setResultadoDescricao(""); setResultadoPendente(false); setVincularLaudo(false); setVincularProntuario(false);
+                } catch (e: any) {
+                  toast({ title: 'Erro', description: e?.response?.data?.mensagem ?? e?.message ?? 'Erro ao registrar resultado' });
+                }
+              }}
+              disabled={!(resultadoPendente || resultadoDescricao.trim().length > 0) || (registrarResultado.isLoading && resultadoModal.exame != null)}
+            >
+              {registrarResultado.isLoading && resultadoModal.exame ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

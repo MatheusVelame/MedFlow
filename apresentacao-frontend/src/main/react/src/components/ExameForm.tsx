@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -32,7 +32,7 @@ interface ExameFormProps {
 }
 
 export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameFormProps) {
-  const { register, handleSubmit, reset, setValue, setError, formState: { errors } } = useForm<ExameFormData>({
+  const { register, handleSubmit, reset, setValue, setError, control, formState: { errors } } = useForm<ExameFormData>({
     resolver: zodResolver(exameSchema),
     defaultValues: {
       prioridade: "normal",
@@ -48,11 +48,64 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
   // carregar tipos de exames para seleção
   const [tipos, setTipos] = useState<any[]>((window as any)._tiposExamesCache || []);
   const [historico, setHistorico] = useState<any[] | null>(null);
+  const [horarioIndisponivel, setHorarioIndisponivel] = useState<string | null>(null);
+  const [verificandoDisponibilidade, setVerificandoDisponibilidade] = useState(false);
+  // watch medicoId and dataHora for availability pre-check
+  const watchedMedicoId = useWatch({ name: 'medicoId', control }) as any;
+  const watchedDataHora = useWatch({ name: 'dataHora', control }) as any;
   useEffect(() => {
     let mounted = true;
     tiposExamesApi.listar().then(data => { if(mounted){ setTipos(data); (window as any)._tiposExamesCache = data; } });
     return () => { mounted = false; };
   }, []);
+
+  // Availability pre-check: query existing AGENDADO exams for same medico and same minute window
+  useEffect(() => {
+    // debounce
+    let handle: any = 0;
+    const medico = Number(watchedMedicoId);
+    const dataHora = String(watchedDataHora || '');
+    if (!medico || !dataHora) {
+      setHorarioIndisponivel(null);
+      return;
+    }
+
+    handle = setTimeout(async () => {
+      try {
+        setVerificandoDisponibilidade(true);
+        // normalize to YYYY-MM-DDTHH:mm:ss
+        const ensureSeconds = (v: string) => {
+          if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return `${v}:00`;
+          if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(v)) return v;
+          return v.length >= 19 ? v.slice(0,19) : `${v}:00`;
+        };
+        const dt = ensureSeconds(dataHora);
+
+        // build a small time window: [dt, dt] exact minute
+        const dataInicio = dt;
+        const dataFim = dt;
+
+        const encontrados = await examesApi.listar({ status: 'AGENDADO', medicoId: medico as any, dataInicio, dataFim } as any);
+        // If editing an existing exame, exclude it
+        const currentId = (initialData as any)?.id;
+        const conflict = encontrados.some((e: any) => Number(e.medicoId) === medico && (currentId ? Number(e.id) !== Number(currentId) : true) && e.dataHora && e.dataHora.startsWith(dt.slice(0,16)));
+        if (conflict) {
+          setHorarioIndisponivel('O médico já possui um exame agendado nesse horário.');
+        } else {
+          setHorarioIndisponivel(null);
+        }
+      } catch (err) {
+        // não bloquear por erro de pre-check; apenas logar
+        console.debug('Erro ao verificar disponibilidade do médico', err);
+        setHorarioIndisponivel(null);
+      } finally {
+        setVerificandoDisponibilidade(false);
+      }
+    }, 450);
+
+    return () => clearTimeout(handle);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedMedicoId, watchedDataHora, initialData]);
 
   useEffect(() => {
     if (!open) {
@@ -245,11 +298,19 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" className="bg-gradient-primary">
+            <div className="flex-1 mr-4 text-right self-center">
+              {verificandoDisponibilidade ? <span className="text-sm text-muted-foreground">Verificando disponibilidade...</span> : null}
+            </div>
+            <Button type="submit" className="bg-gradient-primary" disabled={!!horarioIndisponivel || verificandoDisponibilidade}>
               {initialData ? "Salvar" : "Solicitar Exame"}
             </Button>
           </div>
-        </form>
+          {horarioIndisponivel && (
+            <div className="mt-2 p-3 rounded bg-yellow-50 border border-yellow-100 text-yellow-900">
+              {horarioIndisponivel}
+            </div>
+          )}
+         </form>
         {/* Histórico de alterações (apenas em edição) */}
         {historico && historico.length > 0 && (
           <div className="mt-6 p-4 border-t">

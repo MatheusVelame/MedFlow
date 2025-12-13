@@ -70,4 +70,10 @@ export const examesApi = {
     request<ExameResponse>(
       api.patch(`/api/exames/${id}/cancelamento`, payload)
     ),
+
+  registrarResultado: async (
+    id: number,
+    payload: { descricao?: string; vincularLaudo?: boolean; vincularProntuario?: boolean; responsavelId: number }
+  ): Promise<ExameResponse> =>
+    request<ExameResponse>(api.patch(`/api/exames/${id}/resultado`, payload)),
 };
