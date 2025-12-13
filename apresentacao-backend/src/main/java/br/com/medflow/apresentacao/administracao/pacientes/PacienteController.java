@@ -67,17 +67,18 @@ public class PacienteController {
         }
     }
     
+    // === MUDANÇA AQUI ===
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> remover(
             @PathVariable int id,
-            @RequestParam int responsavelId,
-            @RequestParam(defaultValue = "false") boolean temProntuario,
-            @RequestParam(defaultValue = "false") boolean temConsulta,
-            @RequestParam(defaultValue = "false") boolean temExame) {
+            @RequestParam int responsavelId) { 
+            // Removemos os booleans 'temProntuario', etc. Eles não vêm mais da tela.
         try {
-            servicoAplicacao.removerPaciente(id, responsavelId, temProntuario, temConsulta, temExame);
+            // O serviço agora se vira para descobrir se tem pendências
+            servicoAplicacao.removerPaciente(id, responsavelId);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException | IllegalStateException e) {
+            // Dica: Se quiser saber POR QUE falhou, poderia retornar e.getMessage() no body
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }

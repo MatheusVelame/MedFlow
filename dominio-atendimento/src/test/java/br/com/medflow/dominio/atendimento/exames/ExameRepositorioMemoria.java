@@ -22,6 +22,12 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
     public Optional<Exame> obterPorId(ExameId id) {
         return Optional.ofNullable(exames.get(id));
     }
+    
+    @Override
+    public boolean existsByPacienteId(Long pacienteId) {
+        return exames.values().stream() // ou o nome da sua lista/map
+                .anyMatch(e -> e.getPacienteId() != null && e.getPacienteId().equals(pacienteId));
+    }
 
     @Override
     public Exame salvar(Exame exame) {

@@ -9,5 +9,9 @@ import java.util.List;
 public interface ProntuarioJpaRepository extends JpaRepository<ProntuarioJpa, String> {
     
     List<ProntuarioJpa> findByPacienteId(Integer pacienteId);
+
     boolean existsByProfissionalResponsavel(String profissionalResponsavel);
+
+    boolean existsByPacienteId(Integer pacienteId);
+
 }

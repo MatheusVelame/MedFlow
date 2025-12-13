@@ -172,4 +172,14 @@ public class ProntuarioRepositorioBase implements ProntuarioRepositorio {
                 jpa.getStatus()
         );
     }
+    
+    @Override
+    public boolean existsByPacienteId(String pacienteId) {
+        try {
+            // Converte String (Domínio) -> Integer (Banco)
+            return jpaRepository.existsByPacienteId(Integer.parseInt(pacienteId));
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
 }

@@ -20,5 +20,10 @@ public interface ExameJpaRepository extends JpaRepository<ExameJpa, Long> {
     List<ExameJpa> encontrarConflitos(@Param("pacienteId") Long pacienteId, 
                                       @Param("dataHora") LocalDateTime dataHora, 
                                       @Param("idIgnorado") Long idIgnorado);
+
     boolean existsByMedicoId(Long medicoId);
+
+    
+    boolean existsByPacienteId(Long pacienteId);
+
 }

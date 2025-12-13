@@ -7,8 +7,13 @@ import br.com.medflow.aplicacao.prontuario.ProntuarioResumo;
 import br.com.medflow.aplicacao.prontuario.AtualizacaoItemResponse;
 import com.medflow.dominio.prontuario.Prontuario;
 import com.medflow.dominio.prontuario.ProntuarioRepositorio;
+
 import com.medflow.dominio.prontuario.HistoricoAtualizacao;
+
+import org.springframework.context.annotation.Primary;
+
 import org.springframework.stereotype.Component;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +24,7 @@ import java.util.stream.Collectors;
  * Compõe os decorators (logging) sobre a implementação base.
  */
 @Component
+@Primary
 public class ProntuarioRepositorioImpl implements ProntuarioRepositorio, ProntuarioRepositorioAplicacao {
 
     private final ProntuarioRepositorio repositorioDecorado;
@@ -52,6 +58,12 @@ public class ProntuarioRepositorioImpl implements ProntuarioRepositorio, Prontua
     @Override
     public List<Prontuario> listarTodos() {
         return repositorioDecorado.listarTodos();
+    }
+    
+    @Override
+    public boolean existsByPacienteId(String pacienteId) {
+        // Delega para o repositório decorado (que já tem a lógica agora)
+        return repositorioDecorado.existsByPacienteId(pacienteId);
     }
 
     // =====================================================================

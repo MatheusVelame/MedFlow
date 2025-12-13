@@ -15,21 +15,42 @@ import br.com.medflow.dominio.administracao.pacientes.PacienteRepositorio;
 import br.com.medflow.dominio.administracao.pacientes.PacienteServico;
 import br.com.medflow.dominio.administracao.pacientes.UsuarioResponsavelId;
 
+import com.medflow.dominio.prontuario.ProntuarioRepositorio;
+import br.com.medflow.dominio.atendimento.consultas.ConsultaRepositorio;
+import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
+
 @Service
 public class PacienteServicoAplicacao {
     
     private final PacienteServico servicoDominio;
     private final PacienteRepositorioAplicacao repositorioAplicacao;
     
+    // Novas dependências para verificação de segurança
+    private final ProntuarioRepositorio prontuarioRepo;
+    private final ConsultaRepositorio consultaRepo;
+    private final ExameRepositorio exameRepo;
+    
     public PacienteServicoAplicacao(
             @Qualifier("pacienteRepositorioJpa") PacienteRepositorio repositorioDominio,
-            PacienteRepositorioAplicacao repositorioAplicacao) {
+            PacienteRepositorioAplicacao repositorioAplicacao,
+            // Injeção dos repositórios
+            ProntuarioRepositorio prontuarioRepo,
+            ConsultaRepositorio consultaRepo,
+            ExameRepositorio exameRepo) {
         
         notNull(repositorioDominio, "O repositório de domínio não pode ser nulo");
         notNull(repositorioAplicacao, "O repositório de aplicação não pode ser nulo");
+        // Validações básicas das novas dependências
+        notNull(prontuarioRepo, "O repositório de prontuário não pode ser nulo");
+        notNull(consultaRepo, "O repositório de consulta não pode ser nulo");
+        notNull(exameRepo, "O repositório de exame não pode ser nulo");
         
         this.servicoDominio = new PacienteServico(repositorioDominio);
         this.repositorioAplicacao = repositorioAplicacao;
+        
+        this.prontuarioRepo = prontuarioRepo;
+        this.consultaRepo = consultaRepo;
+        this.exameRepo = exameRepo;
     }
     
     @Transactional
@@ -74,16 +95,20 @@ public class PacienteServicoAplicacao {
     }
     
     @Transactional
-    public void removerPaciente(
-            int id, 
-            int responsavelId,
-            boolean temProntuario,
-            boolean temConsulta,
-            boolean temExame) {
+    public void removerPaciente(int id, int responsavelId) {
+        // BLINDAGEM: Não aceitamos mais booleanos de fora. 
+        // Nós mesmos verificamos no banco.
         
         PacienteId pacienteId = new PacienteId(id);
         UsuarioResponsavelId usuarioId = new UsuarioResponsavelId(responsavelId);
         
+        // 1. Verifica vínculos reais no banco de dados
+        // Nota: Seus repositórios precisam ter o método 'existsByPacienteId'
+        boolean temProntuario = prontuarioRepo.existsByPacienteId(String.valueOf(id));
+        boolean temConsulta = consultaRepo.existsByPacienteId(id);
+        boolean temExame = exameRepo.existsByPacienteId((long) id);
+        
+        // 2. Chama o domínio passando a verdade
         servicoDominio.remover(pacienteId, usuarioId, temProntuario, temConsulta, temExame);
     }
     
