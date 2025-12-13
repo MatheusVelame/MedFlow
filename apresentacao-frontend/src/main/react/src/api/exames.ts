@@ -1,6 +1,7 @@
 import { api, request } from "./apiClient";
 import type {
   ExameResponse,
+  ExameDetalheResponse,
   AgendamentoExameRequest,
   AtualizacaoExameRequest,
   CancelamentoExameRequest,
@@ -10,8 +11,8 @@ export const examesApi = {
   listar: async (): Promise<ExameResponse[]> =>
     request<ExameResponse[]>(api.get(`/api/exames`)),
 
-  obter: async (id: number): Promise<ExameResponse> =>
-    request<ExameResponse>(api.get(`/api/exames/${id}`)),
+  obter: async (id: number): Promise<ExameDetalheResponse> =>
+    request<ExameDetalheResponse>(api.get(`/api/exames/${id}`)),
 
   agendar: async (payload: AgendamentoExameRequest): Promise<ExameResponse> => {
     // Sanitização defensiva: converte arrays para primeiro elemento e garante IDs numéricos.

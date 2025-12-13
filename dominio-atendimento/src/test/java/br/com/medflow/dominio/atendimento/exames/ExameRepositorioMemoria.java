@@ -25,7 +25,8 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
     
     @Override
     public boolean existsByPacienteId(Long pacienteId) {
-        return exames.values().stream() // ou o nome da sua lista/map
+        if (pacienteId == null) return false;
+        return exames.values().stream()
                 .anyMatch(e -> e.getPacienteId() != null && e.getPacienteId().equals(pacienteId));
     }
 
@@ -33,6 +34,10 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
     public Exame salvar(Exame exame) {
         if (exame.getId() == null) {
             exame.setId(proximoId());
+        }
+        // Garantir status padrão para novos exames
+        if (exame.getStatus() == null) {
+            exame.setStatus(StatusExame.AGENDADO);
         }
         exames.put(exame.getId(), exame);
         return exame;
@@ -46,10 +51,28 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
     
     @Override
     public Optional<Exame> obterAgendamentoConflitante(Long pacienteId, LocalDateTime dataHora, ExameId idExcluido) {
-        
+        if (pacienteId == null || dataHora == null) return Optional.empty();
+
         return exames.values().stream()
-                .filter(exame -> exame.getPacienteId().equals(pacienteId))
-                .filter(exame -> exame.getDataHora().equals(dataHora))
+                .filter(exame -> exame.getPacienteId() != null && exame.getPacienteId().equals(pacienteId))
+                .filter(exame -> exame.getDataHora() != null && exame.getDataHora().equals(dataHora))
+                // Ignorar exames cancelados
+                .filter(exame -> exame.getStatus() != StatusExame.CANCELADO)
+                .filter(exame -> idExcluido == null || !exame.getId().equals(idExcluido))
+                .findFirst();
+    }
+
+    @Override
+    public Optional<Exame> obterAgendamentoConflitantePorMedico(Long medicoId, LocalDateTime dataHora, ExameId idExcluido) {
+        if (medicoId == null || dataHora == null) {
+            return Optional.empty();
+        }
+
+        return exames.values().stream()
+                .filter(exame -> exame.getMedicoId() != null && exame.getMedicoId().equals(medicoId))
+                .filter(exame -> exame.getDataHora() != null && exame.getDataHora().equals(dataHora))
+                // Ignorar exames cancelados
+                .filter(exame -> exame.getStatus() != StatusExame.CANCELADO)
                 .filter(exame -> idExcluido == null || !exame.getId().equals(idExcluido))
                 .findFirst();
     }
@@ -59,11 +82,7 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
         if (medicoId == null) return false;
 
         return exames.values().stream()
-                .anyMatch(exame ->
-                        exame.getMedicoId() != null &&
-                                // Conversão necessária: Exame usa Long, mas o parâmetro veio como Integer
-                                exame.getMedicoId().equals(medicoId.longValue())
-                );
+                .anyMatch(exame -> exame.getMedicoId() != null && exame.getMedicoId().equals(medicoId.longValue()));
     }
 
     public void limpar() {

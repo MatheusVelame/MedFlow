@@ -73,6 +73,19 @@ export interface ExameResponse {
   status: string;
 }
 
+// Novo: tipo de histórico retornado pelo endpoint de detalhe
+export interface HistoricoEntradaResponse {
+  dataHora: string; // ISO date-time
+  acao: string;
+  descricao: string;
+  responsavelId: number;
+}
+
+// Response detalhada de Exame (inclui histórico)
+export interface ExameDetalheResponse extends ExameResponse {
+  historico: HistoricoEntradaResponse[];
+}
+
 export interface AgendamentoExameRequest {
   pacienteId: number;
   medicoId: number;

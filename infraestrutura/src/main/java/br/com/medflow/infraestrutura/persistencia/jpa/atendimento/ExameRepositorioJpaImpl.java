@@ -50,6 +50,13 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
         var conflitos = jpaRepository.encontrarConflitos(pacienteId, dataHora, idIgnorar);
         return conflitos.stream().findFirst().map(this::paraDominio);
     }
+
+    @Override
+    public Optional<Exame> obterAgendamentoConflitantePorMedico(Long medicoId, java.time.LocalDateTime dataHora, ExameId idExcluido) {
+        Long idIgnorar = (idExcluido != null) ? idExcluido.getValor() : null;
+        var conflitos = jpaRepository.encontrarConflitosPorMedico(medicoId, dataHora, idIgnorar);
+        return conflitos.stream().findFirst().map(this::paraDominio);
+    }
     
     @Override
     public boolean existsByPacienteId(Long pacienteId) {
@@ -83,6 +90,11 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
             dominio.getStatus(),
             null // responsavelId será calculado a partir do histórico abaixo
         );
+
+        // Garantir status padrão para novos agendamentos: AGENDADO
+        if (exameJpa.getStatus() == null) {
+            exameJpa.setStatus(br.com.medflow.dominio.atendimento.exames.StatusExame.AGENDADO);
+        }
 
         // Mapear histórico: converter cada entrada de domínio em JPA e associar ao exameJpa
         var historicoDominio = dominio.getHistorico();

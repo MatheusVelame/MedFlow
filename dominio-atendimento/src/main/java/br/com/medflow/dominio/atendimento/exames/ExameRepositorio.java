@@ -39,6 +39,8 @@ public interface ExameRepositorio {
      * @return Opcional contendo o Exame conflitante, se encontrado.
      */
     Optional<Exame> obterAgendamentoConflitante(Long pacienteId, LocalDateTime dataHora, ExameId idExcluido);
+
+    Optional<Exame> obterAgendamentoConflitantePorMedico(Long medicoId, LocalDateTime dataHora, ExameId idExcluido);
     
     boolean existsByPacienteId(Long pacienteId);
 
