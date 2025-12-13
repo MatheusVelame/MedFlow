@@ -1,6 +1,7 @@
 package br.com.medflow.infraestrutura.persistencia.jpa.referencia;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +14,7 @@ public class HistoricoRepositorioImpl implements HistoricoRepositorio {
     private final EspecialidadeHistoricoJpaRepository jpaRepository;
     private final ModelMapper mapper;
 
-    public HistoricoRepositorioImpl(EspecialidadeHistoricoJpaRepository jpaRepository, ModelMapper mapper) {
+    public HistoricoRepositorioImpl(EspecialidadeHistoricoJpaRepository jpaRepository, @Qualifier("jpaMapeador") ModelMapper mapper) {
         this.jpaRepository = jpaRepository;
         this.mapper = mapper;
     }
