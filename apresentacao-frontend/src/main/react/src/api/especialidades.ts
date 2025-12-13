@@ -19,4 +19,7 @@ export const especialidadesApi = {
 
   excluir: async (id: number): Promise<void> =>
     request<void>(api.delete(`/api/referencia/especialidades/${id}`)),
+
+  historico: async (id: number): Promise<any[]> =>
+    request<any[]>(api.get(`/referencia/especialidades/${id}/historico`)),
 };
