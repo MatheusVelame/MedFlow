@@ -32,7 +32,7 @@ const formSchema = z.object({
 interface EspecialidadeFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: z.infer<typeof formSchema>) => void;
+  onSave: (data: z.infer<typeof formSchema>) => Promise<any> | void;
   initialData?: Partial<z.infer<typeof formSchema>> | null;
 }
 
@@ -58,9 +58,22 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, open]);
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    onSave(data);
-    form.reset();
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    try {
+      await onSave(data as any);
+      form.reset();
+      onOpenChange(false);
+    } catch (e: any) {
+      const payloadErr = e?.response?.data;
+      if (payloadErr?.errors && typeof payloadErr.errors === 'object') {
+        Object.entries(payloadErr.errors).forEach(([field, message]) => {
+          try { form.setError(field as any, { type: 'server', message: String(message) }); } catch {}
+        });
+        return;
+      }
+      // fallback: don't swallow error — caller may handle toast
+      throw e;
+    }
   };
 
   return (

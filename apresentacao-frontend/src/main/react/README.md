@@ -36,6 +36,76 @@ npm i
 npm run dev
 ```
 
+## Local development with backend on localhost:8080
+
+If your backend runs on http://localhost:8080 and the frontend on a different port (example: 8090), set the API base URL using an env file. Copy the example file and edit if needed:
+
+```bash
+cp .env.local.example .env.local
+# then (Windows PowerShell)
+$env:PORT=8090
+npm run dev -- --port 8090
+```
+
+The project reads `VITE_API_BASE_URL` in `src/api/apiClient.ts`.
+
+If you see the Spring Whitelabel Error Page at http://localhost:8080/, that's normal when the root path has no mapping. Test a real API path to validate the API, for example:
+
+```bash
+curl http://localhost:8080/backend/tipos-exames
+```
+
+If the API returns JSON, the backend is working even if `/` shows the Whitelabel 404.
+
+### CORS
+When frontend and backend run on different origins (different ports count as different origins), the browser enforces CORS. If you get CORS errors in the browser console, add one of the following to the Spring backend:
+
+Option A — per controller (quick):
+
+```java
+@CrossOrigin(origins = "http://localhost:8090")
+@RestController
+@RequestMapping("/backend/exames")
+public class ExameController { ... }
+```
+
+Option B — global config (recommended for dev):
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+	@Override
+	public void addCorsMappings(CorsRegistry registry) {
+		registry.addMapping("/**")
+						.allowedOrigins("http://localhost:8090")
+						.allowedMethods("GET","POST","PUT","PATCH","DELETE","OPTIONS")
+						.allowCredentials(true);
+	}
+}
+```
+
+### Mapping backend validation errors into forms
+When the backend returns HTTP 400 or 409 with a payload containing validation errors, it's good UX to show those errors next to the corresponding input. The frontend uses `react-hook-form`; implement something like this in your mutation `onError` handler:
+
+```ts
+// exemplo simplificado dentro de um onError
+onError: (error) => {
+	const payload = error.response?.data;
+	// payload.errors expected as { fieldName: "mensagem" }
+	if (payload?.errors) {
+		Object.entries(payload.errors).forEach(([field, message]) => {
+			form.setError(field as any, { type: 'server', message: String(message) });
+		});
+		return;
+	}
+	// fallback: toast generic
+	toast.error(payload?.message || 'Erro ao processar a requisição');
+}
+```
+
+Add this pattern to the `onError` of mutations used by `ExameForm` and `EspecialidadeForm` to show server-side validation messages inline.
+
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

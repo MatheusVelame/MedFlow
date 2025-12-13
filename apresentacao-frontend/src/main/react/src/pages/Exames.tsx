@@ -33,7 +33,7 @@ import { ExameForm } from "@/components/ExameForm";
 import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList } from "@/hooks/useExames";
 
 export default function Exames() {
-  const { isGestor } = useAuth();
+  const { isGestor, isMedico } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
   
@@ -167,20 +167,22 @@ export default function Exames() {
     setIsExameFormOpen(true);
   };
 
-  const handleSaveExame = async (data: any) => {
-    try {
-      // o backend espera dataHora como LocalDateTime (YYYY-MM-DDTHH:mm:ss)
-      if (editingExame) {
-        await atualizarExame.mutateAsync({ id: editingExame.id, payload: { medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: data.dataHora, responsavelId: Number(data.responsavelId) } });
-        toast({ title: 'Exame atualizado', description: 'Agendamento atualizado.' });
-      } else {
-        await agendar.mutateAsync({ pacienteId: Number(data.pacienteId), medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: data.dataHora, responsavelId: Number(data.responsavelId) });
-        toast({ title: 'Exame agendado', description: 'Agendamento criado com sucesso.' });
-      }
-      setIsExameFormOpen(false);
-      setEditingExame(null);
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e?.message ?? 'Erro ao salvar exame' });
+  const handleSaveExame = (data: any) => {
+    // o backend espera dataHora como LocalDateTime (YYYY-MM-DDTHH:mm:ss)
+    const ensureSeconds = (v: string) => {
+      if (!v) return v;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return `${v}:00`;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(v)) return v;
+      return v.length >= 19 ? v.slice(0, 19) : `${v}:00`;
+    };
+
+    const dataHoraComSegundos = ensureSeconds(data.dataHora);
+
+    if (editingExame) {
+      return atualizarExame.mutateAsync({ id: editingExame.id, payload: { medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: dataHoraComSegundos, responsavelId: Number(data.responsavelId) } })
+        .then((res) => { setEditingExame(null); return res; });
+    } else {
+      return agendar.mutateAsync({ pacienteId: Number(data.pacienteId), medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: dataHoraComSegundos, responsavelId: Number(data.responsavelId) });
     }
   };
 
@@ -256,10 +258,12 @@ export default function Exames() {
           <p className="text-muted-foreground">Gerencie os tipos de exames disponíveis na clínica</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleOpenAgendar} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Agendar Exame
-          </Button>
+          {(isGestor || isMedico) && (
+            <Button onClick={handleOpenAgendar} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Agendar Exame
+            </Button>
+          )}
         </div>
       </div>
 

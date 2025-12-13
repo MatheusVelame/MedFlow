@@ -16,6 +16,7 @@ import {
 import { EspecialidadeForm } from "@/components/EspecialidadeForm";
 import { toast } from "@/hooks/use-toast";
 import { useEspecialidades, useCriarEspecialidade, useAtualizarEspecialidade, useExcluirEspecialidade } from "@/hooks/useEspecialidades";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Especialidade {
   id: number;
@@ -30,25 +31,20 @@ export default function Especialidades() {
   const criar = useCriarEspecialidade();
   const atualizar = useAtualizarEspecialidade();
   const excluir = useExcluirEspecialidade();
+  const { isGestor, isMedico } = useAuth();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEspecialidade, setEditingEspecialidade] = useState<Especialidade | null>(null);
   const [especialidadeToDelete, setEspecialidadeToDelete] = useState<number | null>(null);
 
-  const handleSave = async (data: any) => {
-    try {
-      if (editingEspecialidade) {
-        await atualizar.mutateAsync({ id: editingEspecialidade.id, payload: { novoNome: data.nome, novaDescricao: data.descricao } });
-        toast({ title: "Especialidade atualizada", description: "As informações foram atualizadas com sucesso." });
-      } else {
-        await criar.mutateAsync({ nome: data.nome, descricao: data.descricao });
-        toast({ title: "Especialidade cadastrada", description: "Nova especialidade foi adicionada com sucesso." });
-      }
-      setIsFormOpen(false);
-      setEditingEspecialidade(null);
-    } catch (e: any) {
-      toast({ title: "Erro", description: e?.message ?? "Erro ao salvar especialidade" });
+  const handleSave = (data: any) => {
+    if (editingEspecialidade) {
+      return atualizar.mutateAsync({ id: editingEspecialidade.id, payload: { novoNome: data.nome, novaDescricao: data.descricao } })
+        .then(() => { setIsFormOpen(false); setEditingEspecialidade(null); });
     }
+
+    return criar.mutateAsync({ nome: data.nome, descricao: data.descricao })
+      .then(() => { setIsFormOpen(false); });
   };
 
   const handleEdit = (especialidade: Especialidade) => {
@@ -73,10 +69,12 @@ export default function Especialidades() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Especialidades Médicas</h1>
           <p className="text-muted-foreground">Gerencie as especialidades disponíveis na clínica</p>
         </div>
-        <Button onClick={() => { setIsFormOpen(true); setEditingEspecialidade(null); }} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nova Especialidade
-        </Button>
+        {isGestor && (
+          <Button onClick={() => { setIsFormOpen(true); setEditingEspecialidade(null); }} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nova Especialidade
+          </Button>
+        )}
       </div>
 
       {isLoading && <div>Carregando especialidades...</div>}
@@ -109,22 +107,26 @@ export default function Especialidades() {
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => handleEdit(especialidade as Especialidade)}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEspecialidadeToDelete(especialidade.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {(isGestor || isMedico) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(especialidade as Especialidade)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                )}
+                {isGestor && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEspecialidadeToDelete(especialidade.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

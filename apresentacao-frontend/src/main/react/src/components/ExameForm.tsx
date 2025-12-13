@@ -26,12 +26,12 @@ type ExameFormData = z.infer<typeof exameSchema>;
 interface ExameFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: ExameFormData) => void;
+  onSave: (data: ExameFormData) => Promise<any> | void;
   initialData?: Partial<ExameFormData> | null;
 }
 
 export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameFormProps) {
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ExameFormData>({
+  const { register, handleSubmit, reset, setValue, setError, formState: { errors } } = useForm<ExameFormData>({
     resolver: zodResolver(exameSchema),
     defaultValues: {
       prioridade: "normal",
@@ -80,10 +80,37 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
     }
   }, [initialData, setValue]);
 
-  const onSubmit = (data: ExameFormData) => {
-    onSave(data);
-    toast.success(initialData ? "Exame atualizado com sucesso!" : "Exame solicitado com sucesso!");
-    onOpenChange(false);
+  const onSubmit = async (data: ExameFormData) => {
+    // Garantir que dataHora esteja no formato YYYY-MM-DDTHH:mm:ss (sem timezone)
+    const formatDataHora = (v: string) => {
+      if (!v) return v;
+      // datetime-local typically returns YYYY-MM-DDTHH:mm
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return `${v}:00`;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(v)) return v;
+      // fallback: try to truncate or append seconds
+      return v.length >= 19 ? v.slice(0, 19) : `${v}:00`;
+    };
+
+    const payload: ExameFormData = {
+      ...data,
+      dataHora: formatDataHora(data.dataHora),
+    };
+    try {
+      await onSave(payload);
+      toast.success(initialData ? "Exame atualizado com sucesso!" : "Exame solicitado com sucesso!");
+      reset();
+      onOpenChange(false);
+    } catch (e: any) {
+      const payloadErr = e?.response?.data;
+      if (payloadErr?.errors && typeof payloadErr.errors === 'object') {
+        Object.entries(payloadErr.errors).forEach(([field, message]) => {
+          try { setError(field as any, { type: 'server', message: String(message) }); } catch { /* ignore */ }
+        });
+        return;
+      }
+      toast.error(payloadErr?.message ?? e?.message ?? 'Erro ao salvar exame');
+      throw e;
+    }
   };
 
   return (
