@@ -37,33 +37,50 @@ import { useListarPacientes } from "@/api/usePacientesApi";
 // Novo: Funcionários (médicos)
 import { useListarFuncionarios } from "@/api/useFuncionariosApi";
 import { examesApi } from "@/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Exames() {
   const { isGestor, isMedico } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
-  // Novo: busca por CPF (validação: 11 dígitos) e filtro por intervalo de datas
-  const [cpfSearch, setCpfSearch] = useState("");
-  const [cpfValid, setCpfValid] = useState(true);
   const [cpfError, setCpfError] = useState<string | null>(null);
 
+  // Dates
   const [startDate, setStartDate] = useState<string | null>(null); // YYYY-MM-DD
   const [endDate, setEndDate] = useState<string | null>(null);     // YYYY-MM-DD
 
-  useEffect(() => {
-    // validação simples: apenas dígitos; se vazio => nenhum filtro
-    const digits = (cpfSearch || "").replace(/\D/g, "");
-    if (digits.length === 0) {
-      setCpfValid(true);
-      setCpfError(null);
-    } else if (digits.length === 11) {
-      setCpfValid(true);
-      setCpfError(null);
+  // CPF helper: detect if input is a CPF candidate (only digits, dots, hyphens, spaces)
+  const isCpfCandidate = (v: string) => /^[\d.\-\s]+$/.test(v || "");
+  const onlyDigits = (v: string) => (v || "").replace(/\D/g, "");
+
+  // format CPF when the user types digits/punctuation only
+  const formatCpf = (raw: string) => {
+    const digits = onlyDigits(raw).slice(0, 11);
+    const p1 = digits.slice(0, 3);
+    const p2 = digits.slice(3, 6);
+    const p3 = digits.slice(6, 9);
+    const p4 = digits.slice(9, 11);
+    let out = p1;
+    if (p2) out += '.' + p2;
+    if (p3) out += '.' + p3;
+    if (p4) out += '-' + p4;
+    return out;
+  };
+
+  const handleSearchChange = (value: string) => {
+    if (isCpfCandidate(value)) {
+      setSearchTerm(formatCpf(value));
     } else {
-      setCpfValid(false);
-      setCpfError("CPF deve conter 11 dígitos");
+      setSearchTerm(value);
     }
-  }, [cpfSearch]);
+  };
+
+  useEffect(() => {
+    // When the search looks like a CPF candidate, validate digit count
+    // We intentionally do not block results for partial CPFs. Keep UI free of blocking errors.
+    // Clear any CPF error so the search is permissive (partial CPF will match prefixes).
+    setCpfError(null);
+  }, [searchTerm]);
 
   // ========================================================================
   // INTEGRAÇÃO COM A API (TIPOS DE EXAME)
@@ -538,16 +555,22 @@ export default function Exames() {
       default: matchesStatus = true;
     }
 
-    // Filtro por CPF: aplica somente se o CPF informado for válido (11 dígitos)
-    const cpfDigits = (cpfSearch || "").replace(/\D/g, "");
-    if (cpfDigits.length > 0) {
-      if (!cpfValid) return false; // inválido => não retorna resultados (ou poderia ignorar o filtro)
-      // procurar CPF do paciente associado
-      const pacienteObj = pacientes.find((p: any) => Number(p.id) === Number(exame.pacienteId));
-      const pacienteCpf = (pacienteObj && (pacienteObj.cpf || pacienteObj.CPF)) ? String(pacienteObj.cpf || pacienteObj.CPF).replace(/\D/g, "") : "";
-      if (pacienteCpf !== cpfDigits) return false;
+    // Se o usuário digitou algo que parece um CPF (apenas dígitos/pontuação), fazemos prefix matching
+    // Ex.: ao digitar '12' matcheamos pacientes cujo CPF começa com '12'. Se não houver paciente
+    // cujo CPF começa com os dígitos fornecidos, ignoramos a filtragem por CPF (fallback para busca por texto).
+    const searchIsCpf = isCpfCandidate(searchTerm);
+    const cpfDigits = onlyDigits(searchTerm);
+    if (searchIsCpf && cpfDigits.length > 0) {
+      const matchingPatientIds = pacientes
+        .filter((p: any) => ((p.cpf || '').replace(/\D/g, '')).startsWith(cpfDigits))
+        .map((p: any) => String(p.id));
+      if (matchingPatientIds.length > 0) {
+        // if we have matching patients by CPF prefix, only include exams for those patients
+        if (!matchingPatientIds.includes(String(exame.pacienteId))) return false;
+      }
+      // else: no patient matches prefix -> ignore CPF and continue with normal text filters
     }
-    
+
     // Filtro por intervalo de datas (inclusive). Se startDate/endDate não preenchidos, ignora.
     if (startDate || endDate) {
       if (!exameDate) return false;
@@ -695,38 +718,27 @@ export default function Exames() {
               <div className="flex flex-col gap-3 w-full">
 
                 {/* Linha 1 — Busca principal */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Input
-                    className="w-full"
-                    placeholder="Pesquisar por paciente, tipo ou médico"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-
-                  <div>
-                    <Input
-                      className="w-full"
-                      placeholder="CPF (11 dígitos)"
-                      value={cpfSearch}
-                      onChange={(e) => setCpfSearch(e.target.value)}
-                    />
-                    {!cpfValid && cpfError && (
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                  {/* Busca larga (ocupa a maior parte em telas >= sm) */}
+                  <div className="sm:col-span-9 flex-1 pr-4 min-w-0">
+                    <Input className="w-full" placeholder="Pesquisar por paciente, médico ou tipo de exame" value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} />
+                    {cpfError && (
                       <p className="text-sm text-destructive mt-1">{cpfError}</p>
                     )}
                   </div>
 
-                  <div className="flex gap-2">
+                  {/* Datas alinhadas à direita */}
+                  <div className="sm:col-span-3 flex justify-end gap-2">
                     <input
                       type="date"
-                      className="border rounded-md px-2 py-1 w-full"
+                      className="border rounded-md px-2 py-1 w-full sm:w-40"
                       value={startDate || ''}
                       onChange={(e) => setStartDate(e.target.value || null)}
                       aria-label="Data início"
                     />
-
                     <input
                       type="date"
-                      className="border rounded-md px-2 py-1 w-full"
+                      className="border rounded-md px-2 py-1 w-full sm:w-40"
                       value={endDate || ''}
                       onChange={(e) => setEndDate(e.target.value || null)}
                       aria-label="Data fim"
@@ -741,7 +753,7 @@ export default function Exames() {
                   <Button variant={filterStatus === 'resultado pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado pendente')}>Pendentes</Button>
                   <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultados</Button>
                   <Button variant={filterStatus === 'historico' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('historico')}>Histórico</Button>
-                  <Button variant="outline" size="sm" onClick={() => { setSearchTerm(''); setCpfSearch(''); setStartDate(null); setEndDate(null); setFilterStatus('todos'); }}>
+                  <Button variant="outline" size="sm" onClick={() => { setSearchTerm(''); setStartDate(null); setEndDate(null); setFilterStatus('todos'); }}>
                     Limpar filtros
                   </Button>
                 </div>

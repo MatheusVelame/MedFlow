@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Plus, Search, Phone, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PatientForm } from "@/components/PatientForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSearchParams } from 'react-router-dom';
 // Importamos o novo hook useBuscarPacientePorId
 import { 
   useListarPacientes, 
@@ -19,6 +20,8 @@ import {
 
 export default function Pacientes() {
   const { isMedico } = useAuth();
+  const { isGestor } = useAuth();
+  const [searchParams] = useSearchParams();
   
   // Estado local
   const [searchTerm, setSearchTerm] = useState("");
@@ -110,9 +113,32 @@ export default function Pacientes() {
   };
 
   const filteredPatients = patients.filter(patient =>
-    patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.cpf?.includes(searchTerm)
+    patient.name?.toLowerCase().includes((searchTerm || "").toLowerCase()) ||
+    (patient.cpf || "").replace(/\D/g, "").includes((searchTerm || "").replace(/\D/g, ""))
   );
+  
+  // Se houver query param 'q' (CPF), preenche o searchTerm e tenta selecionar o paciente
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (!q) return;
+    const digits = String(q).replace(/\D/g, '');
+    if (!digits) return;
+    // preenche o campo de busca com o CPF (digits) — isso fará o filtro
+    setSearchTerm(digits);
+    // aguarda pacientes carregarem e seleciona o paciente correspondente
+    const trySelect = () => {
+      const match = patients.find(p => (p.cpf || '').replace(/\D/g, '') === digits);
+      if (match) {
+        setSelectedPatientSummary(match);
+        // abrir o formulário de edição automaticamente se o usuário for gestor/atendente (não médico)
+        if (!isMedico) setIsFormOpen(true);
+      }
+    };
+    // tentar imediatamente e também depois de um pequeno timeout caso a lista ainda esteja carregando
+    trySelect();
+    const tid = setTimeout(trySelect, 300);
+    return () => clearTimeout(tid);
+  }, [searchParams, patients, isMedico]);
 
   // COMBINAÇÃO DE DADOS:
   // Se 'pacienteDetalhado' (da busca nova) existir, usamos ele (tem endereço).
