@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EspecialidadeForm } from "@/components/EspecialidadeForm";
 import { toast } from "@/hooks/use-toast";
-import { useEspecialidades, useCriarEspecialidade, useAtualizarEspecialidade, useExcluirEspecialidade, useHistoricoEspecialidade } from "@/hooks/useEspecialidades";
+import { useEspecialidades, useCriarEspecialidade, useAtualizarEspecialidade, useExcluirEspecialidade, useHistoricoEspecialidade, useToggleStatusEspecialidade } from "@/hooks/useEspecialidades";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Especialidade {
@@ -32,6 +32,7 @@ export default function Especialidades() {
   const criar = useCriarEspecialidade();
   const atualizar = useAtualizarEspecialidade();
   const excluir = useExcluirEspecialidade();
+  const toggleStatus = useToggleStatusEspecialidade();
   const { isGestor, isMedico } = useAuth();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -75,6 +76,17 @@ export default function Especialidades() {
       toast({ title: "Especialidade removida", description: "A especialidade foi removida com sucesso." });
     } catch (e: any) {
       toast({ title: "Erro ao remover", description: e?.message ?? "Não foi possível remover a especialidade" });
+    }
+  };
+
+  // New: toggle status handler
+  const handleToggleStatus = async (id: number) => {
+    try {
+      const responsavelId = Number((window as any)._currentUserId ?? 1);
+      await toggleStatus.mutateAsync({ id, payload: { responsavelId } });
+      toast({ title: 'Status atualizado', description: 'Status da especialidade atualizado.' });
+    } catch (err: any) {
+      toast({ title: 'Erro ao alterar status', description: err?.message ?? 'Não foi possível alterar o status', variant: 'destructive' });
     }
   };
 
@@ -231,6 +243,18 @@ export default function Especialidades() {
                     onClick={() => setHistoricoOpenFor(especialidade.id)}
                   >
                     <List className="h-4 w-4" />
+                  </Button>
+                )}
+                {/* New: toggle status button visible to gestor */}
+                {isGestor && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleToggleStatus(especialidade.id)}
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    { (especialidade.status === "ATIVA" || especialidade.status === "Ativa") ? "Inativar" : "Ativar" }
                   </Button>
                 )}
               </div>

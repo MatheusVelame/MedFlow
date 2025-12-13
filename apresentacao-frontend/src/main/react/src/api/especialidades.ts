@@ -22,4 +22,8 @@ export const especialidadesApi = {
 
   historico: async (id: number): Promise<any[]> =>
     request<any[]>(api.get(`/referencia/especialidades/${id}/historico`)),
+
+  // New: toggle status (activate / inactivate)
+  toggleStatus: async (id: number, payload: { responsavelId?: number }) =>
+    request(api.put(`/api/referencia/especialidades/${id}/inativar`, payload)),
 };
