@@ -2,6 +2,7 @@ package br.com.medflow.apresentacao.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
 import br.com.medflow.dominio.atendimento.exames.ExameServicoImpl;
@@ -9,6 +10,11 @@ import br.com.medflow.dominio.atendimento.exames.ExameServicoProxy;
 import br.com.medflow.dominio.atendimento.exames.IExameServico;
 import br.com.medflow.dominio.atendimento.exames.VerificadorExternoServico;
 import br.com.medflow.dominio.evento.EventoBarramento;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 public class AtendimentoConfig {
@@ -63,20 +69,76 @@ public class AtendimentoConfig {
         };
     }
 
-    // Bean stub para VerificadorExternoServico
+    // Bean stub para VerificadorExternoServico (configurável via properties)
     @Bean
-    public VerificadorExternoServico verificadorExternoServico() {
+    public VerificadorExternoServico verificadorExternoServico(Environment env) {
+        // Leitura de propriedades simples:
+        // medflow.stub.pacientes.invalid = csv de ids (ex: 999,1000)
+        // medflow.stub.medicos.inativos = csv
+        // medflow.stub.tipos.invalid = csv
+        // medflow.stub.medicos.indisponiveis = csv (medicoId sempre indisponível)
+
+        String pacientesInvalidos = env.getProperty("medflow.stub.pacientes.invalid", "");
+        String medicosInativos = env.getProperty("medflow.stub.medicos.inativos", "");
+        String tiposInvalidos = env.getProperty("medflow.stub.tipos.invalid", "");
+        String medicosIndisponiveis = env.getProperty("medflow.stub.medicos.indisponiveis", "");
+
+        Set<Long> pacientesInvalidosSet = parseLongSet(pacientesInvalidos);
+        Set<Long> medicosInativosSet = parseLongSet(medicosInativos);
+        Set<String> tiposInvalidosSet = parseStringSet(tiposInvalidos);
+        Set<Long> medicosIndisponiveisSet = parseLongSet(medicosIndisponiveis);
+
         return new VerificadorExternoServico() {
             @Override
-            public boolean pacienteEstaCadastrado(Long pacienteId) { return true; }
+            public boolean pacienteEstaCadastrado(Long pacienteId) {
+                if (pacienteId == null) return false;
+                return !pacientesInvalidosSet.contains(pacienteId);
+            }
+
             @Override
-            public boolean medicoEstaCadastrado(Long medicoId) { return true; }
+            public boolean medicoEstaCadastrado(Long medicoId) {
+                if (medicoId == null) return false;
+                // Se estiver inativo ou indisponível, consideramos cadastrado (se quiser testar cadastro verifique medicosInativosSet)
+                return true;
+            }
+
             @Override
-            public boolean medicoEstaAtivo(Long medicoId) { return true; }
+            public boolean medicoEstaAtivo(Long medicoId) {
+                if (medicoId == null) return false;
+                return !medicosInativosSet.contains(medicoId);
+            }
+
             @Override
-            public boolean tipoExameEstaCadastrado(String tipoExame) { return true; }
+            public boolean tipoExameEstaCadastrado(String tipoExame) {
+                if (tipoExame == null) return false;
+                return !tiposInvalidosSet.contains(tipoExame.toLowerCase());
+            }
+
             @Override
-            public boolean medicoEstaDisponivel(Long medicoId, java.time.LocalDateTime dataHora) { return true; }
+            public boolean medicoEstaDisponivel(Long medicoId, java.time.LocalDateTime dataHora) {
+                if (medicoId == null || dataHora == null) return false;
+                // Simples: se o médico estiver na lista de indisponíveis, retorna false para qualquer horário
+                return !medicosIndisponiveisSet.contains(medicoId);
+            }
         };
     }
+
+    private static Set<Long> parseLongSet(String csv) {
+        if (csv == null || csv.trim().isEmpty()) return new HashSet<>();
+        return Arrays.stream(csv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<String> parseStringSet(String csv) {
+        if (csv == null || csv.trim().isEmpty()) return new HashSet<>();
+        return Arrays.stream(csv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+    }
+
 }

@@ -4,6 +4,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +45,7 @@ public class ExameControlador {
     }
 
     @PostMapping
-    public ResponseEntity<ExameResponse> agendar(@RequestBody AgendamentoExameRequest request,
+    public ResponseEntity<ExameResponse> agendar(@Valid @RequestBody AgendamentoExameRequest request,
                                                  UriComponentsBuilder uriBuilder) {
         
         Exame exameCriado = exameServico.agendarExame(
@@ -60,7 +62,7 @@ public class ExameControlador {
 
     @PutMapping("/{id}")
     public ResponseEntity<ExameResponse> atualizar(@PathVariable Long id,
-                                                   @RequestBody AtualizacaoExameRequest request) {
+                                                   @Valid @RequestBody AtualizacaoExameRequest request) {
         
         Exame exameAtualizado = exameServico.atualizarAgendamento(
             new ExameId(id),
@@ -79,7 +81,7 @@ public class ExameControlador {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> tentarExcluir(@PathVariable Long id, 
-                                              @RequestParam Long responsavelId) {
+                                              @RequestParam(name = "responsavelId", required = true) Long responsavelId) {
         
         exameServico.tentarExcluirAgendamento(
             new ExameId(id), 
@@ -94,7 +96,7 @@ public class ExameControlador {
      */
     @PatchMapping("/{id}/cancelamento")
     public ResponseEntity<ExameResponse> cancelar(@PathVariable Long id,
-                                                  @RequestBody CancelamentoExameRequest request) {
+                                                  @Valid @RequestBody CancelamentoExameRequest request) {
         
         Exame exameCancelado = exameServico.cancelarAgendamento(
             new ExameId(id),
