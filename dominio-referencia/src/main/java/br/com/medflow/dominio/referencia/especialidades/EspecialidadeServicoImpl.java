@@ -11,10 +11,17 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
 
     private final EspecialidadeRepositorio especialidadeRepositorio;
     private final MedicoRepositorio medicoRepositorio;
+    private final HistoricoRepositorio historicoRepositorio;
 
     public EspecialidadeServicoImpl(EspecialidadeRepositorio especialidadeRepositorio, MedicoRepositorio medicoRepositorio) {
+        this(especialidadeRepositorio, medicoRepositorio, null);
+    }
+
+    // novo construtor para injeção do historico (infraestrutura)
+    public EspecialidadeServicoImpl(EspecialidadeRepositorio especialidadeRepositorio, MedicoRepositorio medicoRepositorio, HistoricoRepositorio historicoRepositorio) {
         this.especialidadeRepositorio = especialidadeRepositorio;
         this.medicoRepositorio = medicoRepositorio;
+        this.historicoRepositorio = historicoRepositorio;
     }
 
     private String normalize(String s) {
@@ -46,7 +53,10 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
         Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nomeOriginal)
                 .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada."));
 
-        if (!nomeOriginal.equals(novoNome) && medicoRepositorio.contarMedicosAtivosVinculados(nomeOriginal) > 0) {
+        // RN-01: Se houver médicos ATIVOS vinculados, bloquear alteração de nome
+        boolean temMedicosAtivos = medicoRepositorio.contarMedicosAtivosVinculados(nomeOriginal) > 0;
+
+        if (!nomeOriginal.equals(novoNome) && temMedicosAtivos) {
             throw new RegraNegocioException("Não é possível alterar o nome: existem médicos ativos vinculados");
         }
 
@@ -55,16 +65,29 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
                 throw new RegraNegocioException("Já existe outra especialidade com este nome", Map.of("nome", "Já existe outra especialidade com este nome"));
             }
 
-            // Em vez de remover e recriar (o que pode causar violação de FK/PK), apenas atualizamos o próprio aggregate e salvamos.
-            // Isso preserva o id e evita problemas com referências por FK.
+            String antigo = especialidade.getNome();
             especialidade.alterarNome(novoNome);
+
+            especialidadeRepositorio.salvar(especialidade);
+
+            // RN-02: registrar historico de alteração de nome
+            if (historicoRepositorio != null) {
+                EspecialidadeHistorico h = new EspecialidadeHistorico(especialidade.getId(), "nome", antigo, novoNome, TipoOperacaoHistorico.UPDATE);
+                historicoRepositorio.salvar(h);
+            }
         }
 
         if (novaDescricao != null) {
+            String antigoDesc = especialidade.getDescricao();
             especialidade.alterarDescricao(novaDescricao);
+            especialidadeRepositorio.salvar(especialidade);
+
+            if (historicoRepositorio != null) {
+                EspecialidadeHistorico h = new EspecialidadeHistorico(especialidade.getId(), "descricao", antigoDesc, novaDescricao, TipoOperacaoHistorico.UPDATE);
+                historicoRepositorio.salvar(h);
+            }
         }
 
-        especialidadeRepositorio.salvar(especialidade);
         return especialidade;
     }
 
@@ -84,15 +107,28 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
         Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nome)
                 .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada para exclusão."));
 
+        // RN-03: bloquear exclusão se existirem médicos ATIVOS vinculados
         if (medicoRepositorio.contarMedicosAtivosVinculados(nome) > 0) {
             throw new RegraNegocioException("Não é possível excluir: existem médicos ativos vinculados");
         }
 
+        // RN-04 e RN-05: Se já teve vínculo histórico (possuiVinculoHistorico == true), não excluir fisicamente, apenas inativar
         if (especialidade.isPossuiVinculoHistorico()) {
+            String antigo = especialidade.getStatus() == null ? null : especialidade.getStatus().name();
             especialidade.inativar();
             especialidadeRepositorio.salvar(especialidade);
+
+            if (historicoRepositorio != null) {
+                EspecialidadeHistorico h = new EspecialidadeHistorico(especialidade.getId(), "status", antigo, especialidade.getStatus().name(), TipoOperacaoHistorico.INATIVACAO);
+                historicoRepositorio.salvar(h);
+            }
         } else {
+            // RN-04: Permitir exclusão física apenas se nunca teve vínculo historico
             especialidadeRepositorio.remover(especialidade);
+            if (historicoRepositorio != null) {
+                EspecialidadeHistorico h = new EspecialidadeHistorico(especialidade.getId(), "exclusao", null, null, TipoOperacaoHistorico.DELETE_FISICO);
+                historicoRepositorio.salvar(h);
+            }
         }
     }
 
@@ -107,12 +143,19 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
         Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nomeEspecialidade)
                 .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada para atribuição."));
 
+        // RN-07: Especialidades INATIVAS não podem ser atribuídas a novos médicos
         if (especialidade.getStatus() == StatusEspecialidade.INATIVA) {
             throw new RegraNegocioException("Não é possível atribuir a médicos: a especialidade está inativa");
         }
 
+        // marca vínculo histórico e salva
         especialidade.registrarVinculoHistorico();
         especialidadeRepositorio.salvar(especialidade);
+
+        if (historicoRepositorio != null) {
+            EspecialidadeHistorico h = new EspecialidadeHistorico(especialidade.getId(), "vinculo", "false", "true", TipoOperacaoHistorico.ATRIBUICAO);
+            historicoRepositorio.salvar(h);
+        }
     }
 
     // ========== MÉTODOS PARA A CAMADA DE APRESENTAÇÃO ==========

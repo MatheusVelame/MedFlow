@@ -8,14 +8,15 @@ import br.com.medflow.dominio.referencia.especialidades.EspecialidadeServicoImpl
 import br.com.medflow.dominio.referencia.especialidades.IEspecialidadeServico;
 import br.com.medflow.dominio.referencia.especialidades.EspecialidadeServicoProxy; 
 import br.com.medflow.dominio.referencia.especialidades.MedicoRepositorio;
+import br.com.medflow.dominio.referencia.especialidades.HistoricoRepositorio;
 
 @Configuration
 public class ReferenciaConfig {
 
     @Bean
-    public IEspecialidadeServico especialidadeServico(EspecialidadeRepositorio repositorio, MedicoRepositorio medicoRepositorio) {
+    public IEspecialidadeServico especialidadeServico(EspecialidadeRepositorio repositorio, MedicoRepositorio medicoRepositorio, HistoricoRepositorio historicoRepositorio) {
         // Cria a implementação real (núcleo) com as dependências necessárias
-        IEspecialidadeServico original = new EspecialidadeServicoImpl(repositorio, medicoRepositorio);
+        IEspecialidadeServico original = new EspecialidadeServicoImpl(repositorio, medicoRepositorio, historicoRepositorio);
         // Retorna o proxy que adiciona comportamento (auditoria/log) antes de delegar ao real
         return new EspecialidadeServicoProxy(original);
     }
