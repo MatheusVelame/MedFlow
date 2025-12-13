@@ -1,8 +1,9 @@
 // Localização: apresentacao-frontend/src/main/react/src/pages/ConsultasLista.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useConsultasApi } from '../api/useConsultasApi';
 import { ConsultaResumo, StatusConsulta, ConsultaDetalhes } from '../api/types'; // Importado ConsultaDetalhes
+import { useAuth } from '../contexts/AuthContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { 
@@ -15,9 +16,6 @@ import {
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDataHora } from '../lib/utils'; 
-
-// Mock do ID do usuário responsável pela ação de alteração de status
-const MOCK_USUARIO_ID = 100; 
 
 // Mapeamento de cores para os Status
 const statusColors: Record<StatusConsulta, string> = {
@@ -38,13 +36,19 @@ type DetalhesCache = Record<number, ConsultaDetalhes>;
 export const ConsultasLista: React.FC<{ refreshToggle: number }> = ({ refreshToggle }) => {
     // Adicionado 'obterDetalhes' ao destructuring
     const { listarConsultas, mudarStatus, obterDetalhes } = useConsultasApi(); 
+    const { user } = useAuth();
     const [consultas, setConsultas] = useState<ConsultaResumo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState<number | null>(null); 
     // Estado para armazenar os detalhes que já foram carregados
     const [detalhesCache, setDetalhesCache] = useState<DetalhesCache>({}); 
     // Estado para saber qual ID está sendo carregado no momento
-    const [fetchingDetailId, setFetchingDetailId] = useState<number | null>(null); 
+    const [fetchingDetailId, setFetchingDetailId] = useState<number | null>(null);
+
+    // Obter ID do usuário logado
+    const usuarioId = useMemo(() => {
+        return user?.id ? parseInt(user.id) : 1;
+    }, [user]); 
 
     // Função para buscar a lista de consultas resumida
     const fetchConsultas = async () => {
@@ -105,7 +109,7 @@ export const ConsultasLista: React.FC<{ refreshToggle: number }> = ({ refreshTog
             const statusType = novoStatus as StatusConsulta;
             await mudarStatus(consultaId, { 
                 novoStatus: statusType, 
-                usuarioId: MOCK_USUARIO_ID 
+                usuarioId: usuarioId 
             });
             
             toast.success(`Consulta #${consultaId} atualizada para ${novoStatus}.`);

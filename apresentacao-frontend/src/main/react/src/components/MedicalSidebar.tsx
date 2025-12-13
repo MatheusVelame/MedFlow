@@ -40,6 +40,7 @@ interface NavItem {
 const navigationItems: NavItem[] = [
   { title: "Dashboard", url: "/", icon: Home, roles: ['gestor', 'atendente', 'medico'] },
   { title: "Agendamentos", url: "/agendamentos", icon: Calendar, roles: ['gestor', 'atendente', 'medico'] },
+  { title: "Consultas", url: "/consultas", icon: CalendarCheck, roles: ['gestor', 'atendente', 'medico'] },
   { title: "Pacientes", url: "/pacientes", icon: Users, roles: ['gestor', 'atendente', 'medico'] },
   // { title: "Triagem", url: "/triagem", icon: Activity, roles: ['gestor', 'atendente', 'medico'] }, // REMOVIDO
   { title: "Prontuários", url: "/prontuarios", icon: FileText, roles: ['gestor', 'medico'] },
@@ -54,7 +55,6 @@ const managementItems: NavItem[] = [
   { title: "Medicamentos", url: "/medicamentos", icon: Pill, roles: ['gestor'] },
     { title: "Medicamentos", url: "/medicamentos-medico", icon: Pill, roles: ['medico'] },
   { title: "Profissionais", url: "/profissionais", icon: Stethoscope, roles: ['gestor'] },
-  { title: "Consultas", url: "/consultas", icon: CalendarCheck, roles: ['gestor', 'medico'] },
   { title: "Especialidades", url: "/especialidades", icon: Activity, roles: ['gestor'] },
   { title: "Tipos de Exame", url: "/tipos-exames", icon: Microscope, roles: ['gestor'] },
   // { title: "Relatórios", url: "/relatorios", icon: ClipboardList, roles: ['gestor'] }, // REMOVIDO

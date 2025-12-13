@@ -27,6 +27,7 @@ import EspecialidadeNovo from "./pages/EspecialidadeNovo";
 import EspecialidadeDetalhe from "./pages/EspecialidadeDetalhe";
 import ExameNovo from "./pages/ExameNovo";
 import { ConsultasPage } from './pages/ConsultasPage';
+import { AgendamentosPage } from './pages/AgendamentosPage';
 import ExameDetalhe from "./pages/ExameDetalhe";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,11 @@ const App = () => (
                 <MedicalLayout>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/agendamentos" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'atendente', 'medico']}>
+                        <AgendamentosPage />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/pacientes" element={<Pacientes />} />
                     {/* ROTA TRIAGEM REMOVIDA */}
                     <Route path="/prontuarios" element={
