@@ -3,17 +3,27 @@ package br.com.medflow.infraestrutura.persistencia.jpa.referencia;
 import org.springframework.stereotype.Component;
 
 import br.com.medflow.dominio.referencia.especialidades.MedicoRepositorio;
+import br.com.medflow.infraestrutura.persistencia.jpa.referencia.EspecialidadeJpaRepository;
+import br.com.medflow.infraestrutura.persistencia.jpa.administracao.MedicoJpaRepository;
 
-/**
- * Stub simples para permitir injeção de MedicoRepositorio no contexto Spring.
- * Retorna 0 por padrão para contagens, pode ser substituído por uma implementação JPA real.
- */
 @Component
 public class MedicoRepositorioStubImpl implements MedicoRepositorio {
 
+    private final EspecialidadeJpaRepository especialidadeJpaRepository;
+    private final MedicoJpaRepository medicoJpaRepository;
+
+    public MedicoRepositorioStubImpl(EspecialidadeJpaRepository especialidadeJpaRepository, MedicoJpaRepository medicoJpaRepository) {
+        this.especialidadeJpaRepository = especialidadeJpaRepository;
+        this.medicoJpaRepository = medicoJpaRepository;
+    }
+
     @Override
     public int contarMedicosAtivosVinculados(String nomeEspecialidade) {
-        // TODO: implementar corretamente contra a camada de persistência (JPA/Query)
-        return 0;
+        if (nomeEspecialidade == null) return 0;
+        var opt = especialidadeJpaRepository.findByNomeIgnoreCase(nomeEspecialidade.trim());
+        if (opt.isEmpty()) return 0;
+        Integer especialidadeId = opt.get().getId();
+        Long count = medicoJpaRepository.contarAtivosPorEspecialidade(especialidadeId);
+        return count == null ? 0 : count.intValue();
     }
 }
