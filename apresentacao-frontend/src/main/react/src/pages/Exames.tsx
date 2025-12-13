@@ -32,6 +32,9 @@ import {
 import { ExameForm } from "@/components/ExameForm";
 import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList } from "@/hooks/useExames";
 
+// Novo: Patients list for displaying names
+import { useListarPacientes } from "@/api/usePacientesApi";
+
 export default function Exames() {
   const { isGestor, isMedico } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,6 +67,8 @@ export default function Exames() {
   const atualizarExame = useAtualizarExame();
   const cancelarExame = useCancelarExame();
   const excluirExame = useExcluirExame();
+
+  const { data: pacientes = [] } = useListarPacientes();
 
   const [isExameFormOpen, setIsExameFormOpen] = useState(false);
   const [editingExame, setEditingExame] = useState<any | null>(null);
@@ -262,12 +267,28 @@ export default function Exames() {
     ) : null;
   };
 
-  const filteredExames = exames.filter(exame => {
-    const pacienteText = String((exame as any).paciente ?? exame.pacienteId ?? "");
-    const tipoText = String((exame as any).tipo ?? exame.tipoExame ?? "");
+  // Map exames para incluir nomes legíveis para paciente e tipo
+  const mappedExames = exames.map((exame: any) => {
+    const paciente = pacientes.find((p: any) => p.id === Number(exame.pacienteId));
+    const pacienteName = paciente ? paciente.name : String(exame.pacienteId ?? '');
+
+    // tipoExame in the API is usually the codigo; try to resolve to a more friendly label
+    const tipo = tiposExame.find((t: any) => (t.codigo && String(t.codigo) === String(exame.tipoExame)) || String(t.id) === String(exame.tipoExame));
+    const tipoLabel = tipo ? ((tipo.codigo ? tipo.codigo + ' - ' : '') + (tipo.descricao || tipo.codigo)) : String(exame.tipoExame ?? '');
+
+    const statusNormalized = (exame.status || exame.situation || '').toString().toLowerCase();
+
+    return { ...exame, pacienteName, tipoLabel, statusNormalized };
+  });
+
+  const totalAgendados = mappedExames.filter((e: any) => e.statusNormalized !== 'cancelado').length;
+
+  const filteredExames = mappedExames.filter((exame: any) => {
+    const pacienteText = String(exame.pacienteName ?? exame.pacienteId ?? "");
+    const tipoText = String(exame.tipoLabel ?? exame.tipoExame ?? "");
     const matchesSearch = pacienteText.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tipoText.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "todos" || exame.status === filterStatus;
+    const matchesStatus = filterStatus === "todos" || exame.statusNormalized === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -307,7 +328,7 @@ export default function Exames() {
             <TestTube className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">156</div>
+            <div className="text-2xl font-bold text-foreground">{totalAgendados}</div>
             <p className="text-xs text-muted-foreground">Este mês</p>
           </CardContent>
         </Card>
@@ -344,12 +365,12 @@ export default function Exames() {
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-semibold">{exame.paciente ?? exame.pacienteId}</h3>
-                            <p className="text-sm text-muted-foreground">{exame.tipo ?? exame.tipoExame}</p>
+                            <h3 className="font-semibold">{exame.pacienteName}</h3>
+                            <p className="text-sm text-muted-foreground">{exame.tipoLabel}</p>
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground">{new Date(exame.dataHora || exame.datahora || exame.data).toLocaleString()}</div>
-                            <div className="mt-2">{getStatusBadge(exame.status ?? exame.situation ?? 'pendente')}</div>
+                            <div className="mt-2">{getStatusBadge(exame.statusNormalized ?? 'pendente')}</div>
                           </div>
                         </div>
 
@@ -482,6 +503,24 @@ export default function Exames() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => tipoExameToDelete && handleDeleteTipoExame(tipoExameToDelete)}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm dialog para exclusão de exame */}
+      <AlertDialog open={!!exameToDelete} onOpenChange={() => setExameToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão do exame</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este exame? Esta ação irá remover o agendamento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => exameToDelete && handleDeleteExame(exameToDelete)}>
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
