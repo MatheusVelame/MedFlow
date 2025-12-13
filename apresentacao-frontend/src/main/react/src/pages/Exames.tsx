@@ -658,7 +658,7 @@ export default function Exames() {
 					    </div>
 
 					    {/* ===================== AÇÕES ===================== */}
-					    <div className="flex items-center justify-between pt-3 border-t">
+					    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between pt-3 border-t">
 
 					      {/* STATUS (AÇÃO PRINCIPAL) */}
 					      <Button
