@@ -57,3 +57,12 @@ export function useHistoricoEspecialidade(id?: number) {
     refetchOnWindowFocus: false,
   });
 }
+
+export function useToggleStatusEspecialidade() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload?: { responsavelId?: number } }) =>
+      especialidadesApi.toggleStatus(id, payload || {}),
+    onSuccess: () => qc.invalidateQueries(["especialidades"]),
+  });
+}
