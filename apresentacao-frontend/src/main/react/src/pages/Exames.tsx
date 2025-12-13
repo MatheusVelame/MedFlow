@@ -244,8 +244,10 @@ export default function Exames() {
   };
 
   const filteredExames = exames.filter(exame => {
-    const matchesSearch = exame.paciente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exame.tipo.toLowerCase().includes(searchTerm.toLowerCase());
+    const pacienteText = String((exame as any).paciente ?? exame.pacienteId ?? "");
+    const tipoText = String((exame as any).tipo ?? exame.tipoExame ?? "");
+    const matchesSearch = pacienteText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tipoText.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "todos" || exame.status === filterStatus;
     return matchesSearch && matchesStatus;
   });

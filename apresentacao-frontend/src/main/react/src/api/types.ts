@@ -3,6 +3,7 @@ export interface EspecialidadeResumo {
   nome: string;
   descricao?: string | null;
   status: string;
+  medicosVinculados?: number;
 }
 
 export interface EspecialidadeDetalhes {

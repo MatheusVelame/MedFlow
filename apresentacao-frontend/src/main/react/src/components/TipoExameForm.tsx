@@ -42,6 +42,7 @@ interface TipoExameFormProps {
   onSave: (data: z.infer<typeof formSchema>) => void;
   initialData?: any;
   existingCodes: string[];
+  especialidades?: string[];
   isLoading?: boolean;
 }
 
