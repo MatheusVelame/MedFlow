@@ -12,6 +12,8 @@ import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+// Import do hook para listar medicamentos com revisão pendente
+import { useListarMedicamentosComRevisaoPendente } from "@/api/useMedicamentosApi"; 
 
 const myAppointments = [
   { id: 1, patient: "Maria Silva", time: "09:00", type: "Consulta", room: "Sala 1" },
@@ -20,6 +22,7 @@ const myAppointments = [
   { id: 4, patient: "Pedro Lima", time: "10:30", type: "Retorno", room: "Sala 1" },
 ];
 
+// Removendo os alertas clínicos mockados, pois o cliente deseja exibir apenas as revisões.
 const clinicalAlerts = [
   { id: 1, type: "exam", message: "Resultado de hemograma de Maria Silva disponível", time: "10 min" },
   { id: 2, type: "evolution", message: "2 evoluções pendentes de registro", time: "30 min" },
@@ -39,6 +42,19 @@ const followUpPatients = [
 ];
 
 export default function MedicoDashboard() {
+  // Busca os dados de revisões pendentes
+  const { data: medicamentosPendentes, isLoading: isLoadingMedicamentos } = useListarMedicamentosComRevisaoPendente();
+
+  // Mapeia os medicamentos com revisão pendente para o formato de alerta
+  const medicamentosAlerts = medicamentosPendentes?.map(med => ({
+      id: `med-${med.id}`, 
+      type: "medicamento-review", 
+      message: `Revisão pendente: ${med.nome}`, 
+      time: "Aguardando Aprovação" // Texto mais contextualizado
+  })) || [];
+
+  // OBS: Não precisamos mais do allClinicalAlerts se o objetivo é mostrar APENAS as revisões
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -61,11 +77,12 @@ export default function MedicoDashboard() {
           icon={<Users className="h-4 w-4" />}
           trend={{ value: 10, isPositive: true }}
         />
+        {/* Card de Revisões de Medicamentos Pendentes (Estatística) */}
         <StatCard
-          title="Próximo Paciente"
-          value="15 min"
-          description="Maria Silva - Sala 1"
-          icon={<Clock className="h-4 w-4" />}
+          title="Revisões Medicamento"
+          value={isLoadingMedicamentos ? '...' : (medicamentosPendentes?.length ?? 0).toString()}
+          description="Medicamentos com alteração crítica"
+          icon={<AlertCircle className="h-4 w-4" />}
         />
         <StatCard
           title="Exames Pendentes"
@@ -106,27 +123,30 @@ export default function MedicoDashboard() {
           </CardContent>
         </Card>
 
+        {/* Card MODIFICADO: Exibe APENAS os Alertas de Revisões Pendentes */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Alertas Clínicos
+              {/* Ícone de Alerta mantido, mas com foco no processo crítico */}
+              <AlertCircle className="h-5 w-5 text-destructive" /> 
+              Alertas de Revisões Pendentes
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {clinicalAlerts.map((alert) => (
-                <div key={alert.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                    alert.type === "exam" ? "bg-primary" :
-                    alert.type === "evolution" ? "bg-warning" : "bg-muted-foreground"
-                  }`} />
-                  <div className="flex-1">
-                    <p className="text-sm">{alert.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">há {alert.time}</p>
+              {medicamentosAlerts.length > 0 ? (
+                medicamentosAlerts.map((alert) => (
+                  <div key={alert.id} className="flex gap-3 p-3 bg-destructive/10 rounded-lg">
+                    <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-destructive" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{alert.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma revisão crítica pendente no momento.</p>
+              )}
             </div>
           </CardContent>
         </Card>
