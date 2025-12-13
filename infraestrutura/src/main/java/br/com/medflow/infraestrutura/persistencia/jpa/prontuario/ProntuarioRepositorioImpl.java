@@ -21,9 +21,11 @@ public class ProntuarioRepositorioImpl implements ProntuarioRepositorio, Prontua
 
     private final ProntuarioRepositorio repositorioDecorado;
 
-    public ProntuarioRepositorioImpl(ProntuarioRepositorioBase repositorioBase) {
-        // Aplica os decorators em cascata: base -> logging
+    private final ProntuarioJpaRepository jpaRepository;
+
+    public ProntuarioRepositorioImpl(ProntuarioRepositorioBase repositorioBase, ProntuarioJpaRepository jpaRepository) {
         this.repositorioDecorado = new ProntuarioRepositorioLoggingDecorator(repositorioBase);
+        this.jpaRepository = jpaRepository;
     }
 
     // =====================================================================
@@ -74,6 +76,13 @@ public class ProntuarioRepositorioImpl implements ProntuarioRepositorio, Prontua
                         .map(this::toHistoricoItemResponse)
                         .collect(Collectors.toList()))
                 .orElse(List.of());
+    }
+
+    @Override
+    public boolean existePorMedicoId(Integer medicoId) {
+        if (medicoId == null) return false;
+        // O campo profissionalResponsavel no JPA é String, então convertemos o ID
+        return jpaRepository.existsByProfissionalResponsavel(String.valueOf(medicoId));
     }
 
     // Mapeamento Domain -> DTO

@@ -12,4 +12,6 @@ public interface ConsultaJpaRepository extends JpaRepository<ConsultaJpa, Intege
     
     // Método customizado para suportar a busca por status no Query Service
     List<ConsultaJpa> findByStatus(String status);
+
+    boolean existsByMedicoId(Integer medicoId);
 }

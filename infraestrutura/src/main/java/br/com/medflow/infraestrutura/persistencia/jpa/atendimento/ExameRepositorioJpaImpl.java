@@ -58,6 +58,13 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
         return jpaRepository.findAll().stream().map(this::paraDominio).collect(Collectors.toList());
     }
 
+    @Override
+    public boolean existePorMedicoId(Integer medicoId) {
+        if (medicoId == null) return false;
+        // Adicionado .longValue() para corrigir o erro de tipo
+        return jpaRepository.existsByMedicoId(medicoId.longValue());
+    }
+
     // --- Métodos Auxiliares de Mapeamento (Converter) ---
 
     private ExameJpa paraJpa(Exame dominio) {
