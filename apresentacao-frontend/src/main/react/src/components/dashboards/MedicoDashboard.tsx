@@ -65,17 +65,15 @@ export default function MedicoDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Minhas Consultas Hoje"
-          value="12"
-          description="4 realizadas, 8 pendentes"
+          value="4"
+          description="2 Agendadas, 2 Em andamento"
           icon={<Calendar className="h-4 w-4" />}
-          trend={{ value: 15, isPositive: true }}
         />
         <StatCard
           title="Pacientes Atendidos no Mês"
           value="87"
           description="Meta: 100 pacientes"
           icon={<Users className="h-4 w-4" />}
-          trend={{ value: 10, isPositive: true }}
         />
         {/* Card de Revisões de Medicamentos Pendentes (Estatística) */}
         <StatCard
@@ -93,38 +91,9 @@ export default function MedicoDashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Minha Agenda do Dia
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {myAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm font-medium text-primary">
-                      {appointment.time}
-                    </div>
-                    <div>
-                      <p className="font-medium">{appointment.patient}</p>
-                      <p className="text-sm text-muted-foreground">{appointment.type} • {appointment.room}</p>
-                    </div>
-                  </div>
-                  <Button size="sm" variant="outline">Iniciar</Button>
-                </div>
-              ))}
-            </div>
-            <Button variant="outline" className="w-full mt-4">
-              Ver Agenda Completa
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Card MODIFICADO: Exibe APENAS os Alertas de Revisões Pendentes */}
-        <Card>
+        <Card className="lg:col-start-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {/* Ícone de Alerta mantido, mas com foco no processo crítico */}
@@ -153,77 +122,9 @@ export default function MedicoDashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
-              Últimos Prontuários Atualizados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentRecords.map((record) => (
-                <div key={record.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium">{record.patient}</p>
-                    <p className="text-sm text-muted-foreground">{record.diagnosis}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{record.date}</p>
-                  </div>
-                  <Button size="sm" variant="ghost">Ver</Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Pacientes em Acompanhamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {followUpPatients.map((patient) => (
-                <div key={patient.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div>
-                    <p className="font-medium">{patient.name}</p>
-                    <p className="text-sm text-muted-foreground">{patient.condition}</p>
-                  </div>
-                  <Badge variant="outline">{patient.nextVisit}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button className="h-20 flex-col gap-2">
-              <CheckCircle className="h-6 w-6" />
-              Iniciar Consulta
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <ClipboardList className="h-6 w-6" />
-              Registrar Evolução
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <FileText className="h-6 w-6" />
-              Solicitar Exame
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Activity className="h-6 w-6" />
-              Ver Prontuários
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
