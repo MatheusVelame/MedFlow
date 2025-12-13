@@ -1,3 +1,42 @@
+export type StatusConsulta = 'AGENDADA' | 'EM_ANDAMENTO' | 'REALIZADA' | 'CANCELADA';
+
+/**
+ * Representa os dados resumidos de uma consulta.
+ * Baseado em br.com.medflow.aplicacao.atendimento.consultas.ConsultaResumo
+ */
+export interface ConsultaResumo {
+    id: number;
+    dataHora: string; // Mapeado de LocalDateTime no Java
+    descricao: string;
+    pacienteId: number | string; // Ajustado para ser mais flexível, se necessário
+    medicoId: number | string;   // Ajustado para ser mais flexível, se necessário
+    status: StatusConsulta;
+}
+
+/**
+ * Interface para a entrada de histórico da consulta.
+ * Baseado em br.com.medflow.dominio.atendimento.consultas.HistoricoConsultaEntrada
+ */
+export interface HistoricoConsultaEntrada {
+    acao: string; 
+    descricao: string;
+    responsavelId: number;
+    dataRegistro: string; 
+}
+
+/**
+ * Representa os detalhes completos de uma consulta.
+ * Baseado em br.com.medflow.aplicacao.atendimento.consultas.ConsultaDetalhes
+ */
+export interface ConsultaDetalhes extends ConsultaResumo {
+    // Campos que vêm na resposta de detalhes, mas não no resumo:
+    idPaciente: number | string;
+    nomeCompletoPaciente: string;
+    idMedico: number | string;
+    nomeCompletoMedico: string;
+    historico: HistoricoConsultaEntrada[];
+}
+
 export interface EspecialidadeResumo {
   id: number;
   nome: string;
