@@ -8,28 +8,40 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8090,
-    // Proxy: todas as chamadas que começam por /api serão encaminhadas ao backend Spring Boot
-    // Mantemos um único mapeamento para evitar reescritas contraditórias que causavam "No static resource exames.".
+    // --- BLOCO DE PROXY ADICIONADO ---
     proxy: {
-      '/api': {
+      // Proxy específico para exames: reescreve '/api/exames' -> '/exames' no backend
+      '/api/exames': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
-        configure: (proxy, options) => {
-          // proxy is an http-proxy instance
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            const url = req.url;
-            const method = req.method;
-            // eslint-disable-next-line no-console
-            console.log(`[vite-proxy] ${method} ${url} -> ${options.target}`);
-          });
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            // eslint-disable-next-line no-console
-            console.log(`[vite-proxy] response for ${req.method} ${req.url} -> ${proxyRes.statusCode}`);
-          });
-        }
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+
+      // Redireciona todas as requisições que começam com /api para o servidor Spring Boot
+	  '/api': {
+	      target: 'http://localhost:8080',
+	      changeOrigin: true,
+	      secure: false,
+	    },
+	  
+	  	 '/backend': {
+        target: 'http://localhost:8080', // Porta onde seu Spring Boot está rodando
+        changeOrigin: true, // Necessário para evitar problemas de CORS
+        secure: false,      // Usar 'false' se estiver rodando o backend em HTTP (padrão)
+      },
+
+      // --- NOVO: proxy para /exames ---
+      // O backend expõe o controller em '/exames' (sem /api), então o Vite estava servindo a SPA
+      // quando você acessava http://localhost:8090/exames. Encaminhamos essas requisições ao backend.
+      '/exames': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        // Não reescrevemos o caminho: backend já espera '/exames'
       },
     },
+    // --- FIM DO BLOCO ADICIONADO ---
   },
   plugins: [
     react(),
