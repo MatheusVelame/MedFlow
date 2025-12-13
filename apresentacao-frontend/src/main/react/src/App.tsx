@@ -26,6 +26,7 @@ import TiposExames from "./pages/TiposExames";
 import EspecialidadeNovo from "./pages/EspecialidadeNovo";
 import EspecialidadeDetalhe from "./pages/EspecialidadeDetalhe";
 import ExameNovo from "./pages/ExameNovo";
+import { ConsultasPage } from './pages/ConsultasPage';
 import ExameDetalhe from "./pages/ExameDetalhe";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,11 @@ const App = () => (
                     <Route path="/medicamentos" element={
                       <ProtectedRoute allowedRoles={['gestor']}>
                         <Medicamentos />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/consultas" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ConsultasPage />
                       </ProtectedRoute>
                     } />
                     <Route path="/medicamentos-medico" element={
