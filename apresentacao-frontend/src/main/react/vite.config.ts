@@ -10,7 +10,15 @@ export default defineConfig(({ mode }) => ({
     port: 8090,
     // --- BLOCO DE PROXY ADICIONADO ---
     proxy: {
-      // Redireciona todas as requisições que começam com /backend para o servidor Spring Boot
+      // Proxy específico para exames: reescreve '/api/exames' -> '/exames' no backend
+      '/api/exames': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+
+      // Redireciona todas as requisições que começam com /api para o servidor Spring Boot
 	  '/api': {
 	      target: 'http://localhost:8080',
 	      changeOrigin: true,

@@ -38,6 +38,16 @@ public class MedicoRepositorioImpl implements FuncionarioRepositorio {
         this.mapeador = mapeador;
     }
 
+    // Helper para parsear inteiros de forma defensiva (retorna null em caso de formato inválido)
+    private Integer tryParseInteger(String value) {
+        if (value == null) return null;
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     @Override
     @Transactional
     public void salvar(Funcionario funcionario) {
@@ -68,7 +78,11 @@ public class MedicoRepositorioImpl implements FuncionarioRepositorio {
         }
 
         // UPDATE - Médico existente
-        Integer idAtualizacao = Integer.parseInt(idMedico.getId());
+        Integer idAtualizacao = tryParseInteger(idMedico.getId());
+        if (idAtualizacao == null) {
+            throw new RuntimeException("ID do médico não é numérico: " + idMedico.getId());
+        }
+
         MedicoJpa jpaExistente = medicoJpaRepository.findById(idAtualizacao)
                 .orElseThrow(() -> new RuntimeException("Médico não encontrado para atualização (ID: " + idAtualizacao + ")"));
 
@@ -93,11 +107,12 @@ public class MedicoRepositorioImpl implements FuncionarioRepositorio {
         // Remove histórico antigo e adiciona o novo
         jpaExistente.getHistorico().clear();
         medico.getHistorico().forEach(h -> {
+            Integer responsavelId = tryParseInteger(h.getResponsavel().getCodigo());
             HistoricoEntradaJpa historicoJpa = new HistoricoEntradaJpa(
                     null,
                     h.getAcao(),
                     h.getDescricao(),
-                    Integer.parseInt(h.getResponsavel().getCodigo()),
+                    responsavelId,
                     h.getDataHora()
             );
             historicoJpa.setFuncionario(jpaExistente);
@@ -109,7 +124,8 @@ public class MedicoRepositorioImpl implements FuncionarioRepositorio {
 
     @Override
     public Funcionario obter(FuncionarioId id) {
-        Integer idInt = Integer.parseInt(id.getId());
+        Integer idInt = tryParseInteger(id.getId());
+        if (idInt == null) throw new RuntimeException("ID do médico não é numérico: " + id.getId());
         MedicoJpa jpa = medicoJpaRepository.findById(idInt)
                 .orElseThrow(() -> new RuntimeException("Médico não encontrado: " + id.getId()));
 
@@ -153,7 +169,9 @@ public class MedicoRepositorioImpl implements FuncionarioRepositorio {
 
     @Override
     public void remover(FuncionarioId id) {
-        medicoJpaRepository.deleteById(Integer.parseInt(id.getId()));
+        Integer idInt = tryParseInteger(id.getId());
+        if (idInt == null) throw new RuntimeException("ID do médico não é numérico: " + id.getId());
+        medicoJpaRepository.deleteById(idInt);
     }
 
     /**
@@ -191,7 +209,7 @@ public class MedicoRepositorioImpl implements FuncionarioRepositorio {
      * Mapeia entidade de domínio para entidade JPA.
      */
     private MedicoJpa mapearDominioParaJpa(Medico medico) {
-        Integer id = medico.getId() != null ? Integer.parseInt(medico.getId().getId()) : null;
+        Integer id = medico.getId() != null ? tryParseInteger(medico.getId().getId()) : null;
 
         // Mapeia histórico
         List<HistoricoEntradaJpa> historicoJpa = medico.getHistorico().stream()
@@ -199,7 +217,7 @@ public class MedicoRepositorioImpl implements FuncionarioRepositorio {
                         null,
                         h.getAcao(),
                         h.getDescricao(),
-                        Integer.parseInt(h.getResponsavel().getCodigo()),
+                        tryParseInteger(h.getResponsavel().getCodigo()),
                         h.getDataHora()
                 ))
                 .collect(Collectors.toList());

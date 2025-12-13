@@ -256,8 +256,8 @@ export default function Exames() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Tipos de Exames</h1>
-          <p className="text-muted-foreground">Gerencie os tipos de exames disponíveis na clínica</p>
+          <h1 className="text-3xl font-bold text-foreground">Exames</h1>
+          <p className="text-muted-foreground">Gerencie e agende exames na clínica</p>
         </div>
         <div className="flex gap-2">
           {(isGestor || isMedico) && (
@@ -295,10 +295,67 @@ export default function Exames() {
         {/* Cards adicionais podem ser inseridos aqui se necessário */}
       </div>
 
-      <Tabs defaultValue="tipos" className="space-y-4">
+      <Tabs defaultValue="exames" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="exames">Exames</TabsTrigger>
           <TabsTrigger value="tipos">Tipos de Exames</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="exames" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex-1 pr-4">
+                  <Input placeholder="Pesquisar por paciente ou tipo" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
+                  <Button variant={filterStatus === 'pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('pendente')}>Pendente</Button>
+                  <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultado</Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredExames.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">Nenhum exame encontrado</div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredExames.map((exame: any) => (
+                    <Card key={exame.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold">{exame.paciente ?? exame.pacienteId}</h3>
+                            <p className="text-sm text-muted-foreground">{exame.tipo ?? exame.tipoExame}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground">{new Date(exame.dataHora || exame.datahora || exame.data).toLocaleString()}</div>
+                            <div className="mt-2">{getStatusBadge(exame.status ?? exame.situation ?? 'pendente')}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-4">
+                          <Button size="sm" variant="outline" onClick={() => handleEditExame(exame)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setExameToCancel(exame.id)}>
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setExameToDelete(exame.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleUploadResult(exame.id)}>
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="tipos" className="space-y-4">
           <Card>
