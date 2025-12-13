@@ -66,6 +66,11 @@ public class ConvenioServico {
 			boolean temProcedimentoAtivo) {
 		var convenio = obter(id);
 		StatusConvenio statusAnterior = convenio.getStatus();
+		
+		// Se o status anterior for null, assume ATIVO como padrão (para convênios antigos)
+		if (statusAnterior == null) {
+			statusAnterior = StatusConvenio.ATIVO;
+		}
 
 		if (novoStatus == StatusConvenio.INATIVO && temProcedimentoAtivo) {
 			throw new IllegalStateException(

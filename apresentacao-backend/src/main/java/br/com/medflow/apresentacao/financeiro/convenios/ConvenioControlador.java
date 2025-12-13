@@ -2,6 +2,7 @@ package br.com.medflow.apresentacao.financeiro.convenios;
 
 import br.com.medflow.aplicacao.financeiro.convenios.ConvenioServicoAplicacao;
 import br.com.medflow.aplicacao.financeiro.convenios.ConvenioResumo;
+import br.com.medflow.aplicacao.financeiro.convenios.ConvenioDetalhes;
 import br.com.medflow.dominio.financeiro.convenios.ConvenioServico;
 import br.com.medflow.dominio.financeiro.convenios.StatusConvenio;
 import br.com.medflow.dominio.financeiro.convenios.ConvenioId;
@@ -39,17 +40,7 @@ public class ConvenioControlador {
 		return servicoConsulta.pesquisarResumos();
 	}
 
-	// GET /backend/convenios/{id}
-	@GetMapping("/{id}")
-	public ResponseEntity<?> obterDetalhes(@PathVariable Integer id) {
-		try {
-			var detalhes = servicoConsulta.obterDetalhes(id);
-			return ResponseEntity.ok(detalhes);
-		} catch (RuntimeException e) {
-			return ResponseEntity.notFound().build();
-		}
-	}
-
+	// IMPORTANTE: Rotas específicas devem vir ANTES da rota genérica /{id}
 	// GET /backend/convenios/codigo/{codigoIdentificacao}
 	@GetMapping("/codigo/{codigoIdentificacao}")
 	public List<ConvenioResumo> pesquisarPorCodigo(@PathVariable String codigoIdentificacao) {
@@ -60,6 +51,25 @@ public class ConvenioControlador {
 	@GetMapping("/status/{status}")
 	public List<ConvenioResumo> pesquisarPorStatus(@PathVariable StatusConvenio status) {
 		return servicoConsulta.pesquisarPorStatus(status);
+	}
+
+	// GET /backend/convenios/{id} - Aceita tanto ID numérico quanto codigoIdentificacao
+	@GetMapping("/{id}")
+	public ResponseEntity<?> obterDetalhes(@PathVariable String id) {
+		try {
+			ConvenioDetalhes detalhes;
+			// Tenta como ID numérico primeiro
+			try {
+				Integer idNumerico = Integer.parseInt(id);
+				detalhes = servicoConsulta.obterDetalhes(idNumerico);
+			} catch (NumberFormatException e) {
+				// Se não for numérico, tenta como codigoIdentificacao
+				detalhes = servicoConsulta.obterDetalhesPorCodigoIdentificacao(id);
+			}
+			return ResponseEntity.ok(detalhes);
+		} catch (RuntimeException e) {
+			return ResponseEntity.notFound().build();
+		}
 	}
 
 	// =====================================================================
@@ -97,21 +107,21 @@ public class ConvenioControlador {
 	}
 
 	// 3. Comando: mudarStatus
+	// PUT /backend/convenios/{id} - Aceita status no body
 	@Transactional
-	@PutMapping("/{id}/status/{novoStatus}")
+	@PutMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void mudarStatus(
 			@PathVariable Integer id,
-			@PathVariable StatusConvenio novoStatus,
-			@Valid @RequestBody UsuarioResponsavelFormulario responsavel,
+			@Valid @RequestBody StatusFormulario formulario,
 			@RequestParam(defaultValue = "false") boolean temProcedimentoAtivo) {
 
 		var convenioId = new ConvenioId(id);
-		var responsavelId = new UsuarioResponsavelId(responsavel.getResponsavelId());
+		var responsavelId = new UsuarioResponsavelId(formulario.getResponsavelId());
 
 		servicoDominio.mudarStatus(
 			convenioId,
-			novoStatus,
+			formulario.getStatus(),
 			responsavelId,
 			temProcedimentoAtivo
 		);

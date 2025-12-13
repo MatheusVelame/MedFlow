@@ -40,6 +40,7 @@ export interface AlterarNomePayload {
 }
 
 export interface MudarStatusPayload {
+  status: StatusConvenio;
   responsavelId: number;
 }
 
@@ -55,7 +56,6 @@ interface MutateVariables<T> {
 
 interface MudarStatusVariables {
   id: number;
-  novoStatus: StatusConvenio;
   payload: MudarStatusPayload;
   temProcedimentoAtivo?: boolean;
 }
@@ -103,12 +103,11 @@ const alterarNomeConvenio = async ({ id, payload }: MutateVariables<AlterarNomeP
 
 const mudarStatusConvenio = async ({ 
   id, 
-  novoStatus, 
   payload, 
   temProcedimentoAtivo = false 
 }: MudarStatusVariables) => {
   await axios.put(
-    `${API_BASE_URL}/${id}/status/${novoStatus}?temProcedimentoAtivo=${temProcedimentoAtivo}`,
+    `${API_BASE_URL}/${id}?temProcedimentoAtivo=${temProcedimentoAtivo}`,
     payload
   );
 };
@@ -199,7 +198,7 @@ export function useMudarStatusConvenio() {
     mutationFn: mudarStatusConvenio,
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["convenios"] });
-      toast.success(`Status alterado para ${variables.novoStatus.toLowerCase()} com sucesso!`);
+      toast.success(`Status alterado para ${variables.payload.status.toLowerCase()} com sucesso!`);
     },
     onError: (error: any) => {
       const mensagemErro = error.response?.data?.message || "Erro ao mudar status do convênio.";

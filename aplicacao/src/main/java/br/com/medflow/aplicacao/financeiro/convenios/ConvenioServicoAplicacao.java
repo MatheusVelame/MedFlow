@@ -25,6 +25,11 @@ public class ConvenioServicoAplicacao {
 			.orElseThrow(() -> new RuntimeException("Convênio não encontrado"));
 	}
 	
+	public ConvenioDetalhes obterDetalhesPorCodigoIdentificacao(String codigoIdentificacao) {
+		return repositorio.obterDetalhesPorCodigoIdentificacao(codigoIdentificacao)
+			.orElseThrow(() -> new RuntimeException("Convênio não encontrado"));
+	}
+	
 	public List<ConvenioResumo> pesquisarPorCodigoIdentificacao(String codigoIdentificacao) { // validar ser vou manter esse mesmo
 		return repositorio.pesquisarPorCodigoIdentificacao(codigoIdentificacao);
 	}
