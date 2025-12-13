@@ -20,6 +20,7 @@ const exameSchema = z.object({
   laboratorio: z.string().min(1, "Laboratório é obrigatório"),
   prioridade: z.enum(["normal", "urgente"]),
   dataHora: z.string().min(1, "Data e hora é obrigatória"),
+  observacoes: z.string().max(2000).optional()
 });
 
 type ExameFormData = z.infer<typeof exameSchema>;
@@ -40,6 +41,7 @@ export function ExameFormWrapper({ onSave, initialData }: ExameFormWrapperProps)
       prioridade: "normal",
       dataHora: new Date().toISOString().slice(0, 16), // datetime-local value
       laboratorio: "",
+      observacoes: undefined
     }
   });
 
@@ -72,6 +74,7 @@ export function ExameFormWrapper({ onSave, initialData }: ExameFormWrapperProps)
         const v = initialData.dataHora.length === 19 ? initialData.dataHora.slice(0, 16) : initialData.dataHora;
         setValue('dataHora', v);
       }
+      if ((initialData as any).observacoes !== undefined) setValue('observacoes', (initialData as any).observacoes);
     }
   }, [initialData, setValue]);
 
@@ -82,6 +85,7 @@ export function ExameFormWrapper({ onSave, initialData }: ExameFormWrapperProps)
       prioridade: "normal",
       dataHora: new Date().toISOString().slice(0, 16),
       laboratorio: "",
+      observacoes: undefined
     });
   };
 
@@ -182,6 +186,12 @@ export function ExameFormWrapper({ onSave, initialData }: ExameFormWrapperProps)
           />
           {errors.dataHora && <p className="text-sm text-destructive mt-1">{errors.dataHora.message}</p>}
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="observacoes">Observações (opcional)</Label>
+        <textarea id="observacoes" {...register("observacoes") as any} className="w-full p-2 border rounded-md min-h-[80px]" />
+        {errors.observacoes && <p className="text-sm text-destructive mt-1">{errors.observacoes.message}</p>}
       </div>
 
       {/* Botão Submit */}
