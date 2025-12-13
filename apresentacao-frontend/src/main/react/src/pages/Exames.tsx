@@ -34,6 +34,8 @@ import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, 
 
 // Novo: Patients list for displaying names
 import { useListarPacientes } from "@/api/usePacientesApi";
+// Novo: Funcionários (médicos)
+import { useListarFuncionarios } from "@/api/useFuncionariosApi";
 
 export default function Exames() {
   const { isGestor, isMedico } = useAuth();
@@ -69,6 +71,7 @@ export default function Exames() {
   const excluirExame = useExcluirExame();
 
   const { data: pacientes = [] } = useListarPacientes();
+  const { data: funcionarios = [] } = useListarFuncionarios();
 
   const [isExameFormOpen, setIsExameFormOpen] = useState(false);
   const [editingExame, setEditingExame] = useState<any | null>(null);
@@ -267,18 +270,32 @@ export default function Exames() {
     ) : null;
   };
 
-  // Map exames para incluir nomes legíveis para paciente e tipo
+  const normalizeStatus = (s: any) => {
+    if (!s) return '';
+    const v = String(s).toLowerCase();
+    if (v.includes('pend')) return 'pendente';
+    if (v.includes('result') || v.includes('resultado')) return 'resultado';
+    if (v.includes('cancel')) return 'cancelado';
+    if (v.includes('aguard')) return 'aguardando';
+    return v;
+  };
+
+  // Map exames para incluir nomes legíveis para paciente, tipo e médico
   const mappedExames = exames.map((exame: any) => {
     const paciente = pacientes.find((p: any) => p.id === Number(exame.pacienteId));
     const pacienteName = paciente ? paciente.name : String(exame.pacienteId ?? '');
+
+    // medico
+    const medico = funcionarios.find((f: any) => f.id === Number(exame.medicoId));
+    const medicoName = medico ? medico.nome || medico.name : String(exame.medicoId ?? '');
 
     // tipoExame in the API is usually the codigo; try to resolve to a more friendly label
     const tipo = tiposExame.find((t: any) => (t.codigo && String(t.codigo) === String(exame.tipoExame)) || String(t.id) === String(exame.tipoExame));
     const tipoLabel = tipo ? ((tipo.codigo ? tipo.codigo + ' - ' : '') + (tipo.descricao || tipo.codigo)) : String(exame.tipoExame ?? '');
 
-    const statusNormalized = (exame.status || exame.situation || '').toString().toLowerCase();
+    const statusNormalized = normalizeStatus(exame.status || exame.situation || exame.statusName || '');
 
-    return { ...exame, pacienteName, tipoLabel, statusNormalized };
+    return { ...exame, pacienteName, tipoLabel, medicoName, statusNormalized };
   });
 
   const totalAgendados = mappedExames.filter((e: any) => e.statusNormalized !== 'cancelado').length;
@@ -287,7 +304,8 @@ export default function Exames() {
     const pacienteText = String(exame.pacienteName ?? exame.pacienteId ?? "");
     const tipoText = String(exame.tipoLabel ?? exame.tipoExame ?? "");
     const matchesSearch = pacienteText.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tipoText.toLowerCase().includes(searchTerm.toLowerCase());
+      tipoText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(exame.medicoName ?? '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "todos" || exame.statusNormalized === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -346,7 +364,7 @@ export default function Exames() {
             <CardHeader>
               <div className="flex items-center justify-between w-full">
                 <div className="flex-1 pr-4">
-                  <Input placeholder="Pesquisar por paciente ou tipo" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <Input placeholder="Pesquisar por paciente, tipo ou médico" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
@@ -367,6 +385,7 @@ export default function Exames() {
                           <div>
                             <h3 className="font-semibold">{exame.pacienteName}</h3>
                             <p className="text-sm text-muted-foreground">{exame.tipoLabel}</p>
+                            <p className="text-sm text-muted-foreground">Médico: <span className="font-medium text-foreground">{exame.medicoName}</span></p>
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground">{new Date(exame.dataHora || exame.datahora || exame.data).toLocaleString()}</div>
@@ -382,7 +401,11 @@ export default function Exames() {
                             <XCircle className="h-4 w-4" />
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setExameToDelete(exame.id)}>
-                            <Trash2 className="h-4 w-4" />
+                            {excluirExame.isLoading && exameToDelete === exame.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => handleUploadResult(exame.id)}>
                             <Upload className="h-4 w-4" />
@@ -521,7 +544,25 @@ export default function Exames() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={() => exameToDelete && handleDeleteExame(exameToDelete)}>
-              Confirmar
+              {excluirExame.isLoading && exameToDelete ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm dialog para cancelamento de exame */}
+      <AlertDialog open={!!exameToCancel} onOpenChange={() => setExameToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar cancelamento do exame</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar este exame? O exame será marcado como cancelado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => exameToCancel && handleCancelExame(exameToCancel)}>
+              {cancelarExame.isLoading && exameToCancel ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
