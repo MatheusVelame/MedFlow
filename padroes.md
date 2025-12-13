@@ -4,7 +4,7 @@ Este documento lista os padrões de projeto (Design Patterns) que foram implemen
 
 ---
 
-## 1. Decorator
+## 1. Decorator (Paulo Ricardo C. Rago)
 
 **Descrição:** O padrão Decorator permite adicionar novos comportamentos a objetos dinamicamente, envolvendo-os em objetos decoradores. Isso oferece uma alternativa flexível à herança para estender funcionalidades.
 
