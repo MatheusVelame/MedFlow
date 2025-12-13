@@ -8,8 +8,8 @@ export interface ConsultaResumo {
     id: number;
     dataHora: string; // Mapeado de LocalDateTime no Java
     descricao: string;
-    pacienteId: number;
-    medicoId: number;
+    pacienteId: number | string; // Ajustado para ser mais flexível, se necessário
+    medicoId: number | string;   // Ajustado para ser mais flexível, se necessário
     status: StatusConsulta;
 }
 
@@ -29,6 +29,11 @@ export interface HistoricoConsultaEntrada {
  * Baseado em br.com.medflow.aplicacao.atendimento.consultas.ConsultaDetalhes
  */
 export interface ConsultaDetalhes extends ConsultaResumo {
+    // Campos que vêm na resposta de detalhes, mas não no resumo:
+    idPaciente: number | string;
+    nomeCompletoPaciente: string;
+    idMedico: number | string;
+    nomeCompletoMedico: string;
     historico: HistoricoConsultaEntrada[];
 }
 
