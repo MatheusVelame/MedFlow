@@ -234,7 +234,7 @@ export default function Especialidades() {
                 <Badge variant="outline">{especialidade.medicosVinculados ?? 0}</Badge>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {(isGestor || isMedico) && (
                   <Button
                     variant="outline"
