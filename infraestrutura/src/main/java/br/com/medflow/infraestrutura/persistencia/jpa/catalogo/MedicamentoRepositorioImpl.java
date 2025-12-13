@@ -26,7 +26,7 @@ public class MedicamentoRepositorioImpl implements MedicamentoRepositorio, Medic
     
     // Construtor ajustado (removido RevisaoPendenteJpaRepository)
     public MedicamentoRepositorioImpl(MedicamentoJpaRepository jpaRepository,
-                                      HistoricoEntradaJpaRepository historicoJpaRepository) {
+                                     HistoricoEntradaJpaRepository historicoJpaRepository) {
         this.jpaRepository = jpaRepository;
         this.historicoJpaRepository = historicoJpaRepository;
     }
@@ -162,6 +162,7 @@ public class MedicamentoRepositorioImpl implements MedicamentoRepositorio, Medic
             jpa.getId(), 
             jpa.getNome(), 
             jpa.getUsoPrincipal(), 
+            jpa.getContraindicacoes(), // <-- ARGUMENTO DE CONTRAINDICAÇÕES ADICIONADO AQUI
             jpa.getStatus(), 
             temRevisaoPendente
         );

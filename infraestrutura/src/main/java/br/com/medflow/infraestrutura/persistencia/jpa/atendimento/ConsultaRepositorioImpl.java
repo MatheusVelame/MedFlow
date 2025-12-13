@@ -42,7 +42,13 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
         ConsultaJpa jpa = toJpa(consulta);
         jpaRepository.save(jpa);
     }
-    
+
+    @Override
+    public boolean existePorMedicoId(Integer medicoId) {
+        if (medicoId == null) return false;
+        return jpaRepository.existsByMedicoId(medicoId);
+    }
+
     // Métodos de mapeamento interno (Domain <=> JPA)
     
     private Consulta toDomain(ConsultaJpa jpa) {
@@ -97,6 +103,12 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
         return jpaRepository.findByStatus(status.name()).stream()
                 .map(this::toResumoDto)
                 .collect(Collectors.toList());
+    }
+    
+    @Override
+    public boolean existsByPacienteId(int pacienteId) {
+        // Apenas repassa a chamada, sem conversão complicada
+        return jpaRepository.existsByPacienteId(pacienteId);
     }
     
     // Métodos de mapeamento interno (JPA -> DTO)

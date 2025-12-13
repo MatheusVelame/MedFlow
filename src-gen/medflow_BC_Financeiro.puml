@@ -35,9 +35,57 @@ package "'Convenio' Aggregate" <<Rectangle>> {
 		String codigo
 	}
 }
+package "'FolhaPagamento' Aggregate" <<Rectangle>> {
+	class FolhaPagamento <<(A,#fffab8) Aggregate Root>> {
+		String tipoRegistro
+		FolhaPagamentoId_Fin id
+		FuncionarioId_Adm funcionario
+		PeriodoReferencia periodo
+		Valor_Fin salarioBase
+		Valor_Fin beneficios
+		MetodoPagamento metodoPagamento
+		StatusFolha status
+		void atualizarValores(Valor_Fin novoSalarioBase, Valor_Fin novosBeneficios)
+		void alterarStatus(StatusFolha novoStatus)
+		boolean podeSerRemovido()
+	}
+	class FolhaPagamentoId_Fin <<(V,DarkSeaGreen) Value Object>> {
+		String codigo
+	}
+	class PeriodoReferencia <<(V,DarkSeaGreen) Value Object>> {
+		String mesAno
+	}
+	class StatusFolha <<(V,DarkSeaGreen) Value Object>> {
+		String status
+	}
+	class MetodoPagamento <<(V,DarkSeaGreen) Value Object>> {
+		String metodo
+	}
+	class SalarioBruto <<(V,DarkSeaGreen) Value Object>> {
+		Double valor
+	}
+	class DescontoImposto <<(V,DarkSeaGreen) Value Object>> {
+		Double valor
+	}
+	class SalarioLiquido <<(V,DarkSeaGreen) Value Object>> {
+		Double valor
+	}
+	class CalculoSalarioServico <<(S,DarkSeaGreen) Service>> {
+		SalarioBruto calcularBase(FuncionarioId_Adm funcionarioId)
+	}
+	class CalculoImpostoServico <<(S,DarkSeaGreen) Service>> {
+		DescontoImposto calcularImpostoRenda(SalarioBruto salarioBruto)
+	}
+}
 Convenio --> ConvenioId_Fin : id
+FolhaPagamento --> FolhaPagamentoId_Fin : id
 Faturamento --> Valor_Fin : valor
 Faturamento --> FaturamentoId_Fin : id
+FolhaPagamento --> StatusFolha : status
+FolhaPagamento --> Valor_Fin : beneficios
+FolhaPagamento --> MetodoPagamento : metodoPagamento
+FolhaPagamento --> PeriodoReferencia : periodo
+FolhaPagamento --> Valor_Fin : salarioBase
 Faturamento "1" *--> "*" HistoricoFaturamento : historico
 legend left
   This bounded context implements the subdomain 'Financeiro'.

@@ -19,7 +19,7 @@ import br.com.medflow.dominio.evento.EventoObservador;
 public class ExamesFuncionalidadeBase { 
 
     // DEPENDÊNCIAS DE DOMÍNIO
-    protected ExameServico exameServico;
+    protected ExameServicoImpl exameServico;
     protected ExameRepositorioMemoria repositorio;
     
     // ===========================================
@@ -89,7 +89,7 @@ public class ExamesFuncionalidadeBase {
     public ExamesFuncionalidadeBase() {
         this.eventos = new ArrayList<>();
         this.repositorio = new ExameRepositorioMemoria();
-        this.exameServico = new ExameServico(this.repositorio, new VerificadorExternoMock(), new EventoBarramentoMock());
+        this.exameServico = new ExameServicoImpl(this.repositorio, new VerificadorExternoMock(), new EventoBarramentoMock());
     }
     
     // O Hook @Before foi movido para a subclasse.

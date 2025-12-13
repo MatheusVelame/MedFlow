@@ -5,10 +5,16 @@ package br.com.medflow.dominio.referencia.especialidades;
  */
 public class Especialidade {
     
+    private Integer id; // Identificador persistente (estável)
     private String nome;
     private String descricao;
     private StatusEspecialidade status;
     private boolean possuiVinculoHistorico; // RN 3.2: Flag para controle de exclusão física
+
+    // Construtor sem-argumentos necessário para frameworks (Mapeamento/ModelMapper/JPA)
+    public Especialidade() {
+        // Intencionalmente vazio - usado apenas para desserialização e mapeamento
+    }
 
     // Construtor para novas especialidades (RN 1.5 - Status Inicial Ativa)
     public Especialidade(String nome, String descricao) {
@@ -27,6 +33,10 @@ public class Especialidade {
         this.status = status;
         this.possuiVinculoHistorico = possuiVinculoHistorico;
     }
+
+    // Getter/Setter para ID (necessário para mapeamento JPA <-> DOMÍNIO)
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
     
     // Métodos de Regra de Negócio
 
@@ -91,4 +101,10 @@ public class Especialidade {
     public String getDescricao() { return descricao; }
     public StatusEspecialidade getStatus() { return status; }
     public boolean isPossuiVinculoHistorico() { return possuiVinculoHistorico; }
+
+    // Setters públicos para auxiliar frameworks/ModelMapper na reconstrução do Aggregate
+    public void setNome(String nome) { this.nome = nome; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public void setStatus(StatusEspecialidade status) { this.status = status; }
+    public void setPossuiVinculoHistorico(boolean possuiVinculoHistorico) { this.possuiVinculoHistorico = possuiVinculoHistorico; }
 }

@@ -8,6 +8,11 @@ import java.io.IOException;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.stereotype.Repository;
 
 // Imports de Consultas (Módulo 1)
 import br.com.medflow.dominio.atendimento.consultas.ConsultaServico;
@@ -21,9 +26,62 @@ import br.com.medflow.dominio.catalogo.medicamentos.MedicamentoRepositorio;
 import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoServicoAplicacao;
 import br.com.medflow.aplicacao.catalogo.medicamentos.MedicamentoRepositorioAplicacao;
 
+// Imports de Prontuário
+import com.medflow.dominio.prontuario.ProntuarioRepositorio;
+import br.com.medflow.aplicacao.prontuario.ProntuarioServicoAplicacao;
+import br.com.medflow.aplicacao.prontuario.ProntuarioRepositorioAplicacao;
+import br.com.medflow.aplicacao.prontuario.usecase.*;
+import br.com.medflow.infraestrutura.persistencia.jpa.prontuario.*;
+
+// Imports de Faturamento
+import br.com.medflow.dominio.financeiro.faturamentos.FaturamentoServico;
+import br.com.medflow.dominio.financeiro.faturamentos.FaturamentoRepositorio;
+import br.com.medflow.dominio.financeiro.faturamentos.TabelaPrecosServico;
+import br.com.medflow.aplicacao.financeiro.faturamentos.FaturamentoServicoAplicacao;
+import br.com.medflow.aplicacao.financeiro.faturamentos.FaturamentoRepositorioAplicacao;
+import br.com.medflow.aplicacao.financeiro.faturamentos.usecase.*;
+import br.com.medflow.infraestrutura.persistencia.jpa.financeiro.*;
+
+// Imports de Convenios
+import br.com.medflow.dominio.financeiro.convenios.ConvenioServico;
+import br.com.medflow.dominio.financeiro.convenios.ConvenioRepositorio;
+import br.com.medflow.aplicacao.financeiro.convenios.ConvenioServicoAplicacao;
+import br.com.medflow.aplicacao.financeiro.convenios.ConvenioRepositorioAplicacao;
+import br.com.medflow.dominio.financeiro.evento.EventoBarramento;
+import br.com.medflow.infraestrutura.evento.EventoBarramentoImpl;
+import br.com.medflow.aplicacao.financeiro.convenios.ConvenioAuditoriaObservador;
+
+//NOVOS IMPORTS para TiposExames
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameServico;
+import br.com.medflow.dominio.referencia.tiposExames.TipoExameRepositorio;
+import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameServicoAplicacao;
+import br.com.medflow.aplicacao.referencia.tiposExames.TipoExameRepositorioAplicacao;
+
+// Imports de FolhaPagamento
+import br.com.medflow.dominio.financeiro.folhapagamento.FolhaPagamentoServico;
+import br.com.medflow.dominio.financeiro.folhapagamento.FolhaPagamentoRepositorio;
+import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoServicoAplicacao;
+import br.com.medflow.aplicacao.financeiro.folhapagamento.FolhaPagamentoRepositorioAplicacao;
+
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioServico;
+import br.com.medflow.dominio.administracao.funcionarios.FuncionarioRepositorio;
+import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioServicoAplicacao;
+import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioRepositorioAplicacao;
+
 @SpringBootApplication
+@ComponentScan(basePackages = {
+    "br.com.medflow.apresentacao",
+    "br.com.medflow.infraestrutura",
+    "br.com.medflow.aplicacao",
+    "br.com.medflow.dominio"
+})
+// Restringe o escopo de repositórios JPA para o pacote de infraestrutura
+@EnableJpaRepositories(basePackages = "br.com.medflow.infraestrutura.persistencia.jpa")
+// Escaneia entidades JPA no pacote de infraestrutura
+@EntityScan(basePackages = "br.com.medflow.infraestrutura.persistencia.jpa")
 public class BackendAplicacao {
     
+
     // =====================================================================
     // CONFIGURAÇÕES DE BEANS PARA CONSULTAS
     // =====================================================================
@@ -42,16 +100,197 @@ public class BackendAplicacao {
     // =====================================================================
     
     // Configuração do Serviço de Domínio Medicamento (Commands/Writes)
+
 	@Bean
 	public MedicamentoServico medicamentoServico(MedicamentoRepositorio repositorio) {
 		return new MedicamentoServico(repositorio);
 	}
 
-    // Configuração do Serviço de Aplicação Medicamento (Queries/Reads)
+
+    // Configuração do Serviço de Aplicação (Queries/Reads - Medicamento)
+
 	@Bean
 	public MedicamentoServicoAplicacao medicamentoServicoAplicacao(MedicamentoRepositorioAplicacao repositorio) {
 		return new MedicamentoServicoAplicacao(repositorio);
 	}
+    // =====================================================================
+    // CONFIGURAÇÕES DE BEANS PARA PRONTUÁRIO
+    // =====================================================================
+    
+    @Bean
+    public ProntuarioServicoAplicacao prontuarioServicoAplicacao(ProntuarioRepositorioAplicacao repositorio) {
+        return new ProntuarioServicoAplicacao(repositorio);
+    }
+    
+    @Bean
+    public ObterProntuarioQuery obterProntuarioQuery(ProntuarioServicoAplicacao servicoAplicacao) {
+        return new ObterProntuarioQuery(servicoAplicacao);
+    }
+    
+    @Bean
+    public ListarHistoricoQuery listarHistoricoQuery(ProntuarioServicoAplicacao servicoAplicacao) {
+        return new ListarHistoricoQuery(servicoAplicacao);
+    }
+    
+    @Bean
+    public ListarHistoricoAtualizacoesQuery listarHistoricoAtualizacoesQuery(ProntuarioServicoAplicacao servicoAplicacao) {
+        return new ListarHistoricoAtualizacoesQuery(servicoAplicacao);
+    }
+
+    @Bean
+    public ExcluirProntuarioUseCase excluirProntuarioUseCase(
+            ProntuarioRepositorioImpl repositorio) {
+        return new ExcluirProntuarioUseCase(repositorio);
+    }
+
+    @Bean
+    public InativarProntuarioUseCase inativarProntuarioUseCase(
+            ProntuarioRepositorioImpl repositorio) {
+        return new InativarProntuarioUseCase(repositorio);
+    }
+    
+    @Bean
+    public ProntuarioRepositorioBase prontuarioRepositorioBase(
+            ProntuarioJpaRepository jpaRepository,
+            HistoricoClinicoJpaRepository historicoClinicoJpaRepository,
+            HistoricoAtualizacaoJpaRepository historicoAtualizacaoJpaRepository) {
+        return new ProntuarioRepositorioBase(jpaRepository, historicoClinicoJpaRepository, historicoAtualizacaoJpaRepository);
+    }
+    
+    @Bean
+    public AdicionarHistoricoClinicoUseCase adicionarHistoricoClinicoUseCase(
+            ProntuarioRepositorioImpl repositorio) {
+        return new AdicionarHistoricoClinicoUseCase(repositorio);
+    }
+    
+    @Bean
+    public CriarProntuarioUseCase criarProntuarioUseCase(
+            ProntuarioRepositorioImpl repositorio) {
+        return new CriarProntuarioUseCase(repositorio);
+    }
+
+    // =====================================================================
+    // CONFIGURAÇÕES DE BEANS PARA FATURAMENTO
+    // =====================================================================
+    
+    @Bean
+    public TabelaPrecosServico tabelaPrecosServico() {
+        return new TabelaPrecosServico();
+    }
+    
+    @Bean
+    public FaturamentoRepositorioBase faturamentoRepositorioBase(
+            FaturamentoJpaRepository jpaRepository,
+            HistoricoFaturamentoJpaRepository historicoJpaRepository) {
+        return new FaturamentoRepositorioBase(jpaRepository, historicoJpaRepository);
+    }
+    
+    // Bean para FaturamentoRepositorio (injeta o FaturamentoRepositorioImpl que já tem os decorators)
+    @Bean
+    public FaturamentoServico faturamentoServico(
+            FaturamentoRepositorioImpl repositorio, 
+            TabelaPrecosServico tabelaPrecosServico) {
+        return new FaturamentoServico(repositorio, tabelaPrecosServico);
+    }
+    
+    @Bean
+    public FaturamentoServicoAplicacao faturamentoServicoAplicacao(FaturamentoRepositorioAplicacao repositorio) {
+        return new FaturamentoServicoAplicacao(repositorio);
+    }
+    
+    @Bean
+    public RegistrarFaturamentoUseCase registrarFaturamentoUseCase(FaturamentoServico faturamentoServico) {
+        return new RegistrarFaturamentoUseCase(faturamentoServico);
+    }
+    
+    @Bean
+    public MarcarComoPagoUseCase marcarComoPagoUseCase(FaturamentoServico faturamentoServico) {
+        return new MarcarComoPagoUseCase(faturamentoServico);
+    }
+    
+    @Bean
+    public CancelarFaturamentoUseCase cancelarFaturamentoUseCase(FaturamentoServico faturamentoServico) {
+        return new CancelarFaturamentoUseCase(faturamentoServico);
+    }
+
+	// =====================================================================
+	// Configuração de Convenios com Observer
+	// =====================================================================
+
+	// Configuração do Barramento de Eventos
+	@Bean
+	public EventoBarramento eventoBarramento() {
+		EventoBarramentoImpl barramento = new EventoBarramentoImpl();
+		
+		// Registrar observadores
+		ConvenioAuditoriaObservador observadorAuditoria = new ConvenioAuditoriaObservador();
+		barramento.adicionar(observadorAuditoria);
+		
+		return barramento;
+	}
+
+	// Configuração do Serviço de Domínio de Convenios (com EventoBarramento)
+	@Bean
+	public ConvenioServico convenioServico(ConvenioRepositorio repositorio, EventoBarramento barramento) {
+		return new ConvenioServico(repositorio, barramento);
+	}
+
+	// Configuração do Serviço de Aplicação de Convenios (Queries/Reads)
+	@Bean
+	public ConvenioServicoAplicacao convenioServicoAplicacao(ConvenioRepositorioAplicacao repositorio) {
+		return new ConvenioServicoAplicacao(repositorio);
+	}
+
+	// Configuração do Serviço de Domínio de Folha de Pagamento
+	@Bean
+	public FolhaPagamentoServico folhaPagamentoServico(FolhaPagamentoRepositorio repositorio) {
+		return new FolhaPagamentoServico(repositorio);
+	}
+
+	// Configuração do Serviço de Aplicação de Folha de Pagamento
+	@Bean
+	public FolhaPagamentoServicoAplicacao folhaPagamentoServicoAplicacao(
+			FolhaPagamentoServico servicoDominio,
+			FolhaPagamentoRepositorioAplicacao repositorioAplicacao) {
+		return new FolhaPagamentoServicoAplicacao(servicoDominio, repositorioAplicacao);
+	}
+
+	// =====================================================================
+    // CONFIGURAÇÕES DE BEANS PARA FUNCIONÁRIOS
+    // =====================================================================
+
+    // Configuração do Serviço de Domínio (Commands/Writes - Funcionários)
+    @Bean
+    public FuncionarioServico funcionarioServico(FuncionarioRepositorio repositorio) {
+        return new FuncionarioServico(repositorio);
+    }
+
+    // Configuração do Serviço de Aplicação (Queries/Reads - Funcionários)
+    /**
+     * Configura o bean do Serviço de Aplicação de Funcionários (Queries).
+     * O Spring injetará o FuncionarioRepositorioAplicacao que é implementado 
+     * na camada de Infraestrutura (FuncionarioRepositorioAplicacaoImpl).
+     */
+    @Bean
+    public FuncionarioServicoAplicacao funcionarioServicoAplicacao(FuncionarioRepositorioAplicacao repositorio) {
+        return new FuncionarioServicoAplicacao(repositorio);
+    }
+
+	// =====================================================================
+    // CONFIGURAÇÕES DE BEANS PARA TIPOS DE EXAMES
+    // =====================================================================
+
+    // Configuração do Serviço de Domínio TipoExame (Commands/Writes)
+    @Bean
+    public TipoExameServico tipoExameServico(TipoExameRepositorio repositorio) {
+        return new TipoExameServico(repositorio);
+    }
+
+    // Configuração do Serviço de Aplicação TipoExame (Queries/Reads)
+    @Bean
+    public TipoExameServicoAplicacao tipoExameServicoAplicacao(TipoExameRepositorioAplicacao repositorio) {
+        return new TipoExameServicoAplicacao(repositorio);
+    }
 
 	public static void main(String[] args) throws IOException {
 		run(BackendAplicacao.class, args);

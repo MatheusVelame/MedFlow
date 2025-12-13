@@ -1,0 +1,205 @@
+package br.com.medflow.infraestrutura.persistencia.jpa.prontuario;
+
+import br.com.medflow.aplicacao.prontuario.HistoricoItemResponse;
+import br.com.medflow.aplicacao.prontuario.ProntuarioDetalhes;
+import br.com.medflow.aplicacao.prontuario.ProntuarioRepositorioAplicacao;
+import br.com.medflow.aplicacao.prontuario.ProntuarioResumo;
+import br.com.medflow.aplicacao.prontuario.AtualizacaoItemResponse;
+import com.medflow.dominio.prontuario.Prontuario;
+import com.medflow.dominio.prontuario.ProntuarioRepositorio;
+
+import com.medflow.dominio.prontuario.HistoricoAtualizacao;
+
+import org.springframework.context.annotation.Primary;
+
+import org.springframework.stereotype.Component;
+
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+/**
+ * Implementação final do repositório de Prontuário usando Decorator Pattern.
+ * Compõe os decorators (logging) sobre a implementação base.
+ */
+@Component
+@Primary
+public class ProntuarioRepositorioImpl implements ProntuarioRepositorio, ProntuarioRepositorioAplicacao {
+
+    private final ProntuarioRepositorio repositorioDecorado;
+
+    private final ProntuarioJpaRepository jpaRepository;
+
+    public ProntuarioRepositorioImpl(ProntuarioRepositorioBase repositorioBase, ProntuarioJpaRepository jpaRepository) {
+        this.repositorioDecorado = new ProntuarioRepositorioLoggingDecorator(repositorioBase);
+        this.jpaRepository = jpaRepository;
+    }
+
+    // =====================================================================
+    // IMPLEMENTAÇÃO DO DOMAIN REPOSITORY (PORTA DE ESCRITA/CUD)
+    // =====================================================================
+
+    @Override
+    public void salvar(Prontuario prontuario) {
+        repositorioDecorado.salvar(prontuario);
+    }
+
+    @Override
+    public Optional<Prontuario> obterPorId(String id) {
+        return repositorioDecorado.obterPorId(id);
+    }
+
+    @Override
+    public List<Prontuario> buscarPorPaciente(String pacienteId) {
+        return repositorioDecorado.buscarPorPaciente(pacienteId);
+    }
+
+    @Override
+    public List<Prontuario> listarTodos() {
+        return repositorioDecorado.listarTodos();
+    }
+    
+    @Override
+    public boolean existsByPacienteId(String pacienteId) {
+        // Delega para o repositório decorado (que já tem a lógica agora)
+        return repositorioDecorado.existsByPacienteId(pacienteId);
+    }
+
+    // =====================================================================
+    // IMPLEMENTAÇÃO DO APPLICATION REPOSITORY (PORTA DE LEITURA/QUERY)
+    // =====================================================================
+
+    @Override
+    public List<ProntuarioResumo> pesquisarResumos() {
+        // Retornar todos os prontuários exceto os excluídos
+        // Prontuários inativos aparecem na listagem para permitir visualização
+        return listarTodos().stream()
+                .filter(p -> p.getStatus() != com.medflow.dominio.prontuario.StatusProntuario.EXCLUIDO)
+                .map(this::toResumoDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<ProntuarioDetalhes> obterDetalhesPorId(String id) {
+        return obterPorId(id)
+                .map(this::toDetalhesDto);
+    }
+
+    @Override
+    public List<HistoricoItemResponse> listarHistoricoClinico(String prontuarioId) {
+        return obterPorId(prontuarioId)
+                .map(prontuario -> prontuario.getHistoricoClinico().stream()
+                        .map(h -> toHistoricoItemResponse(h, prontuario))
+                        .collect(Collectors.toList()))
+                .orElse(List.of());
+    }
+
+    @Override
+    public boolean existePorMedicoId(Integer medicoId) {
+        if (medicoId == null) return false;
+        // O campo profissionalResponsavel no JPA é String, então convertemos o ID
+        return jpaRepository.existsByProfissionalResponsavel(String.valueOf(medicoId));
+    }
+
+    @Override
+    public List<ProntuarioResumo> buscarPorPacienteAplicacao(String pacienteId) {
+        // Chama o método do repositório de domínio (que retorna List<Prontuario>)
+        List<Prontuario> prontuarios = repositorioDecorado.buscarPorPaciente(pacienteId);
+        // Converte para DTOs
+        return prontuarios.stream()
+                .map(this::toResumoDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<br.com.medflow.aplicacao.prontuario.AtualizacaoItemResponse> listarHistoricoAtualizacoes(String prontuarioId) {
+        Optional<Prontuario> prontuarioOpt = obterPorId(prontuarioId);
+        if (prontuarioOpt.isEmpty()) {
+            return List.of();
+        }
+        Prontuario prontuario = prontuarioOpt.get();
+        // Ordenar por data/hora decrescente (mais recente primeiro) e retornar todos
+        return prontuario.getHistoricoAtualizacoes().stream()
+                .sorted((a1, a2) -> a2.getDataHoraAtualizacao().compareTo(a1.getDataHoraAtualizacao())) // Ordem decrescente
+                .map(a -> toAtualizacaoItemResponse(a, prontuario))
+                .collect(Collectors.toList());
+    }
+
+    // Mapeamento Domain -> DTO
+    private ProntuarioResumo toResumoDto(Prontuario prontuario) {
+        return new ProntuarioResumo(
+                prontuario.getId(),
+                prontuario.getPacienteId(),
+                prontuario.getAtendimentoId(),
+                prontuario.getStatus(),
+                prontuario.getDataHoraCriacao(),
+                prontuario.getProfissionalResponsavel()
+        );
+    }
+
+    private ProntuarioDetalhes toDetalhesDto(Prontuario prontuario) {
+        List<ProntuarioDetalhes.HistoricoItemDetalhes> historicoClinico = prontuario.getHistoricoClinico().stream()
+                .map(hc -> new ProntuarioDetalhes.HistoricoItemDetalhes(
+                        hc.getId(),
+                        hc.getSintomas(),
+                        hc.getDiagnostico(),
+                        hc.getConduta(),
+                        hc.getDataHoraRegistro(),
+                        hc.getProfissionalResponsavel(),
+                        hc.getAnexosReferenciados()
+                ))
+                .collect(Collectors.toList());
+
+        List<ProntuarioDetalhes.AtualizacaoDetalhes> historicoAtualizacoes = prontuario.getHistoricoAtualizacoes().stream()
+                .map(ha -> new ProntuarioDetalhes.AtualizacaoDetalhes(
+                        ha.getId(),
+                        ha.getAtendimentoId(),
+                        ha.getDataHoraAtualizacao(),
+                        ha.getProfissionalResponsavel(),
+                        ha.getObservacoes(),
+                        ha.getStatus()
+                ))
+                .collect(Collectors.toList());
+
+        return new ProntuarioDetalhes(
+                prontuario.getId(),
+                prontuario.getPacienteId(),
+                prontuario.getAtendimentoId(),
+                prontuario.getStatus(),
+                prontuario.getDataHoraCriacao(),
+                prontuario.getProfissionalResponsavel(),
+                prontuario.getObservacoesIniciais(),
+                historicoClinico,
+                historicoAtualizacoes
+        );
+    }
+
+    private HistoricoItemResponse toHistoricoItemResponse(com.medflow.dominio.prontuario.HistoricoClinico historico, Prontuario prontuario) {
+        return new HistoricoItemResponse(
+                historico.getId(),
+                historico.getSintomas(),
+                historico.getDiagnostico(),
+                historico.getConduta(),
+                historico.getDataHoraRegistro(),
+                historico.getProfissionalResponsavel(),
+                historico.getAnexosReferenciados(),
+                prontuario != null ? prontuario.getId() : null,
+                prontuario != null ? prontuario.getPacienteId() : null
+        );
+    }
+
+    private AtualizacaoItemResponse toAtualizacaoItemResponse(HistoricoAtualizacao atualizacao, Prontuario prontuario) {
+        return new AtualizacaoItemResponse(
+                atualizacao.getId(),
+                atualizacao.getAtendimentoId(),
+                atualizacao.getDataHoraAtualizacao(),
+                atualizacao.getProfissionalResponsavel(),
+                atualizacao.getObservacoes(),
+                atualizacao.getStatus(),
+                prontuario != null ? prontuario.getId() : null,
+                prontuario != null ? prontuario.getPacienteId() : null
+        );
+    }
+
+}

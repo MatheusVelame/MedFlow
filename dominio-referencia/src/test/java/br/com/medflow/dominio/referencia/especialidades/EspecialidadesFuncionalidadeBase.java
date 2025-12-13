@@ -6,14 +6,15 @@ import org.apache.commons.lang3.RandomStringUtils;
 /**
  * Classe base para os Steps Definitions de Especialidades.
  * Gerencia as dependências do domínio e o estado (contexto) de execução de cada cenário.
-
  */
 public class EspecialidadesFuncionalidadeBase {
 
     // DEPENDÊNCIAS DE DOMÍNIO (Injetadas e Mockadas)
     protected EspecialidadesRepositorioMemoria repositorio;
     protected MedicoRepositorioMemoria medicoRepositorio;
-    protected EspecialidadeServico servico;
+    
+    // MUDANÇA 1: O tipo agora é a INTERFACE, não a classe concreta.
+    protected IEspecialidadeServico servico; 
 
     // ESTADO DO CENÁRIO (Variáveis de Contexto)
     private RegraNegocioException ultimaExcecao;
@@ -27,7 +28,12 @@ public class EspecialidadesFuncionalidadeBase {
         this.repositorio = new EspecialidadesRepositorioMemoria();
         this.medicoRepositorio = new MedicoRepositorioMemoria();
      
-        this.servico = new EspecialidadeServico(repositorio, medicoRepositorio);
+        // MUDANÇA 2: Construção com Proxy
+        // 1. Instancia a implementação real (o "miolo" da lógica)
+        IEspecialidadeServico servicoReal = new EspecialidadeServicoImpl(repositorio, medicoRepositorio);
+        
+        // 2. Envolve a implementação real com o Proxy
+        this.servico = new EspecialidadeServicoProxy(servicoReal);
 
         this.repositorio.limpar();
         this.medicoRepositorio.limpar();
@@ -35,6 +41,7 @@ public class EspecialidadesFuncionalidadeBase {
         this.descricao = null;
         this.ultimaEspecialidadeCadastrada = null;
 
+        // Carga inicial de dados para testes
         this.repositorio.popular("Pediatria", "Pediatria Geral", StatusEspecialidade.ATIVA, false);
         this.medicoRepositorio.mockContagem("Pediatria", 0); 
 
@@ -49,7 +56,6 @@ public class EspecialidadesFuncionalidadeBase {
     // GETTERS E SETTERS (Ponto de contato para EspecialidadesFuncionalidade)
     // ===========================================
 
-    // Getters
     public RegraNegocioException getUltimaExcecao() {
         return ultimaExcecao;
     }
@@ -62,7 +68,6 @@ public class EspecialidadesFuncionalidadeBase {
         return ultimaEspecialidadeCadastrada;
     }
     
-    // Setters
     public void setUltimaExcecao(RegraNegocioException ultimaExcecao) {
         this.ultimaExcecao = ultimaExcecao;
     }

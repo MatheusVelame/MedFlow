@@ -40,6 +40,32 @@ public class Exame {
         this.pacienteId = null; 
     }
 
+    /*
+     * Construtor protegido para reconstituição do estado a partir da persistência (uso interno pelos mapeadores).
+     * Permite reconstruir um Exame sem acionar regras de domínio (ex.: registrar histórico de criação novamente).
+     */
+    public Exame(ExameId id,
+                    Long pacienteId,
+                    Long medicoId,
+                    String tipoExame,
+                    LocalDateTime dataHora,
+                    StatusExame status,
+                    List<HistoricoEntrada> historico,
+                    boolean vinculadoALaudo,
+                    boolean vinculadoAProntuario,
+                    String motivoCancelamento) {
+        this.id = id;
+        this.pacienteId = pacienteId;
+        this.medicoId = medicoId;
+        this.tipoExame = tipoExame;
+        this.dataHora = dataHora;
+        this.status = status;
+        this.historico = (historico != null) ? new ArrayList<>(historico) : new ArrayList<>();
+        this.vinculadoALaudo = vinculadoALaudo;
+        this.vinculadoAProntuario = vinculadoAProntuario;
+        this.motivoCancelamento = motivoCancelamento;
+    }
+
     public void atualizar(Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel) {
         LocalDateTime dataHoraAntiga = this.dataHora;
         Long medicoIdAntigo = this.medicoId;

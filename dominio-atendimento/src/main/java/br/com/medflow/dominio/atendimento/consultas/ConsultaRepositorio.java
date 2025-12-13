@@ -14,6 +14,8 @@ public interface ConsultaRepositorio {
      * Busca um Aggregate Root Consulta pelo seu ID.
      */
     Optional<Consulta> buscarPorId(ConsultaId id);
+    
+    boolean existsByPacienteId(int pacienteId);
 
     /**
      * Salva ou atualiza um Aggregate Root Consulta.

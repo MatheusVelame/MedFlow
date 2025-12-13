@@ -32,6 +32,13 @@ public class ConsultaRepositorioMemoria implements ConsultaRepositorio {
     public Optional<Consulta> buscarPorId(ConsultaId id) {
         return Optional.ofNullable(consultas.get(id.getValor()));
     }
+    
+    @Override
+    public boolean existsByPacienteId(int pacienteId) {
+        // Percorre a lista em memória (map) para ver se alguém tem esse ID
+        return consultas.values().stream()
+                .anyMatch(c -> c.getPacienteId() != null && c.getPacienteId() == pacienteId);
+    }
 
     @Override
     public void salvar(Consulta consulta) {

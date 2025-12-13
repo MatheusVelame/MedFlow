@@ -1,0 +1,139 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { MedicalLayout } from "./components/MedicalLayout";
+import Dashboard from "./pages/Dashboard";
+import Pacientes from "./pages/Pacientes";
+// import Triagem from "./pages/Triagem"; // REMOVIDO
+import Prontuarios from "./pages/Prontuarios";
+import Exames from "./pages/Exames";
+import Financeiro from "./pages/Financeiro";
+import Faturamentos from "./pages/Faturamentos";
+// import Estoque from "./pages/Estoque"; // REMOVIDO
+import Profissionais from "./pages/Profissionais";
+// import Relatorios from "./pages/Relatorios"; // REMOVIDO
+import Especialidades from "./pages/Especialidades";
+import Convenios from "./pages/Convenios";
+import Medicamentos from "./pages/Medicamentos";
+import MedicamentosMedico from "./pages/Medicamentos-medico";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+import TiposExames from "./pages/TiposExames";
+import EspecialidadeNovo from "./pages/EspecialidadeNovo";
+import EspecialidadeDetalhe from "./pages/EspecialidadeDetalhe";
+import ExameNovo from "./pages/ExameNovo";
+import { ConsultasPage } from './pages/ConsultasPage';
+import ExameDetalhe from "./pages/ExameDetalhe";
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={
+              <ProtectedRoute>
+                <MedicalLayout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/pacientes" element={<Pacientes />} />
+                    {/* ROTA TRIAGEM REMOVIDA */}
+                    <Route path="/prontuarios" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <Prontuarios />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/exames" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <Exames />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/exames/novo" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ExameNovo />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/exames/:id" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ExameDetalhe />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/financeiro" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'atendente']}>
+                        <Financeiro />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/faturamentos" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'atendente']}>
+                        <Faturamentos />
+                      </ProtectedRoute>
+                    } />
+                    {/* ROTA ESTOQUE REMOVIDA */}
+                    <Route path="/profissionais" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <Profissionais />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/especialidades" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <Especialidades />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/especialidades/novo" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <EspecialidadeNovo />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/especialidades/:id" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <EspecialidadeDetalhe />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/convenios" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'atendente']}>
+                        <Convenios />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/medicamentos" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <Medicamentos />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/consultas" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ConsultasPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/medicamentos-medico" element={
+                      <ProtectedRoute allowedRoles={['medico']}>
+                        <MedicamentosMedico />
+                      </ProtectedRoute>
+                    } />
+                    {/* ROTA RELATORIOS REMOVIDA */}
+					<Route path="/tipos-exames" element={
+					  <ProtectedRoute allowedRoles={['gestor']}>
+					    <TiposExames />
+					  </ProtectedRoute>
+					} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </MedicalLayout>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
+
+export default App;

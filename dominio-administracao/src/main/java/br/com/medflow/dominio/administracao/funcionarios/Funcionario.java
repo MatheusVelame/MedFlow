@@ -163,8 +163,6 @@ public class Funcionario {
     public String getContato() { return contato; }
     public StatusFuncionario getStatus() { return status; }
     public List<HistoricoEntrada> getHistorico() { return List.copyOf(historico); }
-
-
     public static class HistoricoEntrada {
         private final AcaoHistorico acao;
         private final String descricao;

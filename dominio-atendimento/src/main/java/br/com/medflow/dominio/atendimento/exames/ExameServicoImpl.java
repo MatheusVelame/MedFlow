@@ -3,24 +3,25 @@ package br.com.medflow.dominio.atendimento.exames;
 import java.time.LocalDateTime;
 import static org.apache.commons.lang3.Validate.notNull;
 
-// Importações dos pacotes de eventos compartilhados (conforme padrão dominio-catalogo)
 import br.com.medflow.dominio.evento.EventoBarramento;
 
 /**
- * Serviço de Domínio para orquestrar as regras de negócio de Exames.
+ * RealSubject: Implementação real do serviço de domínio de Exames.
+ * Contém toda a lógica de negócio e validações (RNs).
  */
-public class ExameServico {
+public class ExameServicoImpl implements IExameServico {
 
     private final ExameRepositorio repositorio;
     private final VerificadorExternoServico verificadorExterno;
     private final EventoBarramento eventoBarramento;
 
-    public ExameServico(ExameRepositorio repositorio, VerificadorExternoServico verificadorExterno, EventoBarramento eventoBarramento) {
+    public ExameServicoImpl(ExameRepositorio repositorio, VerificadorExternoServico verificadorExterno, EventoBarramento eventoBarramento) {
         this.repositorio = notNull(repositorio, "O repositório é obrigatório.");
         this.verificadorExterno = notNull(verificadorExterno, "O verificador externo é obrigatório.");
         this.eventoBarramento = notNull(eventoBarramento, "O barramento de eventos é obrigatório.");
     }
 
+    @Override
     public Exame agendarExame(Long pacienteId, Long medicoId, String tipoExame, LocalDateTime dataHora, UsuarioResponsavelId responsavel) {
         
         // RN3
@@ -40,7 +41,7 @@ public class ExameServico {
             throw new ExcecaoDominio("Paciente não cadastrado no sistema.");
         }
         
-        // ***** CORREÇÃO PARA RN 1.3 (Médico não cadastrado) *****
+        // RN1.3
         if (!verificadorExterno.medicoEstaCadastrado(medicoId)) {
             throw new ExcecaoDominio("Médico não cadastrado no sistema.");
         }
@@ -70,6 +71,7 @@ public class ExameServico {
         return exameSalvo;
     }
 
+    @Override
     public Exame atualizarAgendamento(ExameId exameId, Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel) {
         
         Exame exame = repositorio.obterPorId(exameId)
@@ -85,20 +87,17 @@ public class ExameServico {
             throw new ExcecaoDominio("A alteração não pode gerar conflito de horário para o paciente.");
         }
         
-        // RN10 (Indisponibilidade Médica) - Corrigi a mensagem de erro no serviço para ser mais explícita
+        // RN10 (Indisponibilidade Médica)
         if (!verificadorExterno.medicoEstaDisponivel(novoMedicoId, novaDataHora)) {
             throw new ExcecaoDominio("A alteração não pode gerar conflito de horário para o médico.");
         }
-        
-        // Simulação da RN9 (Paciente não pode ser alterado - validado no domínio por ser 'final')
-        // O serviço aqui assume que o pacienteId não está sendo passado.
-        // Se a chamada ao serviço do Step tentar alterar o paciente, a lógica abaixo irá barrar via assert.
 
         exame.atualizar(novoMedicoId, novoTipoExame, novaDataHora, responsavel);
         
         return repositorio.salvar(exame);
     }
     
+    @Override
     public void tentarExcluirAgendamento(ExameId exameId, UsuarioResponsavelId responsavel) {
          Exame exame = repositorio.obterPorId(exameId)
             .orElseThrow(() -> new ExcecaoDominio("Agendamento de exame não encontrado"));
@@ -114,6 +113,7 @@ public class ExameServico {
         }
     }
     
+    @Override
     public Exame cancelarAgendamento(ExameId exameId, String motivo, UsuarioResponsavelId responsavel) {
         Exame exame = repositorio.obterPorId(exameId)
             .orElseThrow(() -> new ExcecaoDominio("Agendamento de exame não encontrado"));

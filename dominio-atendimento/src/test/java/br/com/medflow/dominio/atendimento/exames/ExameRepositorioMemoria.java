@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
 
 public class ExameRepositorioMemoria implements ExameRepositorio {
 
@@ -19,6 +21,12 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
     @Override
     public Optional<Exame> obterPorId(ExameId id) {
         return Optional.ofNullable(exames.get(id));
+    }
+    
+    @Override
+    public boolean existsByPacienteId(Long pacienteId) {
+        return exames.values().stream() // ou o nome da sua lista/map
+                .anyMatch(e -> e.getPacienteId() != null && e.getPacienteId().equals(pacienteId));
     }
 
     @Override
@@ -45,9 +53,26 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
                 .filter(exame -> idExcluido == null || !exame.getId().equals(idExcluido))
                 .findFirst();
     }
-    
+
+    @Override
+    public boolean existePorMedicoId(Integer medicoId) {
+        if (medicoId == null) return false;
+
+        return exames.values().stream()
+                .anyMatch(exame ->
+                        exame.getMedicoId() != null &&
+                                // Conversão necessária: Exame usa Long, mas o parâmetro veio como Integer
+                                exame.getMedicoId().equals(medicoId.longValue())
+                );
+    }
+
     public void limpar() {
         exames.clear();
         sequenciaId = 0;
+    }
+
+    @Override
+    public List<Exame> listarTodos() {
+        return new ArrayList<>(exames.values());
     }
 }

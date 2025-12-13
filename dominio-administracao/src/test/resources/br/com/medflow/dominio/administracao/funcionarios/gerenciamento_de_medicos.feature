@@ -69,12 +69,12 @@ Feature: Gerenciamento de Médicos - AV1
 # 3. Consulta de Dados de Médicos
 # ====================================================================#
 
-  Scenario: RN2 Consulta - Sucesso – Busca por CRM exato
+  Scenario: RN1 Consulta - Sucesso – Busca por CRM exato
     Given que existem os seguintes médicos ativos cadastrados: "Dr. André Vasconcelos" com CRM "77777-SC", "Dra. Patrícia Medeiros" com CRM "88888-PR" e "Dra. Gabriela Lima" com CRM "99999-GO"
     When o funcionário digita o CRM "88888-PR" no campo de busca principal
     Then a lista deve exibir apenas o registro da "Dra. Patrícia Medeiros"
 
-  Scenario: RN2 Consulta - Insucesso – Busca por um termo que não corresponde a nenhum médico
+  Scenario: RN1 Consulta - Insucesso – Busca por um termo que não corresponde a nenhum médico
     Given que a base de médicos está populada com 3 médicos ativos
     When o funcionário digita o CRM "00000-XX" no campo de busca
     Then o sistema deve exibir uma lista vazia

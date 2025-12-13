@@ -14,6 +14,13 @@ public class Convenio {
     private StatusConvenio status;
     private List<HistoricoEntrada> historico = new ArrayList<>();
 
+    /**
+     * Construtor padrão exigido pelo ModelMapper para mapeamento JPA -> Domínio.
+     */
+    public Convenio() {
+        this.historico = new ArrayList<>();
+    }
+
     public Convenio(String nome, String codigoIdentificacao, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela criação não pode ser nulo.");
         setNome(nome);
@@ -34,35 +41,32 @@ public class Convenio {
     }
 
     public void mudarStatus(StatusConvenio novoStatus, UsuarioResponsavelId responsavelId) {
-        
         if (this.status != novoStatus) {
             this.status = novoStatus;
             adicionarEntradaHistorico(AcaoHistorico.ATUALIZACAO, "Status alterado para: " + novoStatus.name(), responsavelId);
         }
     }
 
-    
     public void validarExclusao(boolean temProcedimentoAtivo, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela exclusão não pode ser nulo.");
 
         if (this.status == StatusConvenio.ATIVO && temProcedimentoAtivo) {
             throw new IllegalStateException("Convênio ATIVO com procedimento ATIVO não pode ser excluído.");
         }
-        
+
         if (this.status == StatusConvenio.ATIVO && !temProcedimentoAtivo) {
-             throw new IllegalStateException("O Convênio deve estar INATIVO para ser excluído.");
+            throw new IllegalStateException("O Convênio deve estar INATIVO para ser excluído.");
         }
-        
     }
 
     public void alterarNome(String novoNome, UsuarioResponsavelId responsavelId) {
         notNull(responsavelId, "O responsável pela alteração não pode ser nulo.");
         notBlank(novoNome, "O nome do convênio é obrigatório");
-        
+
         if (this.status != StatusConvenio.ATIVO) {
             throw new IllegalStateException("Não é possível alterar dados de um convênio INATIVO.");
         }
-        
+
         if (!this.nome.trim().equalsIgnoreCase(novoNome.trim())) {
             this.nome = novoNome.trim();
             adicionarEntradaHistorico(AcaoHistorico.ATUALIZACAO, "Nome alterado para: " + novoNome, responsavelId);
@@ -81,44 +85,46 @@ public class Convenio {
     }
 
     private void validarCodigoIdentificacao(String codigoIdentificacao) {
-        String regex = "^[a-zA-Z0-9áéíóúÁÉÍÓÚãõñÃÕÑçÇàÀ.,\\s()\\-]+$";
+        // Permite letras, números, acentos, pontos, barras, hífens, parênteses e espaços
+        // Útil para CNPJs (12.345.678/0001-90) e outros formatos
+        String regex = "^[a-zA-Z0-9áéíóúÁÉÍÓÚãõñÃÕÑçÇàÀ.,\\s()\\-\\/]+$";
         if (!codigoIdentificacao.matches(regex)) {
             throw new IllegalArgumentException("Código de identificação contém caracteres especiais inválidos.");
         }
     }
 
+    public HistoricoEntrada adicionarEntradaHistorico(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavelId) {
+        notNull(responsavelId, "O responsável pela ação não pode ser nulo.");
 
- public Convenio.HistoricoEntrada adicionarEntradaHistorico(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavelId) {
-     notNull(responsavelId, "O responsável pela ação não pode ser nulo.");
-     
-     HistoricoEntrada novaEntrada = new HistoricoEntrada(acao, descricao, responsavelId, LocalDateTime.now());
-     historico.add(novaEntrada);
-     
-     return novaEntrada;
- }
+        HistoricoEntrada novaEntrada = new HistoricoEntrada(
+            acao, descricao, responsavelId, LocalDateTime.now()
+        );
+
+        historico.add(novaEntrada);
+        return novaEntrada;
+    }
 
     public ConvenioId getId() { return id; }
     public String getNome() { return nome; }
     public String getCodigoIdentificacao() { return codigoIdentificacao; }
     public StatusConvenio getStatus() { return status; }
     public List<HistoricoEntrada> getHistorico() { return List.copyOf(historico); }
+}
+class HistoricoEntrada {
+    private final AcaoHistorico acao;
+    private final String descricao;
+    private final UsuarioResponsavelId responsavel;
+    private final LocalDateTime dataHora;
 
-    public static class HistoricoEntrada {
-        private final AcaoHistorico acao;
-        private final String descricao;
-        private final UsuarioResponsavelId responsavel;
-        private final LocalDateTime dataHora;
-
-        public HistoricoEntrada(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavel, LocalDateTime dataHora) {
-            this.acao = acao;
-            this.descricao = descricao;
-            this.responsavel = responsavel;
-            this.dataHora = dataHora;
-        }
-
-        public AcaoHistorico getAcao() { return acao; }
-        public String getDescricao() { return descricao; }
-        public UsuarioResponsavelId getResponsavel() { return responsavel; }
-        public LocalDateTime getDataHora() { return dataHora; }
+    public HistoricoEntrada(AcaoHistorico acao, String descricao, UsuarioResponsavelId responsavel, LocalDateTime dataHora) {
+        this.acao = acao;
+        this.descricao = descricao;
+        this.responsavel = responsavel;
+        this.dataHora = dataHora;
     }
+
+    public AcaoHistorico getAcao() { return acao; }
+    public String getDescricao() { return descricao; }
+    public UsuarioResponsavelId getResponsavel() { return responsavel; }
+    public LocalDateTime getDataHora() { return dataHora; }
 }

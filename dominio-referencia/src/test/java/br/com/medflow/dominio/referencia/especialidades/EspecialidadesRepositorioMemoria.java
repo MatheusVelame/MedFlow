@@ -3,6 +3,9 @@ package br.com.medflow.dominio.referencia.especialidades;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Repositório em Memória para uso exclusivo em testes BDD (Cucumber).
@@ -12,9 +15,14 @@ public class EspecialidadesRepositorioMemoria implements EspecialidadeRepositori
 
     // Simula a tabela de Especialidades
     private final Map<String, Especialidade> especialidades = new HashMap<>();
+    private final AtomicInteger nextId = new AtomicInteger(1);
 
     @Override
     public void salvar(Especialidade especialidade) {
+        // Atribui id se necessário
+        if (especialidade.getId() == null) {
+            especialidade.setId(nextId.getAndIncrement());
+        }
         // O nome é a chave única (simulando a PK ou índice de unicidade)
         especialidades.put(especialidade.getNome(), especialidade);
     }
@@ -22,6 +30,13 @@ public class EspecialidadesRepositorioMemoria implements EspecialidadeRepositori
     @Override
     public Optional<Especialidade> buscarPorNome(String nome) {
         return Optional.ofNullable(especialidades.get(nome));
+    }
+
+    @Override
+    public Optional<Especialidade> buscarPorId(Integer id) {
+        return especialidades.values().stream()
+                .filter(e -> e.getId() != null && e.getId().equals(id))
+                .findFirst();
     }
 
     @Override
@@ -34,11 +49,17 @@ public class EspecialidadesRepositorioMemoria implements EspecialidadeRepositori
         especialidades.remove(especialidade.getNome());
     }
 
+    @Override
+    public List<Especialidade> buscarTodos() {
+        return new ArrayList<>(especialidades.values());
+    }
+
     /**
      * Limpa o mapa para reiniciar o estado do teste BDD (usado no @Before da classe base).
      */
     public void limpar() {
         especialidades.clear();
+        nextId.set(1);
     }
     
     /**

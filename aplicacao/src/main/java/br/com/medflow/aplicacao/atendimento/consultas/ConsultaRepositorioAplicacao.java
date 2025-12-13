@@ -32,4 +32,6 @@ public interface ConsultaRepositorioAplicacao {
      * @return Lista de ConsultaResumo.
      */
     List<ConsultaResumo> pesquisarPorStatus(StatusConsulta status);
+
+    boolean existePorMedicoId(Integer medicoId);
 }
