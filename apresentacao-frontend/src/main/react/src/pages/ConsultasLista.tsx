@@ -14,6 +14,7 @@ import {
 } from '../components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDataHora } from '../lib/utils'; // NOVO IMPORT: Importa a função de formatação segura
 
 // Mock do ID do usuário responsável pela ação de alteração de status
 const MOCK_USUARIO_ID = 100; 
@@ -125,7 +126,8 @@ export const ConsultasLista: React.FC<{ refreshToggle: number }> = ({ refreshTog
                             <TableRow key={consulta.id}>
                                 <TableCell className="font-medium">{consulta.id}</TableCell>
                                 <TableCell>
-                                    {new Date(consulta.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                                    {/* CORREÇÃO APLICADA AQUI: Usa a função formatDataHora para lidar com strings de data inválidas/nulas */}
+                                    {formatDataHora(consulta.dataHora)}
                                 </TableCell>
                                 <TableCell className="text-sm text-gray-500">{consulta.descricao}</TableCell>
                                 <TableCell>{consulta.pacienteId}</TableCell>
