@@ -50,7 +50,7 @@ Toda a documentação do sistema está na pasta `docs/`:
 - ## Como rodar
 
 **Backend:** Ao clonar o repositorio, acesse o arquivo **BackendAplicação.java** localizado em MedFlow\apresentacao-backend\src\main\java\br\com\medflow\BackendAplicacao.java, e rode.
-**Frontend:** No terminal digite:
+**Frontend:** Abra o terminal na raiz do projeto e digite:
 
 ```bash
 cd /medflow-modulos/apresentacao-frontend/src/main/react
