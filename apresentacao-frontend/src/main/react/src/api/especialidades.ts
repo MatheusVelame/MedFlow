@@ -21,7 +21,7 @@ export const especialidadesApi = {
     request<void>(api.delete(`/api/referencia/especialidades/${id}`)),
 
   historico: async (id: number): Promise<any[]> =>
-    request<any[]>(api.get(`/referencia/especialidades/${id}/historico`)),
+    request<any[]>(api.get(`/api/referencia/especialidades/${id}/historico`)),
 
   // New: toggle status (activate / inactivate)
   toggleStatus: async (id: number, payload: { responsavelId?: number }) =>
