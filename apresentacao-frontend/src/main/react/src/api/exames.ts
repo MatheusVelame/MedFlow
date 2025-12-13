@@ -70,4 +70,19 @@ export const examesApi = {
     request<ExameResponse>(
       api.patch(`/api/exames/${id}/cancelamento`, payload)
     ),
+
+  // Upload de resultado / anexo para um exame (multipart/form-data)
+  uploadResultado: async (id: number, file: File): Promise<void> => {
+    const form = new FormData();
+    form.append('file', file);
+    // endpoint esperado: POST /api/exames/{id}/anexos
+    return request<void>(api.post(`/api/exames/${id}/anexos`, form, { headers: { 'Content-Type': 'multipart/form-data' } }));
+  },
+
+  // Alterar status do exame (ex.: PENDENTE, REALIZADO)
+  mudarStatus: async (id: number, novoStatus: string, responsavelId: number, descricao?: string): Promise<ExameResponse> => {
+    const payload = { novoStatus, responsavelId, descricao };
+    // endpoint esperado: PATCH /api/exames/{id}/status
+    return request<ExameResponse>(api.patch(`/api/exames/${id}/status`, payload));
+  },
 };

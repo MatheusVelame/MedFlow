@@ -30,7 +30,7 @@ import {
 
 // IMPORTS NOVOS: Exame hooks e form
 import { ExameForm } from "@/components/ExameForm";
-import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList } from "@/hooks/useExames";
+import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList, useUploadResultadoExame, useMudarStatusExame } from "@/hooks/useExames";
 
 // Novo: Patients list for displaying names
 import { useListarPacientes } from "@/api/usePacientesApi";
@@ -91,6 +91,8 @@ export default function Exames() {
   const atualizarExame = useAtualizarExame();
   const cancelarExame = useCancelarExame();
   const excluirExame = useExcluirExame();
+  const uploadResultado = useUploadResultadoExame();
+  const mudarStatusExame = useMudarStatusExame();
 
   const { data: pacientes = [] } = useListarPacientes();
   const { data: funcionarios = [] } = useListarFuncionarios();
@@ -105,6 +107,8 @@ export default function Exames() {
   // Novo: per-exam histórico dialog state
   const [historicoOpenFor, setHistoricoOpenFor] = useState<number | null>(null);
   const [historicoItems, setHistoricoItems] = useState<any[] | null>(null);
+  // file input ref state (controlled via DOM id)
+  const [uploadingFor, setUploadingFor] = useState<number | null>(null);
 
   // ========================================================================
   // HANDLERS
@@ -191,10 +195,44 @@ export default function Exames() {
   };
 
   const handleUploadResult = (exameId: string) => {
-    toast({
-      title: "Upload em desenvolvimento",
-      description: "Funcionalidade de upload será implementada em breve.",
-    });
+    // abrir seletor de arquivo:** usamos input[type=file] com id baseado no exame
+    const id = `exame-upload-${exameId}`;
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (input) {
+      setUploadingFor(Number(exameId));
+      input.value = ""; // reset
+      input.click();
+    } else {
+      toast({ title: 'Erro', description: 'Não foi possível abrir o seletor de arquivos.' });
+    }
+  };
+  
+  // Handler chamado quando o usuário escolhe um arquivo
+  const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    const exameIdStr = e.target.getAttribute('data-exame-id');
+    const exameId = exameIdStr ? Number(exameIdStr) : uploadingFor;
+    if (!file || !exameId) return;
+    try {
+      await uploadResultado.mutateAsync({ id: exameId, file });
+      toast({ title: 'Upload concluído', description: 'Resultado anexado ao exame.' });
+      setUploadingFor(null);
+      // refresh histórico
+      examesApi.obter(exameId).then((resp:any)=> setHistoricoItems(resp.historico || []) ).catch(()=>{});
+    } catch (err:any) {
+      toast({ title: 'Erro no upload', description: err?.message ?? 'Falha ao enviar arquivo' , variant: 'destructive'});
+    }
+  };
+
+  // Permite ao gestor marcar resultado/pendente
+  const handleChangeStatus = async (exameId:number, novoStatus:string) => {
+    try {
+      const responsavelId = Number((window as any)._currentUserId ?? 1);
+      await mudarStatusExame.mutateAsync({ id: exameId, novoStatus, responsavelId, descricao: `Alterado via UI para ${novoStatus}` });
+      toast({ title: 'Status atualizado', description: `Status atualizado para ${novoStatus}` });
+    } catch (err:any) {
+      toast({ title: 'Erro', description: err?.message ?? 'Erro ao alterar status', variant: 'destructive' });
+    }
   };
 
   // Exames handlers
@@ -600,20 +638,40 @@ export default function Exames() {
                           <Button size="sm" variant="outline" onClick={() => setExameToCancel(exame.id)}>
                             <XCircle className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setExameToDelete(exame.id)}>
+                          {/* excluir só se agendado e não vinculado a laudo/prontuário */}
+                          <Button size="sm" variant="outline" onClick={() => setExameToDelete(exame.id)} disabled={!(exame.statusNormalized === 'agendado') || !!(exame.temLaudo || exame.possuiLaudo || exame.laudoId)}>
                             {excluirExame.isLoading && exameToDelete === exame.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <Trash2 className="h-4 w-4" />
                             )}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleUploadResult(exame.id)}>
+                          
+                          {/* upload: abre seletor de arquivo */}
+                          <input id={`exame-upload-${exame.id}`} data-exame-id={String(exame.id)} type="file" accept="*/*" className="hidden" onChange={onFileSelected} />
+                          <Button size="sm" variant="outline" onClick={() => handleUploadResult(String(exame.id))} title="Anexar resultado">
                             <Upload className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setHistoricoOpenFor(exame.id)}>
+
+                          {/* Histórico compacto dentro do card */}
+                          <Button size="sm" variant="outline" onClick={() => setHistoricoOpenFor(exame.id)} title="Histórico">
                             <List className="h-4 w-4" />
-                            Histórico
                           </Button>
+
+                          {/* Se for gestor, permitir alterar status de pendente->resultado ou marcar pendente */}
+                          {isGestor && (
+                            <div className="ml-2">
+                              <select
+                                value={exame.statusNormalized}
+                                onChange={(ev) => handleChangeStatus(exame.id, ev.target.value)}
+                                className="text-sm p-1 border rounded"
+                              >
+                                <option value="agendado">Agendado</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="resultado">Resultado</option>
+                              </select>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -794,8 +852,15 @@ export default function Exames() {
       <AlertDialog open={historicoOpenFor !== null} onOpenChange={(open) => { if (!open) setHistoricoOpenFor(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Histórico do Exame</AlertDialogTitle>
-            <AlertDialogDescription>Registros de alterações e ações realizadas neste exame.</AlertDialogDescription>
+            <div className="flex items-center justify-between w-full">
+              <div>
+                <AlertDialogTitle>Histórico do Exame</AlertDialogTitle>
+                <AlertDialogDescription>Registros de alterações e ações realizadas neste exame.</AlertDialogDescription>
+              </div>
+              <div>
+                <Button variant="ghost" size="sm" onClick={() => setHistoricoOpenFor(null)} aria-label="Fechar histórico">✕</Button>
+              </div>
+            </div>
           </AlertDialogHeader>
           <div className="px-6 pb-4">
             {historicoItems === null ? (

@@ -108,3 +108,33 @@ export function useExcluirExame() {
     },
   });
 }
+
+// Upload de arquivo (resultado/laudo) para exame
+export function useUploadResultadoExame() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => examesApi.uploadResultado(id, file),
+    onSuccess: () => {
+      // invalidar caches de exames para recarregar histórico/detalhes
+      qc.invalidateQueries({ queryKey: ["exames"], exact: false });
+      qc.invalidateQueries({ queryKey: ["exame"], exact: false });
+    },
+  });
+}
+
+// Mudar status do exame (gestor) — registra histórico no backend
+export function useMudarStatusExame() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, novoStatus, responsavelId, descricao }: { id: number; novoStatus: string; responsavelId: number; descricao?: string }) =>
+      examesApi.mudarStatus(id, novoStatus, responsavelId, descricao),
+    onSuccess: (updated) => {
+      // atualizar cache local e invalidar listagens
+      qc.setQueryData<ExameResponse[] | undefined>(["exames"], (old) =>
+        old ? old.map((e) => (e.id === updated.id ? updated : e)) : [updated]
+      );
+      qc.invalidateQueries({ queryKey: ["exames"], exact: false });
+      qc.invalidateQueries({ queryKey: ["exame", updated.id], exact: true });
+    },
+  });
+}
