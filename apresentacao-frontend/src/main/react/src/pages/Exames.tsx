@@ -42,7 +42,29 @@ export default function Exames() {
   const { isGestor, isMedico } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
-  
+  // Novo: busca por CPF (validação: 11 dígitos) e filtro por intervalo de datas
+  const [cpfSearch, setCpfSearch] = useState("");
+  const [cpfValid, setCpfValid] = useState(true);
+  const [cpfError, setCpfError] = useState<string | null>(null);
+
+  const [startDate, setStartDate] = useState<string | null>(null); // YYYY-MM-DD
+  const [endDate, setEndDate] = useState<string | null>(null);     // YYYY-MM-DD
+
+  useEffect(() => {
+    // validação simples: apenas dígitos; se vazio => nenhum filtro
+    const digits = (cpfSearch || "").replace(/\D/g, "");
+    if (digits.length === 0) {
+      setCpfValid(true);
+      setCpfError(null);
+    } else if (digits.length === 11) {
+      setCpfValid(true);
+      setCpfError(null);
+    } else {
+      setCpfValid(false);
+      setCpfError("CPF deve conter 11 dígitos");
+    }
+  }, [cpfSearch]);
+
   // ========================================================================
   // INTEGRAÇÃO COM A API (TIPOS DE EXAME)
   // ========================================================================
@@ -516,6 +538,31 @@ export default function Exames() {
       default: matchesStatus = true;
     }
 
+    // Filtro por CPF: aplica somente se o CPF informado for válido (11 dígitos)
+    const cpfDigits = (cpfSearch || "").replace(/\D/g, "");
+    if (cpfDigits.length > 0) {
+      if (!cpfValid) return false; // inválido => não retorna resultados (ou poderia ignorar o filtro)
+      // procurar CPF do paciente associado
+      const pacienteObj = pacientes.find((p: any) => Number(p.id) === Number(exame.pacienteId));
+      const pacienteCpf = (pacienteObj && (pacienteObj.cpf || pacienteObj.CPF)) ? String(pacienteObj.cpf || pacienteObj.CPF).replace(/\D/g, "") : "";
+      if (pacienteCpf !== cpfDigits) return false;
+    }
+    
+    // Filtro por intervalo de datas (inclusive). Se startDate/endDate não preenchidos, ignora.
+    if (startDate || endDate) {
+      if (!exameDate) return false;
+      const dateOnly = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x.getTime(); };
+      const exameTime = dateOnly(exameDate);
+      if (startDate) {
+        const s = new Date(startDate); s.setHours(0,0,0,0);
+        if (exameTime < s.getTime()) return false;
+      }
+      if (endDate) {
+        const e = new Date(endDate); e.setHours(23,59,59,999);
+        if (exameTime > e.getTime()) return false;
+      }
+    }
+
     return matchesSearch && matchesStatus;
   });
 
@@ -567,7 +614,7 @@ export default function Exames() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{resultadosPendentes}</div>
-//            <p className="text-xs text-muted-foreground">Pacientes em Aguardo</p>
+            <p className="text-xs text-muted-foreground">Pacientes em Aguardo</p>
           </CardContent>
         </Card>
 
@@ -645,17 +692,58 @@ export default function Exames() {
         <TabsContent value="exames" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between w-full">
-                <div className="flex-1 pr-4">
-                  <Input placeholder="Pesquisar por paciente, tipo ou médico" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <div className="flex flex-col gap-3 w-full">
+
+                {/* Linha 1 — Busca principal */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Input
+                    className="w-full"
+                    placeholder="Pesquisar por paciente, tipo ou médico"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+
+                  <div>
+                    <Input
+                      className="w-full"
+                      placeholder="CPF (11 dígitos)"
+                      value={cpfSearch}
+                      onChange={(e) => setCpfSearch(e.target.value)}
+                    />
+                    {!cpfValid && cpfError && (
+                      <p className="text-sm text-destructive mt-1">{cpfError}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      className="border rounded-md px-2 py-1 w-full"
+                      value={startDate || ''}
+                      onChange={(e) => setStartDate(e.target.value || null)}
+                      aria-label="Data início"
+                    />
+
+                    <input
+                      type="date"
+                      className="border rounded-md px-2 py-1 w-full"
+                      value={endDate || ''}
+                      onChange={(e) => setEndDate(e.target.value || null)}
+                      aria-label="Data fim"
+                    />
+                  </div>
                 </div>
+
+                {/* Linha 2 — Ações / filtros extras (se houver) */}
                 <div className="flex items-center gap-2 overflow-auto">
-                  
                   <Button variant={filterStatus === 'agendados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('agendados')}>Agendados</Button>
                   <Button variant={filterStatus === 'cancelados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('cancelados')}>Cancelados</Button>
                   <Button variant={filterStatus === 'resultado pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado pendente')}>Pendentes</Button>
                   <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultados</Button>
                   <Button variant={filterStatus === 'historico' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('historico')}>Histórico</Button>
+                  <Button variant="outline" size="sm" onClick={() => { setSearchTerm(''); setCpfSearch(''); setStartDate(null); setEndDate(null); setFilterStatus('todos'); }}>
+                    Limpar filtros
+                  </Button>
                 </div>
               </div>
             </CardHeader>
