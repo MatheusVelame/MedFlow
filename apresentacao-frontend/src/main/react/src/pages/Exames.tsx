@@ -502,12 +502,12 @@ export default function Exames() {
       <div className="grid gap-6 md:grid-cols-4">
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Solicitados</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Exames Previstos</CardTitle>
             <TestTube className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{totalSolicitados}</div>
-            <p className="text-xs text-muted-foreground">Total (todos os status)</p>
+            <p className="text-xs text-muted-foreground">Total de Agendamentos</p>
           </CardContent>
         </Card>
 
@@ -518,7 +518,7 @@ export default function Exames() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{resultadosPendentes}</div>
-            <p className="text-xs text-muted-foreground">Exames sem resultado</p>
+            <p className="text-xs text-muted-foreground">Pacientes em Aguardo</p>
           </CardContent>
         </Card>
 
@@ -617,64 +617,110 @@ export default function Exames() {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {filteredExames.map((exame: any) => (
-                    <Card key={exame.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="pt-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold">{exame.pacienteName}</h3>
-                            <p className="text-sm text-muted-foreground">{exame.tipoLabel}</p>
-                            <p className="text-sm text-muted-foreground">Médico: <span className="font-medium text-foreground">{exame.medicoName}</span></p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm text-muted-foreground">{new Date(exame.dataHora || exame.datahora || exame.data).toLocaleString()}</div>
-                            <div className="mt-2">{getStatusBadge(exame.statusNormalized ?? 'pendente')}</div>
-                          </div>
-                        </div>
+					<Card key={exame.id} className="hover:shadow-md transition-shadow">
+					  <CardContent className="p-5 space-y-4">
 
-                        <div className="flex gap-2 mt-4">
-                          <Button size="sm" variant="outline" onClick={() => handleEditExame(exame)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setExameToCancel(exame.id)}>
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                          {/* excluir só se agendado e não vinculado a laudo/prontuário */}
-                          <Button size="sm" variant="outline" onClick={() => setExameToDelete(exame.id)} disabled={!(exame.statusNormalized === 'agendado') || !!(exame.temLaudo || exame.possuiLaudo || exame.laudoId)}>
-                            {excluirExame.isLoading && exameToDelete === exame.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                          
-                          {/* upload: abre seletor de arquivo */}
-                          <input id={`exame-upload-${exame.id}`} data-exame-id={String(exame.id)} type="file" accept="*/*" className="hidden" onChange={onFileSelected} />
-                          <Button size="sm" variant="outline" onClick={() => handleUploadResult(String(exame.id))} title="Anexar resultado">
-                            <Upload className="h-4 w-4" />
-                          </Button>
+					    {/* ===================== CABEÇALHO ===================== */}
+					    <div className="flex items-start justify-between gap-4">
+					      <div className="flex items-start gap-3">
+					        <div className="p-2 bg-primary/10 rounded-lg">
+					          <TestTube className="h-4 w-4 text-primary" />
+					        </div>
 
-                          {/* Histórico compacto dentro do card */}
-                          <Button size="sm" variant="outline" onClick={() => setHistoricoOpenFor(exame.id)} title="Histórico">
-                            <List className="h-4 w-4" />
-                          </Button>
+					        <div>
+					          <h3 className="text-base font-semibold leading-tight">
+					            {exame.pacienteName || exame.paciente?.nome || "Paciente não identificado"}
+					          </h3>
 
-                          {/* Se for gestor, permitir alterar status de pendente->resultado ou marcar pendente */}
-                          {isGestor && (
-                            <div className="ml-2">
-                              <select
-                                value={exame.statusNormalized}
-                                onChange={(ev) => handleChangeStatus(exame.id, ev.target.value)}
-                                className="text-sm p-1 border rounded"
-                              >
-                                <option value="agendado">Agendado</option>
-                                <option value="pendente">Pendente</option>
-                                <option value="resultado">Resultado</option>
-                              </select>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+					          <p className="text-sm text-muted-foreground">
+					            {exame.tipoLabel || (exame.tipoExame?.codigo ? `${exame.tipoExame.codigo} - ${exame.tipoExame.descricao}` : exame.tipoExame ?? "Tipo de exame")}
+					          </p>
+					        </div>
+					      </div>
+
+					      <div className="text-right space-y-1">
+					        <div className="text-xs text-muted-foreground">
+					          {new Date(
+					            exame.dataHora || exame.datahora || exame.data
+					          ).toLocaleString()}
+					        </div>
+
+					        {getStatusBadge(exame.statusNormalized ?? 'agendado')}
+					      </div>
+					    </div>
+
+					    {/* ===================== META-INFORMAÇÕES ===================== */}
+					    <div className="text-sm text-muted-foreground">
+					      Médico:&nbsp;
+					      <span className="font-medium text-foreground">
+					        {exame.medicoName || exame.medico?.nome || "Médico não informado"}
+					      </span>
+					    </div>
+
+					    {/* ===================== AÇÕES ===================== */}
+					    <div className="flex items-center justify-between pt-3 border-t">
+
+					      {/* STATUS (AÇÃO PRINCIPAL) */}
+					      <Button
+					        size="sm"
+					        variant="outline"
+					        className="gap-2"
+					      >
+					        <List className="h-4 w-4" />
+					        {(exame.statusNormalized ?? 'agendado').toUpperCase()}
+					      </Button>
+
+					      {/* AÇÕES OPERACIONAIS */}
+					      <div className="flex gap-2">
+					        <Button
+					          size="sm"
+					          variant="outline"
+					          title="Editar exame"
+					          onClick={() => handleEditExame(exame)}
+					        >
+					          <Edit className="h-4 w-4" />
+					        </Button>
+
+					        <Button
+					          size="sm"
+					          variant="outline"
+					          title="Cancelar exame"
+					          onClick={() => setExameToCancel(exame.id)}
+					        >
+					          <XCircle className="h-4 w-4" />
+					        </Button>
+
+					        <Button
+					          size="sm"
+					          variant="outline"
+					          title="Excluir exame"
+					          onClick={() => setExameToDelete(exame.id)}
+					        >
+					          <Trash2 className="h-4 w-4" />
+					        </Button>
+
+					        <Button
+					          size="sm"
+					          variant="outline"
+					          title="Anexar resultado"
+					          onClick={() => handleUploadResult(exame.id)}
+					        >
+					          <Upload className="h-4 w-4" />
+					        </Button>
+
+					        {/* Botão de Histórico (abre o modal) */}
+					        <Button
+					          size="sm"
+					          variant="outline"
+					          title="Histórico"
+					          onClick={() => setHistoricoOpenFor(exame.id)}
+					        >
+					          <List className="h-4 w-4" />
+					        </Button>
+					      </div>
+					    </div>
+					  </CardContent>
+					</Card>
                   ))}
                 </div>
               )}
