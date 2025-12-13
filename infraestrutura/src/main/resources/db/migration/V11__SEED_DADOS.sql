@@ -56,10 +56,10 @@ INSERT INTO medico_disponibilidades (medico_id, dia_semana, hora_inicio, hora_fi
 
 -- ===== CONVÊNIOS =====
 INSERT INTO convenios (nome, codigo_identificacao, status) VALUES
-('Unimed', '12.345.678/0001-90', 'ATIVO'),
-('Bradesco Saúde', '23.456.789/0001-01', 'ATIVO'),
-('Amil', '34.567.890/0001-12', 'ATIVO'),
-('SulAmérica', '45.678.901/0001-23', 'ATIVO');
+('Unimed', 'UNI001', 'ATIVO'),
+('Bradesco Saúde', 'BRA001', 'ATIVO'),
+('Amil', 'AMI001', 'ATIVO'),
+('SulAmérica', 'SUL001', 'ATIVO');
 
 -- ===== TIPOS DE EXAMES =====
 INSERT INTO tipos_exames (codigo, descricao, especialidade, valor, status) VALUES

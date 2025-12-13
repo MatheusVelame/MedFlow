@@ -12,6 +12,8 @@ public interface ConvenioRepositorioAplicacao {
 	
 	Optional<ConvenioDetalhes> obterDetalhesPorId(Integer id);
 	
+	Optional<ConvenioDetalhes> obterDetalhesPorCodigoIdentificacao(String codigoIdentificacao);
+	
 	List<ConvenioResumo> pesquisarPorCodigoIdentificacao(String nomecodigoIdentificacao);// validar ser vou manter esse mesmo
 	
 	List<ConvenioResumo> pesquisarPorStatus(StatusConvenio status);

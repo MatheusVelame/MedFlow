@@ -20,8 +20,10 @@ import {
   useListarConvenios,
   useCadastrarConvenio,
   useAlterarNomeConvenio,
+  useMudarStatusConvenio,
   useExcluirConvenio,
-  type ConvenioResumo
+  type ConvenioResumo,
+  type StatusConvenio
 } from "@/api/useConveniosApi";
 
 export default function Convenios() {
@@ -34,28 +36,66 @@ export default function Convenios() {
   const { data: convenios = [], isLoading, error } = useListarConvenios();
   const cadastrarMutation = useCadastrarConvenio();
   const alterarNomeMutation = useAlterarNomeConvenio();
+  const mudarStatusMutation = useMudarStatusConvenio();
   const excluirMutation = useExcluirConvenio();
 
   const handleSave = (data: any) => {
     const responsavelId = parseInt(user?.id || "1");
     
     if (editingConvenio) {
-      alterarNomeMutation.mutate({
-        id: editingConvenio.id,
-        payload: {
-          novoNome: data.nome,
-          responsavelId: responsavelId
-        }
-      }, {
-        onSuccess: () => {
-          setEditingConvenio(null);
-          setIsFormOpen(false);
-        }
+      // Verifica se o nome mudou
+      const nomeMudou = data.nome !== editingConvenio.nome;
+      // Verifica se o status mudou
+      const statusMudou = data.status && data.status !== editingConvenio.status;
+      
+      // Array para armazenar as promises das mutations
+      const mutations: Promise<any>[] = [];
+      
+      if (nomeMudou) {
+        mutations.push(
+          new Promise((resolve, reject) => {
+            alterarNomeMutation.mutate({
+              id: editingConvenio.id,
+              payload: {
+                novoNome: data.nome,
+                responsavelId: responsavelId
+              }
+            }, {
+              onSuccess: resolve,
+              onError: reject
+            });
+          })
+        );
+      }
+      
+      if (statusMudou) {
+        mutations.push(
+          new Promise((resolve, reject) => {
+            mudarStatusMutation.mutate({
+              id: editingConvenio.id,
+              payload: {
+                status: data.status as StatusConvenio,
+                responsavelId: responsavelId
+              }
+            }, {
+              onSuccess: resolve,
+              onError: reject
+            });
+          })
+        );
+      }
+      
+      // Aguarda todas as mutations completarem
+      Promise.all(mutations).then(() => {
+        setEditingConvenio(null);
+        setIsFormOpen(false);
+      }).catch(() => {
+        // Erro já foi tratado nas mutations individuais
       });
     } else {
       cadastrarMutation.mutate({
         nome: data.nome,
-        codigoIdentificacao: data.cnpj || data.codigoIdentificacao,
+        codigoIdentificacao: data.codigoIdentificacao,
         responsavelId: responsavelId
       }, {
         onSuccess: () => {

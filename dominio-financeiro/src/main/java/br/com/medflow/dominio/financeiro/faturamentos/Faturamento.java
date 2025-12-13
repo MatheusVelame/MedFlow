@@ -40,12 +40,23 @@ public class Faturamento {
         this.metodoPagamento = metodoPagamento;
         this.usuarioResponsavel = usuarioResponsavel;
         this.observacoes = observacoes;
-        this.status = StatusFaturamento.PENDENTE;
         this.dataHoraFaturamento = LocalDateTime.now();
         
-        adicionarEntradaHistorico(AcaoHistoricoFaturamento.CRIACAO, 
-                                  "Faturamento criado com status Pendente", 
-                                  usuarioResponsavel);
+        // Se o método de pagamento for dinheiro ou débito, marcar como pago automaticamente
+        if (metodoPagamento.ehPagamentoAutomatico()) {
+            this.status = StatusFaturamento.PAGO;
+            adicionarEntradaHistorico(AcaoHistoricoFaturamento.CRIACAO, 
+                                      "Faturamento criado e marcado como pago automaticamente (método: " + metodoPagamento.getMetodo() + ")", 
+                                      usuarioResponsavel);
+            adicionarEntradaHistorico(AcaoHistoricoFaturamento.PAGAMENTO, 
+                                      "Faturamento marcado como pago automaticamente", 
+                                      usuarioResponsavel);
+        } else {
+            this.status = StatusFaturamento.PENDENTE;
+            adicionarEntradaHistorico(AcaoHistoricoFaturamento.CRIACAO, 
+                                      "Faturamento criado com status Pendente", 
+                                      usuarioResponsavel);
+        }
     }
 
     // Getters

@@ -63,13 +63,18 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 		mapeador.map(convenio, jpaExistente);
 		
 		// Mapeia o histórico manualmente (já que foi ignorado no mapeamento principal)
+		// IMPORTANTE: Com orphanRemoval = true, não podemos substituir a referência da coleção.
+		// Devemos modificar a coleção existente para evitar o erro "collection was no longer referenced"
+		List<HistoricoConvenioJpa> historicoExistente = jpaExistente.getHistorico();
+		historicoExistente.clear(); // Limpa a coleção existente
+		
 		if (convenio.getHistorico() != null && !convenio.getHistorico().isEmpty()) {
 			@SuppressWarnings("unchecked")
 			List<Object> historicoComoObject = (List<Object>) (List<?>) convenio.getHistorico();
 			List<HistoricoConvenioJpa> historicoJpa = historicoComoObject.stream()
 				.map(this::mapearHistorico)
 				.collect(java.util.stream.Collectors.toList());
-			jpaExistente.setHistorico(historicoJpa);
+			historicoExistente.addAll(historicoJpa); // Adiciona os novos itens à coleção existente
 		}
 		
 		jpaRepository.save(jpaExistente);
@@ -82,28 +87,8 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 		ConvenioJpa jpa = jpaOptional
 			.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + id.getId()));
 
-		Convenio convenio = mapeador.map(jpa, Convenio.class);
-		
-		// Mapeia o histórico manualmente (já que foi ignorado no mapeamento principal)
-		if (jpa.getHistorico() != null && !jpa.getHistorico().isEmpty()) {
-			// Mapeia o histórico de JPA para Domínio
-			@SuppressWarnings({"unchecked", "rawtypes"})
-			List historicoMapeado = (List) jpa.getHistorico().stream()
-				.map(this::mapearHistoricoParaDominio)
-				.collect(java.util.stream.Collectors.toList());
-			
-			// Reconstrói o Convenio com o histórico usando o construtor que aceita histórico
-			// O construtor aceita List<HistoricoEntrada>, então fazemos o cast
-			return new Convenio(
-				convenio.getId(),
-				convenio.getNome(),
-				convenio.getCodigoIdentificacao(),
-				convenio.getStatus(),
-				historicoMapeado
-			);
-		}
-		
-		return convenio;
+		// Usa o método helper que garante o mapeamento correto do ID
+		return mapearJpaParaDominio(jpa);
 	}
 	
 	// Helper method para mapear ConvenioJpa para Convenio (com histórico e ID)
@@ -220,7 +205,21 @@ public class ConvenioRepositorioImpl implements ConvenioRepositorio {
 
 	@Override
 	public void remover(ConvenioId id) {
-		jpaRepository.deleteById(id.getId());
+		// Carrega a entidade para garantir que o histórico seja gerenciado corretamente
+		Optional<ConvenioJpa> convenioOptional = jpaRepository.findById(id.getId());
+		if (convenioOptional.isPresent()) {
+			ConvenioJpa convenioJpa = convenioOptional.get();
+			// Limpa o histórico antes de deletar (orphanRemoval cuida disso, mas é melhor ser explícito)
+			convenioJpa.getHistorico().clear();
+			jpaRepository.flush(); // Força a sincronização do histórico antes de deletar
+			// Deleta a entidade permanentemente do banco de dados
+			jpaRepository.delete(convenioJpa);
+			jpaRepository.flush(); // Força o commit da exclusão
+		} else {
+			// Se não encontrou, tenta deletar por ID mesmo (caso não tenha histórico)
+			jpaRepository.deleteById(id.getId());
+			jpaRepository.flush(); // Força o commit da exclusão
+		}
 	}
 }
 

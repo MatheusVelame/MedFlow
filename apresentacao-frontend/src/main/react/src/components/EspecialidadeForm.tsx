@@ -1,3 +1,4 @@
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,20 +18,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 
+// Ajustado: o backend aceita apenas nome/descricao na criação/atualização
 const formSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  descricao: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
-  ativa: z.boolean().default(true),
+  descricao: z
+    .string()
+    .max(255, "Descrição deve ter no máximo 255 caracteres")
+    .optional(),
 });
 
 interface EspecialidadeFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: z.infer<typeof formSchema>) => void;
-  initialData?: any;
+  onSave: (data: z.infer<typeof formSchema>) => Promise<any> | void;
+  initialData?: Partial<z.infer<typeof formSchema>> | null;
 }
 
 export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: EspecialidadeFormProps) {
@@ -39,13 +42,38 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
     defaultValues: initialData || {
       nome: "",
       descricao: "",
-      ativa: true,
     },
   });
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    onSave(data);
-    form.reset();
+  // sincronizar initialData quando modal abrir para edição
+  React.useEffect(() => {
+    if (initialData) {
+      form.reset({
+        nome: initialData.nome ?? "",
+        descricao: initialData.descricao ?? "",
+      });
+    } else {
+      form.reset({ nome: "", descricao: "" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData, open]);
+
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
+    try {
+      await onSave(data as any);
+      form.reset();
+      onOpenChange(false);
+    } catch (e: any) {
+      const payloadErr = e?.response?.data;
+      if (payloadErr?.errors && typeof payloadErr.errors === 'object') {
+        Object.entries(payloadErr.errors).forEach(([field, message]) => {
+          try { form.setError(field as any, { type: 'server', message: String(message) }); } catch {}
+        });
+        return;
+      }
+      // fallback: don't swallow error — caller may handle toast
+      throw e;
+    }
   };
 
   return (
@@ -79,11 +107,11 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Descreva a especialidade médica" 
-                      className="resize-none" 
+                    <Textarea
+                      placeholder="Descreva a especialidade médica"
+                      className="resize-none"
                       rows={3}
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -91,29 +119,12 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="ativa"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Especialidade Ativa</FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      Desative se a especialidade não estiver mais disponível
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
               <Button type="submit">Salvar</Button>

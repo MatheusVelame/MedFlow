@@ -24,12 +24,25 @@ public class MetodoPagamento {
         return "CARTAO".equalsIgnoreCase(metodo) || "CARTÃO".equalsIgnoreCase(metodo);
     }
 
+    public boolean ehCartaoDebito() {
+        return "CARTAO_DEBITO".equalsIgnoreCase(metodo) || "CARTÃO_DEBITO".equalsIgnoreCase(metodo) ||
+               "CARTAO DEBITO".equalsIgnoreCase(metodo) || "CARTÃO DÉBITO".equalsIgnoreCase(metodo);
+    }
+
     public boolean ehConvenio() {
         return "CONVENIO".equalsIgnoreCase(metodo) || "CONVÊNIO".equalsIgnoreCase(metodo);
     }
 
     public boolean ehPix() {
         return "PIX".equalsIgnoreCase(metodo);
+    }
+
+    /**
+     * Verifica se o método de pagamento é pago automaticamente (dinheiro, débito ou PIX).
+     * Esses métodos não ficam pendentes, são marcados como pagos automaticamente (depósito imediato).
+     */
+    public boolean ehPagamentoAutomatico() {
+        return ehDinheiro() || ehCartaoDebito() || ehPix();
     }
 
     @Override

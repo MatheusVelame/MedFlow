@@ -85,7 +85,9 @@ public class Convenio {
     }
 
     private void validarCodigoIdentificacao(String codigoIdentificacao) {
-        String regex = "^[a-zA-Z0-9áéíóúÁÉÍÓÚãõñÃÕÑçÇàÀ.,\\s()\\-]+$";
+        // Permite letras, números, acentos, pontos, barras, hífens, parênteses e espaços
+        // Útil para CNPJs (12.345.678/0001-90) e outros formatos
+        String regex = "^[a-zA-Z0-9áéíóúÁÉÍÓÚãõñÃÕÑçÇàÀ.,\\s()\\-\\/]+$";
         if (!codigoIdentificacao.matches(regex)) {
             throw new IllegalArgumentException("Código de identificação contém caracteres especiais inválidos.");
         }

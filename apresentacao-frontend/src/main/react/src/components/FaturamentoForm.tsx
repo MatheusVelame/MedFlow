@@ -4,6 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -64,12 +71,14 @@ const metodoPagamentoMap: Record<string, string> = {
 };
 
 interface FaturamentoFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSubmit: (data: FormValues) => void;
   initialData?: any;
   onCancel?: () => void;
 }
 
-export function FaturamentoForm({ onSubmit, initialData, onCancel }: FaturamentoFormProps) {
+export function FaturamentoForm({ open, onOpenChange, onSubmit, initialData, onCancel }: FaturamentoFormProps) {
   const [valorDiferente, setValorDiferente] = useState(false);
   const [valorPadrao, setValorPadrao] = useState<number | null>(null);
   
@@ -90,12 +99,27 @@ export function FaturamentoForm({ onSubmit, initialData, onCancel }: Faturamento
     },
   });
 
-  // Atualizar valores quando initialData mudar
+  // Atualizar valores quando initialData ou open mudar
   useEffect(() => {
-    if (initialData) {
-      form.reset(initialData);
+    if (open) {
+      if (initialData) {
+        form.reset(initialData);
+      } else {
+        form.reset({
+          pacienteId: "",
+          pacienteNome: "",
+          procedimentoTipo: undefined,
+          procedimentoDescricao: "",
+          valor: undefined as any,
+          metodoPagamento: "",
+          observacoes: "",
+          justificativaValor: "",
+        });
+        setValorDiferente(false);
+        setValorPadrao(null);
+      }
     }
-  }, [initialData, form]);
+  }, [initialData, open, form]);
 
   const handlePacienteSelecionado = (pacienteId: string) => {
     const pacienteIdNum = parseInt(pacienteId);
@@ -160,8 +184,18 @@ export function FaturamentoForm({ onSubmit, initialData, onCancel }: Faturamento
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {initialData ? "Editar Faturamento" : "Novo Faturamento"}
+          </DialogTitle>
+          <DialogDescription>
+            Preencha os dados do procedimento realizado para registrar o faturamento
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -377,17 +411,20 @@ export function FaturamentoForm({ onSubmit, initialData, onCancel }: Faturamento
           )}
         />
 
-        <div className="flex gap-3">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-              Cancelar
-            </Button>
-          )}
-          <Button type="submit" className="flex-1">
-            {initialData ? "Atualizar Faturamento" : "Registrar Faturamento"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+            <div className="flex gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => {
+                if (onCancel) onCancel();
+                onOpenChange(false);
+              }} className="flex-1">
+                Cancelar
+              </Button>
+              <Button type="submit" className="flex-1">
+                {initialData ? "Atualizar Faturamento" : "Registrar Faturamento"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

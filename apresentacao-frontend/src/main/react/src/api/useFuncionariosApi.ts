@@ -82,8 +82,26 @@ const API_BASE_URL = "/backend/funcionarios";
 
 // Funções de API
 const fetchFuncionarios = async (): Promise<FuncionarioResumo[]> => {
-  const { data } = await axios.get(API_BASE_URL);
-  return data;
+  try {
+    console.log("🔍 Fazendo requisição para:", API_BASE_URL);
+    const response = await axios.get(API_BASE_URL);
+    console.log("✅ Resposta completa:", response);
+    console.log("📦 Dados retornados:", response.data);
+    console.log("📊 Tipo dos dados:", Array.isArray(response.data) ? "Array" : typeof response.data);
+    console.log("🔢 Quantidade:", Array.isArray(response.data) ? response.data.length : "N/A");
+    
+    if (!Array.isArray(response.data)) {
+      console.error("❌ ERRO: A resposta não é um array!", response.data);
+      return [];
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    console.error("❌ ERRO ao buscar funcionários:", error);
+    console.error("❌ Detalhes do erro:", error.response?.data);
+    console.error("❌ Status:", error.response?.status);
+    throw error;
+  }
 };
 
 const fetchFuncionarioById = async (id: number): Promise<FuncionarioDetalhes> => {
@@ -147,7 +165,8 @@ export function useListarFuncionarios() {
   return useQuery<FuncionarioResumo[]>({
     queryKey: ["funcionarios"],
     queryFn: fetchFuncionarios,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Sempre considera os dados como "stale" para forçar refetch
   });
 }
 

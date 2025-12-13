@@ -1,7 +1,7 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,47 +25,59 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { FuncionarioResumo, StatusFuncionario } from "@/api/useFuncionariosApi";
 
-const formSchema = z.object({
+const funcionarioSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  codigoIdentificacao: z.string().min(1, "Código de identificação é obrigatório"),
-  status: z.enum(["ATIVO", "INATIVO"]).optional(),
+  funcao: z.string().min(1, "Função é obrigatória"),
+  contato: z.string().min(1, "Contato é obrigatório"),
+  status: z.enum(["ATIVO", "INATIVO", "FERIAS", "AFASTADO"]).optional(),
 });
 
-interface ConvenioFormProps {
+type FuncionarioFormData = z.infer<typeof funcionarioSchema>;
+
+interface FuncionarioFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: z.infer<typeof formSchema>) => void;
-  initialData?: any;
+  initialData?: FuncionarioResumo | null;
+  onSave: (data: FuncionarioFormData) => void;
 }
 
-export function ConvenioForm({ open, onOpenChange, onSave, initialData }: ConvenioFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+export function FuncionarioForm({ 
+  open, 
+  onOpenChange, 
+  initialData, 
+  onSave 
+}: FuncionarioFormProps) {
+  const form = useForm<FuncionarioFormData>({
+    resolver: zodResolver(funcionarioSchema),
     defaultValues: {
       nome: "",
-      codigoIdentificacao: "",
-      status: "ATIVO" as const,
+      funcao: "",
+      contato: "",
+      status: "ATIVO",
     },
   });
 
   useEffect(() => {
     if (initialData) {
       form.reset({
-        nome: initialData.nome || "",
-        codigoIdentificacao: initialData.codigoIdentificacao || "",
-        status: initialData.status || "ATIVO",
+        nome: initialData.nome,
+        funcao: initialData.funcao,
+        contato: initialData.contato,
+        status: initialData.status,
       });
     } else {
       form.reset({
         nome: "",
-        codigoIdentificacao: "",
+        funcao: "",
+        contato: "",
         status: "ATIVO",
       });
     }
-  }, [initialData, open, form]);
+  }, [initialData, form]);
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
+  const handleSubmit = (data: FuncionarioFormData) => {
     onSave(data);
     if (!initialData) {
       form.reset();
@@ -77,7 +89,7 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {initialData ? "Editar Convênio" : "Novo Convênio"}
+            {initialData ? "Editar Funcionário" : "Novo Funcionário"}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
@@ -87,9 +99,9 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Convênio</FormLabel>
+                  <FormLabel>Nome Completo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Unimed" {...field} />
+                    <Input placeholder="Ex: João Silva" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,16 +110,26 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
 
             <FormField
               control={form.control}
-              name="codigoIdentificacao"
+              name="funcao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Código de Identificação</FormLabel>
+                  <FormLabel>Função</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Ex: UNI001 ou 12.345.678/0001-90" 
-                      {...field}
-                      disabled={!!initialData} // Não permite editar código ao editar
-                    />
+                    <Input placeholder="Ex: Médico, Enfermeiro, Recepcionista" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="contato"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contato</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: (11) 99999-9999 ou email@exemplo.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -121,7 +143,10 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o status" />
@@ -130,6 +155,8 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
                       <SelectContent>
                         <SelectItem value="ATIVO">Ativo</SelectItem>
                         <SelectItem value="INATIVO">Inativo</SelectItem>
+                        <SelectItem value="FERIAS">Férias</SelectItem>
+                        <SelectItem value="AFASTADO">Afastado</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -138,11 +165,17 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
               />
             )}
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar</Button>
+              <Button type="submit">
+                {initialData ? "Atualizar" : "Cadastrar"}
+              </Button>
             </div>
           </form>
         </Form>
@@ -150,3 +183,4 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
     </Dialog>
   );
 }
+

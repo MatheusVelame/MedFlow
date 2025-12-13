@@ -32,7 +32,7 @@ import {
 } from "@/api/useFolhaPagamentoApi";
 
 export default function Financeiro() {
-  const { isGestor, user } = useAuth();
+  const { isGestor, isAtendente, user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPagamento, setEditingPagamento] = useState<FolhaPagamentoResumo | null>(null);
   const [pagamentoToDelete, setPagamentoToDelete] = useState<number | null>(null);
@@ -138,10 +138,12 @@ export default function Financeiro() {
           <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
           <p className="text-muted-foreground">Controle de receitas, despesas e convênios</p>
         </div>
-        <Button className="bg-gradient-primary text-white hover:opacity-90">
-          <FileText className="w-4 h-4 mr-2" />
-          Gerar Relatório
-        </Button>
+        {isGestor && (
+          <Button className="bg-gradient-primary text-white hover:opacity-90">
+            <FileText className="w-4 h-4 mr-2" />
+            Gerar Relatório
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">

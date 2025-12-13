@@ -59,6 +59,12 @@ const fetchMedicamentos = async (): Promise<MedicamentoResumo[]> => {
   return data;
 };
 
+// NOVO: Função para buscar medicamentos com revisão pendente
+const fetchMedicamentosComRevisaoPendente = async (): Promise<MedicamentoResumo[]> => {
+  const { data } = await axios.get(`${API_BASE_URL}/revisao-pendente`); 
+  return data;
+};
+
 const createMedicamento = async (payload: CadastrarMedicamentoPayload) => {
   return axios.post(API_BASE_URL, payload);
 };
@@ -122,6 +128,15 @@ export function useListarMedicamentos() {
   return useQuery<MedicamentoResumo[]>({
     queryKey: ['medicamentos'],
     queryFn: fetchMedicamentos,
+    refetchOnWindowFocus: false,
+  });
+}
+
+// NOVO HOOK: Para listar medicamentos com revisão pendente
+export function useListarMedicamentosComRevisaoPendente() {
+  return useQuery<MedicamentoResumo[]>({
+    queryKey: ['medicamentos', 'revisao-pendente'],
+    queryFn: fetchMedicamentosComRevisaoPendente,
     refetchOnWindowFocus: false,
   });
 }

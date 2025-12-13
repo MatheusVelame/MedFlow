@@ -24,6 +24,10 @@ import MedicamentosMedico from "./pages/Medicamentos-medico";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import TiposExames from "./pages/TiposExames";
+import EspecialidadeNovo from "./pages/EspecialidadeNovo";
+import EspecialidadeDetalhe from "./pages/EspecialidadeDetalhe";
+import ExameNovo from "./pages/ExameNovo";
+import ExameDetalhe from "./pages/ExameDetalhe";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +62,16 @@ const App = () => (
                         <Exames />
                       </ProtectedRoute>
                     } />
+                    <Route path="/exames/novo" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ExameNovo />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/exames/:id" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ExameDetalhe />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/financeiro" element={
                       <ProtectedRoute allowedRoles={['gestor', 'atendente']}>
                         <Financeiro />
@@ -81,6 +95,16 @@ const App = () => (
                     <Route path="/especialidades" element={
                       <ProtectedRoute allowedRoles={['gestor']}>
                         <Especialidades />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/especialidades/novo" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <EspecialidadeNovo />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/especialidades/:id" element={
+                      <ProtectedRoute allowedRoles={['gestor']}>
+                        <EspecialidadeDetalhe />
                       </ProtectedRoute>
                     } />
                     <Route path="/convenios" element={

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
 
 public class ExameRepositorioMemoria implements ExameRepositorio {
 
@@ -49,5 +51,10 @@ public class ExameRepositorioMemoria implements ExameRepositorio {
     public void limpar() {
         exames.clear();
         sequenciaId = 0;
+    }
+
+    @Override
+    public List<Exame> listarTodos() {
+        return new ArrayList<>(exames.values());
     }
 }

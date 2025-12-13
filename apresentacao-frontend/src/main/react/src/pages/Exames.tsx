@@ -28,8 +28,12 @@ import {
   TipoExameResumo 
 } from "@/api/useTiposExamesApi";
 
+// IMPORTS NOVOS: Exame hooks e form
+import { ExameForm } from "@/components/ExameForm";
+import { useAgendarExame, useAtualizarExame, useCancelarExame, useExcluirExame, useExamesList } from "@/hooks/useExames";
+
 export default function Exames() {
-  const { isGestor } = useAuth();
+  const { isGestor, isMedico } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
   
@@ -51,6 +55,20 @@ export default function Exames() {
   const [isTipoExameFormOpen, setIsTipoExameFormOpen] = useState(false);
   const [editingTipoExame, setEditingTipoExame] = useState<TipoExameResumo | null>(null);
   const [tipoExameToDelete, setTipoExameToDelete] = useState<number | null>(null);
+
+  // ========================================================================
+  // EXAMES: hooks e UI state
+  // ========================================================================
+  const { data: exames = [] } = useExamesList();
+  const agendar = useAgendarExame();
+  const atualizarExame = useAtualizarExame();
+  const cancelarExame = useCancelarExame();
+  const excluirExame = useExcluirExame();
+
+  const [isExameFormOpen, setIsExameFormOpen] = useState(false);
+  const [editingExame, setEditingExame] = useState<any | null>(null);
+  const [exameToDelete, setExameToDelete] = useState<number | null>(null);
+  const [exameToCancel, setExameToCancel] = useState<number | null>(null);
 
   // ========================================================================
   // HANDLERS
@@ -143,6 +161,56 @@ export default function Exames() {
     });
   };
 
+  // Exames handlers
+  const handleOpenAgendar = () => {
+    setEditingExame(null);
+    setIsExameFormOpen(true);
+  };
+
+  const handleSaveExame = (data: any) => {
+    // o backend espera dataHora como LocalDateTime (YYYY-MM-DDTHH:mm:ss)
+    const ensureSeconds = (v: string) => {
+      if (!v) return v;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return `${v}:00`;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(v)) return v;
+      return v.length >= 19 ? v.slice(0, 19) : `${v}:00`;
+    };
+
+    const dataHoraComSegundos = ensureSeconds(data.dataHora);
+
+    if (editingExame) {
+      return atualizarExame.mutateAsync({ id: editingExame.id, payload: { medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: dataHoraComSegundos, responsavelId: Number(data.responsavelId) } })
+        .then((res) => { setEditingExame(null); return res; });
+    } else {
+      return agendar.mutateAsync({ pacienteId: Number(data.pacienteId), medicoId: Number(data.medicoId), tipoExame: data.tipoExame, dataHora: dataHoraComSegundos, responsavelId: Number(data.responsavelId) });
+    }
+  };
+
+  const handleEditExame = (exame: any) => {
+    setEditingExame(exame);
+    setIsExameFormOpen(true);
+  };
+
+  const handleDeleteExame = async (id: number) => {
+    try {
+      await excluirExame.mutateAsync({ id, responsavelId: 1073741824 });
+      toast({ title: 'Exame excluído', description: 'Exame removido.' });
+      setExameToDelete(null);
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.message ?? 'Erro ao excluir exame' });
+    }
+  };
+
+  const handleCancelExame = async (id: number, motivo?: string) => {
+    try {
+      await cancelarExame.mutateAsync({ id, payload: { motivo: motivo ?? 'Cancelado pelo usuário', responsavelId: 1073741824 } });
+      toast({ title: 'Exame cancelado', description: 'Exame cancelado com sucesso.' });
+      setExameToCancel(null);
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.message ?? 'Erro ao cancelar exame' });
+    }
+  };
+
   // ========================================================================
   // HELPERS VISUAIS
   // ========================================================================
@@ -176,8 +244,10 @@ export default function Exames() {
   };
 
   const filteredExames = exames.filter(exame => {
-    const matchesSearch = exame.paciente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exame.tipo.toLowerCase().includes(searchTerm.toLowerCase());
+    const pacienteText = String((exame as any).paciente ?? exame.pacienteId ?? "");
+    const tipoText = String((exame as any).tipo ?? exame.tipoExame ?? "");
+    const matchesSearch = pacienteText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tipoText.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "todos" || exame.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -188,6 +258,14 @@ export default function Exames() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Tipos de Exames</h1>
           <p className="text-muted-foreground">Gerencie os tipos de exames disponíveis na clínica</p>
+        </div>
+        <div className="flex gap-2">
+          {(isGestor || isMedico) && (
+            <Button onClick={handleOpenAgendar} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Agendar Exame
+            </Button>
+          )}
         </div>
       </div>
 
@@ -200,6 +278,8 @@ export default function Exames() {
         especialidades={[]}
         isLoading={isCadastrando || isEditando} 
       />
+
+      <ExameForm open={isExameFormOpen} onOpenChange={setIsExameFormOpen} initialData={editingExame ?? undefined} onSave={handleSaveExame} />
 
       <div className="grid gap-6 md:grid-cols-4">
         <Card className="shadow-card">
