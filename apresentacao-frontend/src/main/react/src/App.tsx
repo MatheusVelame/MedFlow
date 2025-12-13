@@ -8,14 +8,14 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MedicalLayout } from "./components/MedicalLayout";
 import Dashboard from "./pages/Dashboard";
 import Pacientes from "./pages/Pacientes";
-import Triagem from "./pages/Triagem";
+// import Triagem from "./pages/Triagem"; // REMOVIDO
 import Prontuarios from "./pages/Prontuarios";
 import Exames from "./pages/Exames";
 import Financeiro from "./pages/Financeiro";
 import Faturamentos from "./pages/Faturamentos";
-import Estoque from "./pages/Estoque";
+// import Estoque from "./pages/Estoque"; // REMOVIDO
 import Profissionais from "./pages/Profissionais";
-import Relatorios from "./pages/Relatorios";
+// import Relatorios from "./pages/Relatorios"; // REMOVIDO
 import Especialidades from "./pages/Especialidades";
 import Convenios from "./pages/Convenios";
 import Medicamentos from "./pages/Medicamentos";
@@ -46,11 +46,7 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/pacientes" element={<Pacientes />} />
-                    <Route path="/triagem" element={
-                      <ProtectedRoute allowedRoles={['gestor', 'atendente', 'medico']}>
-                        <Triagem />
-                      </ProtectedRoute>
-                    } />
+                    {/* ROTA TRIAGEM REMOVIDA */}
                     <Route path="/prontuarios" element={
                       <ProtectedRoute allowedRoles={['gestor', 'medico']}>
                         <Prontuarios />
@@ -81,11 +77,7 @@ const App = () => (
                         <Faturamentos />
                       </ProtectedRoute>
                     } />
-                    <Route path="/estoque" element={
-                      <ProtectedRoute allowedRoles={['gestor']}>
-                        <Estoque />
-                      </ProtectedRoute>
-                    } />
+                    {/* ROTA ESTOQUE REMOVIDA */}
                     <Route path="/profissionais" element={
                       <ProtectedRoute allowedRoles={['gestor']}>
                         <Profissionais />
@@ -126,11 +118,7 @@ const App = () => (
                         <MedicamentosMedico />
                       </ProtectedRoute>
                     } />
-                    <Route path="/relatorios" element={
-                      <ProtectedRoute allowedRoles={['gestor']}>
-                        <Relatorios />
-                      </ProtectedRoute>
-                    } />
+                    {/* ROTA RELATORIOS REMOVIDA */}
 					<Route path="/tipos-exames" element={
 					  <ProtectedRoute allowedRoles={['gestor']}>
 					    <TiposExames />

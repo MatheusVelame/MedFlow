@@ -161,15 +161,11 @@ export default function Financeiro() {
           <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
           <p className="text-muted-foreground">Controle de receitas, despesas e convênios</p>
         </div>
-        {isGestor && (
-          <Button className="bg-gradient-primary text-white hover:opacity-90">
-            <FileText className="w-4 h-4 mr-2" />
-            Gerar Relatório
-          </Button>
-        )}
+        {/* BOTÃO GERAR RELATÓRIO REMOVIDO DAQUI */}
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
+        {/* ... (restante do código permanece inalterado) ... */}
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
