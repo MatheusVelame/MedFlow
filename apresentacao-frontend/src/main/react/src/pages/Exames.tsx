@@ -518,7 +518,7 @@ export default function Exames() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{resultadosPendentes}</div>
-            <p className="text-xs text-muted-foreground">Pacientes em Aguardo</p>
+//            <p className="text-xs text-muted-foreground">Pacientes em Aguardo</p>
           </CardContent>
         </Card>
 
@@ -529,7 +529,7 @@ export default function Exames() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{totalCancelados}</div>
-            <p className="text-xs text-muted-foreground">Agendamentos cancelados</p>
+            <p className="text-xs text-muted-foreground">Cancelamentos</p>
           </CardContent>
         </Card>
 
@@ -540,7 +540,7 @@ export default function Exames() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{totalExcluidos}</div>
-            <p className="text-xs text-muted-foreground">Registros excluídos</p>
+            <p className="text-xs text-muted-foreground">Registros excluídos do Histórico</p>
           </CardContent>
         </Card>
 
@@ -604,8 +604,8 @@ export default function Exames() {
                   
                   <Button variant={filterStatus === 'agendados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('agendados')}>Agendados</Button>
                   <Button variant={filterStatus === 'cancelados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('cancelados')}>Cancelados</Button>
-                  <Button variant={filterStatus === 'resultado pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado pendente')}>Resultado Pendente</Button>
-                  <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultado</Button>
+                  <Button variant={filterStatus === 'resultado pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado pendente')}>Pendentes</Button>
+                  <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultados</Button>
 			  <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
                   <Button variant={filterStatus === 'historico' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('historico')}>Histórico</Button>
                 </div>
