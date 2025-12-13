@@ -146,7 +146,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
                 </SelectTrigger>
                 <SelectContent>
                   {((window as any)._tiposExamesCache || tipos).map((t: any) => (
-                    <SelectItem key={t.id} value={t.descricao || t.codigo || String(t.id)}>{t.descricao || t.codigo}</SelectItem>
+                    <SelectItem key={t.id} value={t.codigo || t.descricao || String(t.id)}>{(t.codigo ? t.codigo + ' - ' : '') + (t.descricao || t.codigo)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

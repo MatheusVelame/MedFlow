@@ -21,8 +21,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 // Ajustado: o backend aceita apenas nome/descricao na criação/atualização
+// Agora o schema faz trim no nome e valida em tempo real (regex para letras e espaços)
+const nomeSchema = z
+  .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string())
+  .refine((s) => s.length >= 3, { message: "Nome deve ter pelo menos 3 caracteres" })
+  .refine((s) => /^[\p{L}\s]+$/u.test(s), {
+    message: "O nome da especialidade deve conter apenas caracteres alfabéticos e espaços",
+  });
+
 const formSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+  nome: nomeSchema,
   descricao: z
     .string()
     .max(255, "Descrição deve ter no máximo 255 caracteres")
@@ -39,6 +47,7 @@ interface EspecialidadeFormProps {
 export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: EspecialidadeFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: "onChange", // valida em tempo real enquanto o usuário digita
     defaultValues: initialData || {
       nome: "",
       descricao: "",
@@ -58,6 +67,9 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, open]);
 
+  const descricaoValor = form.watch("descricao");
+  const descricaoLen = descricaoValor ? descricaoValor.length : 0;
+
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       await onSave(data as any);
@@ -65,9 +77,11 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
       onOpenChange(false);
     } catch (e: any) {
       const payloadErr = e?.response?.data;
-      if (payloadErr?.errors && typeof payloadErr.errors === 'object') {
+      if (payloadErr?.errors && typeof payloadErr.errors === "object") {
         Object.entries(payloadErr.errors).forEach(([field, message]) => {
-          try { form.setError(field as any, { type: 'server', message: String(message) }); } catch {}
+          try {
+            form.setError(field as any, { type: "server", message: String(message) });
+          } catch {}
         });
         return;
       }
@@ -75,6 +89,9 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
       throw e;
     }
   };
+
+  const isSubmitting = form.formState.isSubmitting;
+  const isValid = form.formState.isValid;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -93,7 +110,7 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
                 <FormItem>
                   <FormLabel>Nome da Especialidade</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Cardiologia" {...field} />
+                    <Input placeholder="Ex: Cardiologia" {...field} aria-invalid={Boolean(form.formState.errors.nome)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -111,10 +128,14 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
                       placeholder="Descreva a especialidade médica"
                       className="resize-none"
                       rows={3}
+                      maxLength={255}
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <FormMessage />
+                    <span>{descricaoLen}/255</span>
+                  </div>
                 </FormItem>
               )}
             />
@@ -124,10 +145,13 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar</Button>
+              <Button type="submit" disabled={isSubmitting || !isValid}>
+                {isSubmitting ? "Salvando..." : "Salvar"}
+              </Button>
             </div>
           </form>
         </Form>

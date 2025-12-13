@@ -9,7 +9,28 @@ export default function EspecialidadeNovo() {
 
   const handleSave = async (data: any) => {
     try {
-      await criar.mutateAsync({ nome: data.nome, descricao: data.descricao });
+      const nome = (data.nome ?? "").toString().trim();
+      const descricao = data.descricao ?? null;
+
+      // Validações cliente (mesmas regras do domínio)
+      if (!nome) {
+        toast({ title: "Erro", description: "O nome da especialidade é obrigatório" });
+        return;
+      }
+
+      // Permite letras, espaços e acentos (Unicode letters)
+      const nomeValido = /^[\p{L}\s]+$/u.test(nome);
+      if (!nomeValido) {
+        toast({ title: "Erro", description: "O nome da especialidade deve conter apenas caracteres alfabéticos e espaços" });
+        return;
+      }
+
+      if (descricao && descricao.length > 255) {
+        toast({ title: "Erro", description: "A descrição não pode exceder 255 caracteres" });
+        return;
+      }
+
+      await criar.mutateAsync({ nome, descricao });
       toast({ title: "Especialidade cadastrada", description: "Nova especialidade foi adicionada com sucesso." });
       navigate("/especialidades");
     } catch (e: any) {

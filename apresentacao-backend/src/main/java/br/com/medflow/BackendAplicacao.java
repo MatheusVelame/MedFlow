@@ -9,6 +9,10 @@ import java.io.IOException;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.stereotype.Repository;
 
 // Imports de Consultas (Módulo 1)
 import br.com.medflow.dominio.atendimento.consultas.ConsultaServico;
@@ -66,11 +70,15 @@ import br.com.medflow.aplicacao.administracao.funcionarios.FuncionarioRepositori
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
-    "br.com.medflow",
+    "br.com.medflow.apresentacao",
     "br.com.medflow.infraestrutura",
     "br.com.medflow.aplicacao",
     "br.com.medflow.dominio"
 })
+// Restringe o escopo de repositórios JPA para o pacote de infraestrutura
+@EnableJpaRepositories(basePackages = "br.com.medflow.infraestrutura.persistencia.jpa")
+// Escaneia entidades JPA no pacote de infraestrutura
+@EntityScan(basePackages = "br.com.medflow.infraestrutura.persistencia.jpa")
 public class BackendAplicacao {
     
 

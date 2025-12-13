@@ -1,0 +1,26 @@
+[INFO] Error stacktraces are turned on.
+[INFO] Scanning for projects...
+[ERROR] [ERROR] Could not find the selected project in the reactor: apresentacao-backend @ 
+[ERROR] Could not find the selected project in the reactor: apresentacao-backend -> [Help 1]
+org.apache.maven.MavenExecutionException: Could not find the selected project in the reactor: apresentacao-backend
+    at org.apache.maven.graph.DefaultGraphBuilder.trimSelectedProjects (DefaultGraphBuilder.java:150)
+    at org.apache.maven.graph.DefaultGraphBuilder.reactorDependencyGraph (DefaultGraphBuilder.java:112)
+    at org.apache.maven.graph.DefaultGraphBuilder.build (DefaultGraphBuilder.java:78)
+    at org.apache.maven.DefaultMaven.buildGraph (DefaultMaven.java:448)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:197)
+    at org.apache.maven.DefaultMaven.doExecute (DefaultMaven.java:173)
+    at org.apache.maven.DefaultMaven.execute (DefaultMaven.java:101)
+    at org.apache.maven.cli.MavenCli.execute (MavenCli.java:906)
+    at org.apache.maven.cli.MavenCli.doMain (MavenCli.java:283)
+    at org.apache.maven.cli.MavenCli.main (MavenCli.java:206)
+    at jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:103)
+    at java.lang.reflect.Method.invoke (Method.java:580)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced (Launcher.java:255)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.launch (Launcher.java:201)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode (Launcher.java:361)
+    at org.codehaus.plexus.classworlds.launcher.Launcher.main (Launcher.java:314)
+[ERROR] 
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MavenExecutionException
