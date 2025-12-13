@@ -28,6 +28,7 @@ public class FolhaPagamentoRepositorioMemoria implements FolhaPagamentoRepositor
                     folhaPagamento.getSalarioBase(),
                     folhaPagamento.getBeneficios(),
                     folhaPagamento.getMetodoPagamento(),
+                    folhaPagamento.getTipoVinculo(),
                     folhaPagamento.getStatus()
             );
             folhasPagamento.put(novoId, nova);

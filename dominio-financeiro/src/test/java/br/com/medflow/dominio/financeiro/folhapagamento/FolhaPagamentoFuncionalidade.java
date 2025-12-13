@@ -95,6 +95,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                     new BigDecimal("3000.00"),
                     new BigDecimal("400.00"),
                     "PIX",
+                    TipoVinculo.CLT,
                     responsavel
             );
             repositorio.salvar(folha);
@@ -145,6 +146,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                 salario,
                 beneficios,
                 metodo,
+                TipoVinculo.CLT,
                 responsavel
         );
         repositorio.salvar(folha);
@@ -214,6 +216,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                 new BigDecimal("3000.00"),
                 new BigDecimal("500.00"),
                 "PIX",
+                TipoVinculo.CLT,
                 responsavel
         );
         repositorio.salvar(folha);
@@ -236,6 +239,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                 new BigDecimal("3000.00"),
                 new BigDecimal("500.00"),
                 "PIX",
+                TipoVinculo.CLT,
                 responsavel
         );
         repositorio.salvar(folha);
@@ -257,6 +261,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                 new BigDecimal("3000.00"),
                 new BigDecimal("500.00"),
                 "PIX",
+                TipoVinculo.CLT,
                 responsavel
         );
         repositorio.salvar(folha);
@@ -299,6 +304,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                 new BigDecimal("4000.00"),
                 new BigDecimal("800.00"),
                 "Transferência Bancária",
+                TipoVinculo.CLT,
                 responsavel
         );
         repositorio.salvar(folha);
@@ -329,6 +335,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                 new BigDecimal("3000.00"),
                 new BigDecimal("500.00"),
                 "PIX",
+                TipoVinculo.CLT,
                 responsavel
         );
         repositorio.salvar(folha);
@@ -702,6 +709,7 @@ public class FolhaPagamentoFuncionalidade extends FolhaPagamentoFuncionalidadeBa
                     this.salarioBase,
                     this.beneficios,
                     this.metodoPagamento,
+                    TipoVinculo.CLT,
                     responsavel,
                     ativo
             );
