@@ -96,6 +96,8 @@ export default function Exames() {
   const [editingExame, setEditingExame] = useState<any | null>(null);
   const [exameToDelete, setExameToDelete] = useState<number | null>(null);
   const [exameToCancel, setExameToCancel] = useState<number | null>(null);
+  // motivo obrigatório para cancelamento
+  const [cancelReason, setCancelReason] = useState<string>("");
 
   // ========================================================================
   // HANDLERS
@@ -604,17 +606,35 @@ export default function Exames() {
       </AlertDialog>
 
       {/* Confirm dialog para cancelamento de exame */}
-      <AlertDialog open={!!exameToCancel} onOpenChange={() => setExameToCancel(null)}>
+      <AlertDialog open={!!exameToCancel} onOpenChange={(open) => { if (!open) { setExameToCancel(null); setCancelReason(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar cancelamento do exame</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja cancelar este exame? O exame será marcado como cancelado.
+              Informe o motivo do cancelamento (obrigatório). O exame será marcado como cancelado e o motivo ficará registrado no histórico.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="px-6 pb-4">
+            <label htmlFor="cancelReason" className="text-sm font-medium">Motivo do cancelamento</label>
+            <textarea
+              id="cancelReason"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="w-full mt-2 p-2 border rounded-md min-h-[80px]"
+              placeholder="Descreva o motivo do cancelamento..."
+            />
+            {cancelReason.trim().length === 0 && (
+              <p className="text-sm text-destructive mt-1">É obrigatório informar o motivo do cancelamento.</p>
+            )}
+          </div>
+
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => exameToCancel && handleCancelExame(exameToCancel)}>
+            <AlertDialogCancel onClick={() => { setExameToCancel(null); setCancelReason(""); }}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => exameToCancel && handleCancelExame(exameToCancel, cancelReason.trim())}
+              disabled={cancelReason.trim().length === 0 || (cancelarExame.isLoading && exameToCancel !== null)}
+            >
               {cancelarExame.isLoading && exameToCancel ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
             </AlertDialogAction>
           </AlertDialogFooter>
