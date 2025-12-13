@@ -59,16 +59,40 @@ export default function ExameDetalhe() {
     }
   };
 
+  const ultimaObservacao = exame.historico && exame.historico.length > 0 ? exame.historico[exame.historico.length - 1].descricao : null;
+
   return (
     <div className="animate-fade-in">
       <h1 className="text-3xl font-bold mb-2">Detalhes do Exame</h1>
       <p className="text-muted-foreground mb-6">Visualize e edite as informações do exame</p>
 
-      <ExameForm open={true} onOpenChange={() => navigate('/exames')} onSave={handleSave} initialData={{ pacienteId: exame.pacienteId, tipoExame: exame.tipoExame, medicoId: exame.medicoId, dataHora: exame.dataHora, observacoes: exame.observacoes }} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <ExameForm open={true} onOpenChange={() => navigate('/exames')} onSave={handleSave} initialData={{ pacienteId: exame.pacienteId, tipoExame: exame.tipoExame, medicoId: exame.medicoId, dataHora: exame.dataHora, observacoes: ultimaObservacao }} />
 
-      <div className="mt-4 flex gap-2">
-        <Button variant="outline" onClick={() => handleCancel('Cancelado via UI')} disabled={cancelling}>{cancelling ? 'Cancelando...' : 'Cancelar Exame'}</Button>
-        <Button variant="destructive" onClick={handleDelete}>Excluir Exame</Button>
+          <div className="mt-4 flex gap-2">
+            <Button variant="outline" onClick={() => handleCancel('Cancelado via UI')} disabled={cancelling}>{cancelling ? 'Cancelando...' : 'Cancelar Exame'}</Button>
+            <Button variant="destructive" onClick={handleDelete}>Excluir Exame</Button>
+          </div>
+        </div>
+
+        <aside className="bg-white border rounded-md p-4">
+          <h2 className="font-semibold mb-2">Histórico de alterações</h2>
+          {exame.historico && exame.historico.length > 0 ? (
+            <ul className="space-y-2">
+              {exame.historico.slice().reverse().map((h: any, idx: number) => (
+                <li key={idx} className="border-b pb-2">
+                  <div className="text-sm text-muted-foreground">{new Date(h.dataHora).toLocaleString()}</div>
+                  <div className="font-medium">{h.acao}</div>
+                  <div className="text-sm">{h.descricao}</div>
+                  <div className="text-xs text-muted-foreground">Responsável: {h.responsavelId}</div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-sm text-muted-foreground">Nenhuma alteração registrada.</div>
+          )}
+        </aside>
       </div>
     </div>
   );

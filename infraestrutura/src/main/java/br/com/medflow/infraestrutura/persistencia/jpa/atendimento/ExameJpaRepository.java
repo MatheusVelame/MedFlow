@@ -21,6 +21,16 @@ public interface ExameJpaRepository extends JpaRepository<ExameJpa, Long> {
                                       @Param("dataHora") LocalDateTime dataHora, 
                                       @Param("idIgnorado") Long idIgnorado);
 
+    // Query para verificar conflitos por médico (evita dupla reserva de mesmo médico no mesmo horário)
+    @Query("SELECT e FROM ExameJpa e " +
+           "WHERE e.medicoId = :medicoId " +
+           "AND e.dataHora = :dataHora " +
+           "AND e.status <> 'CANCELADO' " +
+           "AND (:idIgnorado IS NULL OR e.id <> :idIgnorado)")
+    List<ExameJpa> encontrarConflitosPorMedico(@Param("medicoId") Long medicoId,
+                                               @Param("dataHora") LocalDateTime dataHora,
+                                               @Param("idIgnorado") Long idIgnorado);
+
     boolean existsByMedicoId(Long medicoId);
 
     

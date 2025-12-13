@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import br.com.medflow.dominio.atendimento.exames.Exame;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ExameDetalheResponse(
     Long id,
@@ -12,6 +13,7 @@ public record ExameDetalheResponse(
     Long medicoId,
     String tipoExame,
     LocalDateTime dataHora,
+    @Schema(description = "Status do exame (controlado pelo backend). Valores possíveis: AGENDADO, EM_ANDAMENTO, PENDENTE, REALIZADO, CANCELADO", example = "AGENDADO")
     String status,
     List<HistoricoEntradaResponse> historico
 ) {
