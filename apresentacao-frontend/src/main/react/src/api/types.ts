@@ -21,12 +21,15 @@ export interface TipoExameResumo {
   valor?: number;
 }
 
+// ExameResponse mapeado diretamente do record Java em backend:
+// public record ExameResponse(Long id, Long pacienteId, Long medicoId, String tipoExame, LocalDateTime dataHora, String status)
 export interface ExameResponse {
   id: number;
   pacienteId: number;
   medicoId: number;
   tipoExame: string;
-  dataHora: string; // ISO local
+  // LocalDateTime do backend é serializado como string no formato ISO local (YYYY-MM-DDTHH:mm:ss)
+  dataHora: string;
   status: string;
 }
 
@@ -34,7 +37,7 @@ export interface AgendamentoExameRequest {
   pacienteId: number;
   medicoId: number;
   tipoExame: string;
-  dataHora: string; // ISO local format: YYYY-MM-DDTHH:mm:ss
+  dataHora: string; // ISO local format: YYYY-MM-DDTHH:mm:ss (sem timezone)
   responsavelId: number;
 }
 

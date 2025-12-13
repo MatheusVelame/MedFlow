@@ -27,9 +27,10 @@ interface ExameFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: ExameFormData) => void;
+  initialData?: Partial<ExameFormData> | null;
 }
 
-export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
+export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameFormProps) {
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ExameFormData>({
     resolver: zodResolver(exameSchema),
     defaultValues: {
@@ -63,9 +64,25 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
     }
   }, [open, reset]);
 
+  // sincronizar initialData quando fornecido (edição)
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.pacienteId !== undefined) setValue('pacienteId', initialData.pacienteId);
+      if (initialData.tipoExame !== undefined) setValue('tipoExame', initialData.tipoExame);
+      if (initialData.medicoId !== undefined) setValue('medicoId', initialData.medicoId);
+      if (initialData.laboratorio !== undefined) setValue('laboratorio', initialData.laboratorio);
+      if (initialData.prioridade !== undefined) setValue('prioridade', initialData.prioridade);
+      if (initialData.dataHora !== undefined) {
+        // backend expects YYYY-MM-DDTHH:mm:ss; input expects YYYY-MM-DDTHH:mm
+        const v = initialData.dataHora.length === 19 ? initialData.dataHora.slice(0,16) : initialData.dataHora;
+        setValue('dataHora', v);
+      }
+    }
+  }, [initialData, setValue]);
+
   const onSubmit = (data: ExameFormData) => {
     onSave(data);
-    toast.success("Exame solicitado com sucesso!");
+    toast.success(initialData ? "Exame atualizado com sucesso!" : "Exame solicitado com sucesso!");
     onOpenChange(false);
   };
 
@@ -73,14 +90,14 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Solicitação de Exame</DialogTitle>
+          <DialogTitle>{initialData ? "Editar Solicitação de Exame" : "Nova Solicitação de Exame"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="paciente">Paciente *</Label>
-              <Select onValueChange={(v: any) => setValue('pacienteId', Number(v))}>
+              <Select onValueChange={(v: any) => setValue('pacienteId', Number(v))} defaultValue={initialData?.pacienteId ? String(initialData.pacienteId) : undefined}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -95,7 +112,7 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
 
             <div className="col-span-2">
               <Label htmlFor="tipoExame">Tipo de Exame *</Label>
-              <Select onValueChange={(v: any) => setValue('tipoExame', v)}>
+              <Select onValueChange={(v: any) => setValue('tipoExame', v)} defaultValue={initialData?.tipoExame}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -110,7 +127,7 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
 
             <div>
               <Label htmlFor="medicoId">Médico Solicitante *</Label>
-              <Select onValueChange={(v: any) => setValue('medicoId', Number(v))}>
+              <Select onValueChange={(v: any) => setValue('medicoId', Number(v))} defaultValue={initialData?.medicoId ? String(initialData.medicoId) : undefined}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -131,7 +148,7 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
 
             <div>
               <Label htmlFor="prioridade">Prioridade *</Label>
-              <Select onValueChange={(value: any) => setValue("prioridade", value)} defaultValue="normal">
+              <Select onValueChange={(value: any) => setValue("prioridade", value)} defaultValue={initialData?.prioridade ?? "normal"}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -155,7 +172,7 @@ export function ExameForm({ open, onOpenChange, onSave }: ExameFormProps) {
               Cancelar
             </Button>
             <Button type="submit" className="bg-gradient-primary">
-              Solicitar Exame
+              {initialData ? "Salvar" : "Solicitar Exame"}
             </Button>
           </div>
         </form>

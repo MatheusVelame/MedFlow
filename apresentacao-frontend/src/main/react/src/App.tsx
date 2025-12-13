@@ -26,6 +26,8 @@ import NotFound from "./pages/NotFound";
 import TiposExames from "./pages/TiposExames";
 import EspecialidadeNovo from "./pages/EspecialidadeNovo";
 import EspecialidadeDetalhe from "./pages/EspecialidadeDetalhe";
+import ExameNovo from "./pages/ExameNovo";
+import ExameDetalhe from "./pages/ExameDetalhe";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,16 @@ const App = () => (
                     <Route path="/exames" element={
                       <ProtectedRoute allowedRoles={['gestor', 'medico']}>
                         <Exames />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/exames/novo" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ExameNovo />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/exames/:id" element={
+                      <ProtectedRoute allowedRoles={['gestor', 'medico']}>
+                        <ExameDetalhe />
                       </ProtectedRoute>
                     } />
                     <Route path="/financeiro" element={

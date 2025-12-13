@@ -6,6 +6,10 @@ export function useExamesList() {
   return useQuery<ExameResponse[]>(['exames'], () => examesApi.listar(), { refetchOnWindowFocus: false });
 }
 
+export function useExame(id?: number) {
+  return useQuery<ExameResponse | undefined>(['exame', id], () => examesApi.obter(id as number), { enabled: !!id });
+}
+
 export function useAgendarExame() {
   const qc = useQueryClient();
   return useMutation((payload: AgendamentoExameRequest) => examesApi.agendar(payload), {

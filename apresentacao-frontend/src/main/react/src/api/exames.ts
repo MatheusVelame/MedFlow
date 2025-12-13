@@ -10,6 +10,9 @@ export const examesApi = {
   listar: async (): Promise<ExameResponse[]> =>
     request<ExameResponse[]>(api.get(`/exames`)),
 
+  obter: async (id: number): Promise<ExameResponse> =>
+    request<ExameResponse>(api.get(`/exames/${id}`)),
+
   agendar: async (payload: AgendamentoExameRequest): Promise<ExameResponse> =>
     request<ExameResponse>(api.post(`/exames`, payload)),
 
