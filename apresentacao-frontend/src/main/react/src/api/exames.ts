@@ -8,20 +8,30 @@ import type {
 
 export const examesApi = {
   listar: async (): Promise<ExameResponse[]> =>
-    request<ExameResponse[]>(api.get(`/exames`)),
+    request<ExameResponse[]>(api.get(`/api/exames`)),
 
   obter: async (id: number): Promise<ExameResponse> =>
-    request<ExameResponse>(api.get(`/exames/${id}`)),
+    request<ExameResponse>(api.get(`/api/exames/${id}`)),
 
   agendar: async (payload: AgendamentoExameRequest): Promise<ExameResponse> =>
-    request<ExameResponse>(api.post(`/exames`, payload)),
+    request<ExameResponse>(api.post(`/api/exames`, payload)),
 
-  atualizar: async (id: number, payload: AtualizacaoExameRequest): Promise<ExameResponse> =>
-    request<ExameResponse>(api.put(`/exames/${id}`, payload)),
+  atualizar: async (
+    id: number,
+    payload: AtualizacaoExameRequest
+  ): Promise<ExameResponse> =>
+    request<ExameResponse>(api.put(`/api/exames/${id}`, payload)),
 
   excluir: async (id: number, responsavelId: number): Promise<void> =>
-    request<void>(api.delete(`/exames/${id}`, { params: { responsavelId } })),
+    request<void>(
+      api.delete(`/api/exames/${id}`, { params: { responsavelId } })
+    ),
 
-  cancelar: async (id: number, payload: CancelamentoExameRequest): Promise<ExameResponse> =>
-    request<ExameResponse>(api.patch(`/exames/${id}/cancelamento`, payload)),
+  cancelar: async (
+    id: number,
+    payload: CancelamentoExameRequest
+  ): Promise<ExameResponse> =>
+    request<ExameResponse>(
+      api.patch(`/api/exames/${id}/cancelamento`, payload)
+    ),
 };

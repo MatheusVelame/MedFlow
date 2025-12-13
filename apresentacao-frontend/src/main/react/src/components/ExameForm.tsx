@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +44,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
   const { data: funcionarios = [] } = useListarFuncionarios();
 
   // carregar tipos de exames para seleção
-  const [tipos, setTipos] = (window as any)._tiposExamesCache || [ ];
+  const [tipos, setTipos] = useState<any[]>((window as any)._tiposExamesCache || []);
   useEffect(() => {
     let mounted = true;
     tiposExamesApi.listar().then(data => { if(mounted){ setTipos(data); (window as any)._tiposExamesCache = data; } });
@@ -118,6 +118,7 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initialData ? "Editar Solicitação de Exame" : "Nova Solicitação de Exame"}</DialogTitle>
+          <DialogDescription>Preencha os campos para solicitar o exame.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
