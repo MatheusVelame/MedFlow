@@ -58,4 +58,10 @@ public class ProntuarioRepositorioLoggingDecorator extends ProntuarioRepositorio
         logger.debug("Total de prontuários encontrados: {}", resultado.size());
         return resultado;
     }
+    
+    @Override
+    public boolean existsByPacienteId(String pacienteId) {
+        // Apenas repassa a pergunta para o próximo repositório da fila
+        return repositorio.existsByPacienteId(pacienteId);
+    }
 }

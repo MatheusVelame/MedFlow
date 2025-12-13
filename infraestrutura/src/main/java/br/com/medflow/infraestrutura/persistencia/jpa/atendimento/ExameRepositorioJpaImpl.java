@@ -52,6 +52,11 @@ public class ExameRepositorioJpaImpl implements ExameRepositorio {
         
         return conflitos.stream().findFirst().map(this::paraDominio);
     }
+    
+    @Override
+    public boolean existsByPacienteId(Long pacienteId) {
+        return jpaRepository.existsByPacienteId(pacienteId);
+    }
 
     @Override
     public List<Exame> listarTodos() {

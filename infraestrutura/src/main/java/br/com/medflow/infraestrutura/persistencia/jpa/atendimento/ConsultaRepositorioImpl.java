@@ -105,6 +105,12 @@ public class ConsultaRepositorioImpl implements ConsultaRepositorio, ConsultaRep
                 .collect(Collectors.toList());
     }
     
+    @Override
+    public boolean existsByPacienteId(int pacienteId) {
+        // Apenas repassa a chamada, sem conversão complicada
+        return jpaRepository.existsByPacienteId(pacienteId);
+    }
+    
     // Métodos de mapeamento interno (JPA -> DTO)
 
     private ConsultaResumo toResumoDto(ConsultaJpa jpa) {

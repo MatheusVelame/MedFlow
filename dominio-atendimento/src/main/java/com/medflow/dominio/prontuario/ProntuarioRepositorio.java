@@ -33,4 +33,6 @@ public interface ProntuarioRepositorio {
      * @return Lista de todos os prontuários.
      */
     List<Prontuario> listarTodos();
+    
+    boolean existsByPacienteId(String pacienteId);
 }
