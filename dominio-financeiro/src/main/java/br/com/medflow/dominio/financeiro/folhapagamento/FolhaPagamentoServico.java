@@ -15,7 +15,8 @@ public class FolhaPagamentoServico {
 
     public FolhaPagamento registrar(int funcionarioId, String periodoReferencia, TipoRegistro tipoRegistro,
                                     BigDecimal salarioBase, BigDecimal beneficios, String metodoPagamento,
-                                    UsuarioResponsavelId responsavelId, boolean funcionarioAtivo) {
+                                    TipoVinculo tipoVinculo, UsuarioResponsavelId responsavelId,
+                                    boolean funcionarioAtivo) {
 
         // RN1: Funcionário deve estar ativo
         if (!funcionarioAtivo) {
@@ -31,7 +32,7 @@ public class FolhaPagamentoServico {
         }
 
         var novaFolha = new FolhaPagamento(funcionarioId, periodoReferencia, tipoRegistro,
-                salarioBase, beneficios, metodoPagamento, responsavelId);
+                salarioBase, beneficios, metodoPagamento, tipoVinculo, responsavelId);
         repositorio.salvar(novaFolha);
         return novaFolha;
     }
@@ -56,7 +57,6 @@ public class FolhaPagamentoServico {
         var folha = obter(id);
 
         if (!folha.podeSerRemovido()) {
-            // CORREÇÃO MANTIDA: Formatar o status de UPPERCASE (PAGO, CANCELADO) para Title Case (Pago, Cancelado)
             String statusUpper = folha.getStatus().name();
             String statusFormatado = statusUpper.substring(0, 1).toUpperCase() + statusUpper.substring(1).toLowerCase();
 

@@ -1,5 +1,6 @@
+// src/pages/Financeiro.tsx
+
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, FileText, Clock, Plus, UserCheck, Edit, Trash2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useListarFaturamentos } from "@/api/useFaturamentosApi";
 import { useListarConvenios } from "@/api/useConveniosApi";
@@ -26,15 +27,16 @@ import {
   useRegistrarFolhaPagamento,
   useAlterarStatusFolha,
   useRemoverFolhaPagamento,
+  useAtualizarValoresFolha,
+  useObterFolhaPagamento,
   type FolhaPagamentoResumo,
   type StatusFolha,
-  type TipoRegistro
 } from "@/api/useFolhaPagamentoApi";
 
 export default function Financeiro() {
-  const { isGestor, isAtendente, user } = useAuth();
+  const { isGestor, user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPagamento, setEditingPagamento] = useState<FolhaPagamentoResumo | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [pagamentoToDelete, setPagamentoToDelete] = useState<number | null>(null);
 
   // Queries
@@ -42,14 +44,16 @@ export default function Financeiro() {
   const { data: convenios = [], isLoading: isLoadingConvenios } = useListarConvenios();
   const { data: funcionarios = [], isLoading: isLoadingFuncionarios } = useListarFuncionarios();
   const { data: folhasPagamento = [], isLoading: isLoadingFolhas } = useListarFolhasPagamento();
+  const { data: folhaDetalhes } = useObterFolhaPagamento(editingId);
 
   // Mutations
   const registrarFolhaMutation = useRegistrarFolhaPagamento();
   const alterarStatusMutation = useAlterarStatusFolha();
   const removerFolhaMutation = useRemoverFolhaPagamento();
+  const atualizarValoresMutation = useAtualizarValoresFolha();
 
   // Cálculos baseados em dados reais
-  const totalFaturamentoPendente = useMemo(() => 
+  const totalFaturamentoPendente = useMemo(() =>
     faturamentos
       .filter(f => f.status === "PENDENTE")
       .reduce((acc, f) => acc + Number(f.valor), 0),
@@ -79,18 +83,31 @@ export default function Financeiro() {
 
   const handleSavePagamento = (data: any) => {
     const usuarioResponsavelId = parseInt(user?.id || "1");
-    
-    if (editingPagamento) {
-      toast.info("Funcionalidade de edição em desenvolvimento");
-      setEditingPagamento(null);
-      setIsFormOpen(false);
+
+    if (editingId) {
+      // EDIÇÃO: atualizar apenas valores
+      atualizarValoresMutation.mutate({
+        id: editingId,
+        payload: {
+          novoSalarioBase: data.salarioBase,
+          novosBeneficios: data.beneficios,
+          usuarioResponsavelId: usuarioResponsavelId
+        }
+      }, {
+        onSuccess: () => {
+          setIsFormOpen(false);
+          setEditingId(null);
+        }
+      });
     } else {
+      // NOVO REGISTRO
       registrarFolhaMutation.mutate({
-        funcionarioId: parseInt(data.profissionalId),
-        periodoReferencia: format(data.mesReferencia, "yyyy-MM"),
-        tipoRegistro: "MENSALISTA" as TipoRegistro,
+        funcionarioId: parseInt(data.funcionarioId),
+        periodoReferencia: data.periodoReferencia,
+        tipoRegistro: data.tipoRegistro,
+        tipoVinculo: data.tipoVinculo,
         salarioBase: data.salarioBase,
-        beneficios: data.bonus || 0,
+        beneficios: data.beneficios,
         metodoPagamento: data.metodoPagamento,
         usuarioResponsavelId: usuarioResponsavelId,
         funcionarioAtivo: true
@@ -102,9 +119,14 @@ export default function Financeiro() {
     }
   };
 
-  const handleEdit = (pagamento: FolhaPagamentoResumo) => {
-    setEditingPagamento(pagamento);
+  const handleEdit = (id: number) => {
+    setEditingId(id);
     setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingId(null);
   };
 
   const handleDelete = () => {
@@ -131,6 +153,7 @@ export default function Financeiro() {
       }
     });
   };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -138,15 +161,11 @@ export default function Financeiro() {
           <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
           <p className="text-muted-foreground">Controle de receitas, despesas e convênios</p>
         </div>
-        {isGestor && (
-          <Button className="bg-gradient-primary text-white hover:opacity-90">
-            <FileText className="w-4 h-4 mr-2" />
-            Gerar Relatório
-          </Button>
-        )}
+        {/* BOTÃO GERAR RELATÓRIO REMOVIDO DAQUI */}
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
+        {/* ... (restante do código permanece inalterado) ... */}
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -256,7 +275,7 @@ export default function Financeiro() {
                         <p className="font-bold text-success">
                           {Number(faturamento.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </p>
-                        <Badge 
+                        <Badge
                           variant={faturamento.status === "PAGO" ? "default" : "secondary"}
                           className="mt-1"
                         >
@@ -337,7 +356,7 @@ export default function Financeiro() {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card className="bg-success/10 border-success">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -377,13 +396,13 @@ export default function Financeiro() {
                                   {folha.status === "PAGO" ? "Pago" : folha.status === "PENDENTE" ? "Pendente" : "Cancelado"}
                                 </Badge>
                               </div>
-                              
+
                               <div className="text-sm text-muted-foreground space-y-1">
                                 <p><strong>Referência:</strong> {folha.periodoReferencia}</p>
                                 <p><strong>Função:</strong> {funcionario?.funcao || "N/A"}</p>
                               </div>
                             </div>
-                            
+
                             <div className="flex flex-col items-end gap-3">
                               <div className="text-right">
                                 <p className="text-sm text-muted-foreground">Valor Líquido</p>
@@ -395,8 +414,8 @@ export default function Financeiro() {
                               {isGestor && (
                                 <div className="flex flex-col gap-2 w-full">
                                   {folha.status === "PENDENTE" && (
-                                    <Button 
-                                      size="sm" 
+                                    <Button
+                                      size="sm"
                                       className="w-full"
                                       onClick={() => handleMarkAsPaid(folha.id)}
                                     >
@@ -405,18 +424,22 @@ export default function Financeiro() {
                                     </Button>
                                   )}
                                   <div className="flex gap-2">
-                                    <Button 
-                                      variant="outline" 
+                                    <Button
+                                      variant="outline"
                                       size="sm"
                                       className="flex-1"
-                                      onClick={() => handleEdit(folha)}
+                                      onClick={() => handleEdit(folha.id)}
+                                      disabled={folha.status !== "PENDENTE"}
+                                      title={folha.status !== "PENDENTE" ? "Apenas folhas pendentes podem ser editadas" : "Editar valores"}
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                      variant="outline" 
+                                    <Button
+                                      variant="outline"
                                       size="sm"
                                       onClick={() => setPagamentoToDelete(folha.id)}
+                                      disabled={folha.status !== "PENDENTE"}
+                                      title={folha.status !== "PENDENTE" ? "Apenas folhas pendentes podem ser removidas" : "Remover"}
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -434,31 +457,15 @@ export default function Financeiro() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="relatorios" className="space-y-4">
-          <Card className="shadow-card">
-            <CardContent className="p-12 text-center">
-              <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">Relatórios Financeiros</h3>
-              <p className="text-muted-foreground mb-6">
-                Gere relatórios detalhados de receitas, despesas e convênios
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline">Relatório Mensal</Button>
-                <Button variant="outline">Relatório Anual</Button>
-                <Button className="bg-gradient-primary text-white">Personalizado</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       <FolhaPagamentoForm
         open={isFormOpen}
-        onOpenChange={setIsFormOpen}
+        onOpenChange={handleCloseForm}
         onSave={handleSavePagamento}
-        initialData={editingPagamento}
-        profissionais={funcionarios.map(f => ({ id: String(f.id), nome: f.nome, especialidade: f.funcao, salario: 0 }))}
+        initialData={folhaDetalhes}
+        funcionarios={funcionarios}
+        isEditing={!!editingId}
       />
 
       <AlertDialog open={!!pagamentoToDelete} onOpenChange={() => setPagamentoToDelete(null)}>

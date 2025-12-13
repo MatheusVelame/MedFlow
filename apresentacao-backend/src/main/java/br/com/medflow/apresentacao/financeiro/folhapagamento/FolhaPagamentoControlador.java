@@ -33,6 +33,7 @@ public class FolhaPagamentoControlador {
                     formulario.getSalarioBase(),
                     formulario.getBeneficios(),
                     formulario.getMetodoPagamento(),
+                    formulario.getTipoVinculo(),
                     formulario.getUsuarioResponsavelId(),
                     formulario.isFuncionarioAtivo()
             );

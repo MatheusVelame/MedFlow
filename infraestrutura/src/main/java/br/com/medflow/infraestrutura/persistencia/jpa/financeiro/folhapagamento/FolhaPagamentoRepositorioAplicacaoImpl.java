@@ -80,7 +80,8 @@ public class FolhaPagamentoRepositorioAplicacaoImpl implements FolhaPagamentoRep
         FolhaPagamento folhaDominio = jpa.paraDominio();
 
         CalculoFolhaStrategy strategy = CalculoFolhaStrategyFactory.criar(
-                jpa.getTipoRegistro()
+                jpa.getTipoRegistro(),
+                jpa.getTipoVinculo()
         );
 
         return strategy.calcularValorLiquido(folhaDominio);

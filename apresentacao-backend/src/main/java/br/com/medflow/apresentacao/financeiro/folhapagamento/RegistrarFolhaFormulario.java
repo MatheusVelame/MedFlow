@@ -1,6 +1,7 @@
 package br.com.medflow.apresentacao.financeiro.folhapagamento;
 
 import br.com.medflow.dominio.financeiro.folhapagamento.TipoRegistro;
+import br.com.medflow.dominio.financeiro.folhapagamento.TipoVinculo;
 import java.math.BigDecimal;
 
 /**
@@ -14,6 +15,7 @@ public class RegistrarFolhaFormulario {
     private BigDecimal salarioBase;
     private BigDecimal beneficios;
     private String metodoPagamento;
+    private TipoVinculo tipoVinculo;
     private Integer usuarioResponsavelId;
     private boolean funcionarioAtivo = true;
 
@@ -63,6 +65,14 @@ public class RegistrarFolhaFormulario {
 
     public void setMetodoPagamento(String metodoPagamento) {
         this.metodoPagamento = metodoPagamento;
+    }
+
+    public TipoVinculo getTipoVinculo() {
+        return tipoVinculo;
+    }
+
+    public void setTipoVinculo(TipoVinculo tipoVinculo) {
+        this.tipoVinculo = tipoVinculo;
     }
 
     public Integer getUsuarioResponsavelId() {

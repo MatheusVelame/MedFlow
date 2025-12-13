@@ -5,10 +5,10 @@ import java.math.RoundingMode;
 
 /**
  * PADRÃO STRATEGY - Implementação Concreta
- * Estratégia de cálculo para folhas de PAGAMENTO.
+ * Estratégia de cálculo para folhas de PAGAMENTO de funcionários CLT.
  * Aplica descontos de INSS (11%) e IRRF (15%).
  */
-public class CalculoPagamentoStrategy implements CalculoFolhaStrategy {
+public class CalculoCLTStrategy implements CalculoFolhaStrategy {
 
     private static final BigDecimal ALIQUOTA_INSS = new BigDecimal("0.11");
     private static final BigDecimal ALIQUOTA_IRRF = new BigDecimal("0.15");

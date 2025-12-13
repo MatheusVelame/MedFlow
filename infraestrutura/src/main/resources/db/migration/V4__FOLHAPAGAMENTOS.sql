@@ -9,10 +9,12 @@ CREATE TABLE folha_pagamento (
     salario_base DECIMAL(10,2) NOT NULL,
     beneficios DECIMAL(10,2) NOT NULL,
     metodo_pagamento VARCHAR(50) NOT NULL,
+    tipo_vinculo VARCHAR(20) NOT NULL DEFAULT 'CLT',  -- ← ADICIONE ESTA LINHA
     status VARCHAR(20) NOT NULL,
 
     -- Constraints
     CONSTRAINT chk_tipo_registro CHECK (tipo_registro IN ('PAGAMENTO', 'AJUSTE')),
+    CONSTRAINT chk_tipo_vinculo CHECK (tipo_vinculo IN ('CLT', 'ESTAGIARIO', 'PJ')),  -- ← ADICIONE ESTA LINHA
     CONSTRAINT chk_status CHECK (status IN ('PENDENTE', 'PAGO', 'CANCELADO')),
     CONSTRAINT chk_salario_positivo CHECK (salario_base > 0),
     CONSTRAINT chk_beneficios_nao_negativo CHECK (beneficios >= 0)
