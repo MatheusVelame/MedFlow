@@ -60,20 +60,65 @@ public class FuncionarioRepositorioImpl implements FuncionarioRepositorio {
             throw new RuntimeException("ID do funcionário inválido: " + idFuncionario.getId(), e);
         }
         
-        FuncionarioJpa jpaExistente = jpaRepository.findById(idAtualizacao)
+        // Usa findByIdWithHistorico para garantir que o histórico seja carregado
+        FuncionarioJpa jpaExistente = jpaRepository.findByIdWithHistorico(idAtualizacao)
             .orElseThrow(() -> new RuntimeException("Funcionário JPA não encontrado para atualização (ID: " + idAtualizacao + ")"));
         
-        // Mapeia o objeto de Domínio ATUALIZADO para a Entidade JPA gerenciada.
-        // O ModelMapper copia NOME, FUNCAO, CONTATO, STATUS, etc., e a nova lista de HISTORICO.
-        // O ID é ignorado pelo mapeador, pois ele já está definido em jpaExistente (gerenciada).
-        mapeador.map(funcionario, jpaExistente); 
+        // Atualiza os campos básicos manualmente (evita substituir a coleção de histórico)
+        jpaExistente.setNome(funcionario.getNome());
+        jpaExistente.setFuncao(funcionario.getFuncao());
+        jpaExistente.setContato(funcionario.getContato());
+        jpaExistente.setStatus(funcionario.getStatus());
 
-        // 3. Garante que o vínculo bidirecional seja estabelecido para o novo histórico.
-        if (jpaExistente.getHistorico() != null) {
-            jpaExistente.getHistorico().forEach(h -> {
-                // Essencial para que o Hibernate preencha a FK (funcionario_id) na tabela de histórico.
-                h.setFuncionario(jpaExistente); 
-            });
+        // IMPORTANTE: Com orphanRemoval = true, não podemos substituir a referência da coleção.
+        // Devemos modificar a coleção existente para evitar o erro "collection was no longer referenced"
+        List<HistoricoEntradaJpa> historicoExistente = jpaExistente.getHistorico();
+        
+        // Garante que o histórico seja carregado (lazy loading)
+        if (historicoExistente == null) {
+            historicoExistente = new ArrayList<>();
+            jpaExistente.setHistorico(historicoExistente);
+        }
+        
+        // Cria um mapa dos históricos existentes por data/hora e descrição para identificar duplicatas
+        // e preservar IDs existentes
+        java.util.Map<String, HistoricoEntradaJpa> historicoPorChave = new java.util.HashMap<>();
+        for (HistoricoEntradaJpa h : historicoExistente) {
+            String chave = h.getDataHora().toString() + "|" + h.getDescricao() + "|" + h.getAcao();
+            historicoPorChave.put(chave, h);
+        }
+        
+        historicoExistente.clear(); // Limpa a coleção existente
+        
+        if (funcionario.getHistorico() != null && !funcionario.getHistorico().isEmpty()) {
+            List<HistoricoEntradaJpa> historicoJpa = funcionario.getHistorico().stream()
+                .map(entrada -> {
+                    String chave = entrada.getDataHora().toString() + "|" + entrada.getDescricao() + "|" + entrada.getAcao();
+                    HistoricoEntradaJpa historicoJpaItem = historicoPorChave.get(chave);
+                    
+                    // Se já existe no banco, reutiliza o objeto existente (preserva o ID)
+                    if (historicoJpaItem != null) {
+                        // Atualiza os campos que podem ter mudado
+                        historicoJpaItem.setAcao(entrada.getAcao());
+                        historicoJpaItem.setDescricao(entrada.getDescricao());
+                        Integer responsavelId = Integer.parseInt(entrada.getResponsavel().getCodigo());
+                        historicoJpaItem.setResponsavelId(responsavelId);
+                        historicoJpaItem.setDataHora(entrada.getDataHora());
+                        return historicoJpaItem;
+                    }
+                    
+                    // Se não existe, cria um novo (será inserido no banco)
+                    historicoJpaItem = new HistoricoEntradaJpa();
+                    historicoJpaItem.setAcao(entrada.getAcao());
+                    historicoJpaItem.setDescricao(entrada.getDescricao());
+                    Integer responsavelId = Integer.parseInt(entrada.getResponsavel().getCodigo());
+                    historicoJpaItem.setResponsavelId(responsavelId);
+                    historicoJpaItem.setDataHora(entrada.getDataHora());
+                    historicoJpaItem.setFuncionario(jpaExistente); // Configura o vínculo bidirecional
+                    return historicoJpaItem;
+                })
+                .collect(Collectors.toList());
+            historicoExistente.addAll(historicoJpa); // Adiciona os novos itens à coleção existente
         }
         
 		// O save() aqui faz o UPDATE/MERGE porque a Entidade jpaExistente é gerenciada e tem ID.
@@ -90,7 +135,8 @@ public class FuncionarioRepositorioImpl implements FuncionarioRepositorio {
 			throw new RuntimeException("ID do funcionário inválido: " + id.getId(), e);
 		}
 		
-		Optional<FuncionarioJpa> jpaOptional = jpaRepository.findById(idInteger);	
+		// Usa findByIdWithHistorico para garantir que o histórico seja carregado
+		Optional<FuncionarioJpa> jpaOptional = jpaRepository.findByIdWithHistorico(idInteger);	
         
         FuncionarioJpa jpa = jpaOptional
             .orElseThrow(() -> new RuntimeException("Funcionário não encontrado: " + id.getId()));
