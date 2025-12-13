@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,16 +17,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  cnpj: z.string().min(14, "CNPJ inválido"),
-  telefone: z.string().min(10, "Telefone inválido"),
-  email: z.string().email("Email inválido"),
-  valorConsulta: z.coerce.number().min(0, "Valor deve ser positivo"),
-  ativo: z.boolean().default(true),
+  codigoIdentificacao: z.string().min(1, "Código de identificação é obrigatório"),
+  status: z.enum(["ATIVO", "INATIVO"]).optional(),
 });
 
 interface ConvenioFormProps {
@@ -38,19 +42,34 @@ interface ConvenioFormProps {
 export function ConvenioForm({ open, onOpenChange, onSave, initialData }: ConvenioFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+    defaultValues: {
       nome: "",
-      cnpj: "",
-      telefone: "",
-      email: "",
-      valorConsulta: 0,
-      ativo: true,
+      codigoIdentificacao: "",
+      status: "ATIVO" as const,
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        nome: initialData.nome || "",
+        codigoIdentificacao: initialData.codigoIdentificacao || "",
+        status: initialData.status || "ATIVO",
+      });
+    } else {
+      form.reset({
+        nome: "",
+        codigoIdentificacao: "",
+        status: "ATIVO",
+      });
+    }
+  }, [initialData, open, form]);
+
   const handleSubmit = (data: z.infer<typeof formSchema>) => {
     onSave(data);
-    form.reset();
+    if (!initialData) {
+      form.reset();
+    }
   };
 
   return (
@@ -77,84 +96,47 @@ export function ConvenioForm({ open, onOpenChange, onSave, initialData }: Conven
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="cnpj"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CNPJ</FormLabel>
-                    <FormControl>
-                      <Input placeholder="00.000.000/0000-00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="telefone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="(00) 0000-0000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="email"
+              name="codigoIdentificacao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Código de Identificação</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="contato@convenio.com.br" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="valorConsulta"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor da Consulta (R$)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="ativo"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Convênio Ativo</FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      Desative se o convênio não estiver mais aceito
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+                    <Input 
+                      placeholder="Ex: UNI001 ou 12.345.678/0001-90" 
+                      {...field}
+                      disabled={!!initialData} // Não permite editar código ao editar
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+
+            {initialData && (
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="ATIVO">Ativo</SelectItem>
+                        <SelectItem value="INATIVO">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
