@@ -2,6 +2,7 @@ package br.com.medflow.apresentacao.referencia.especialidades;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,22 +42,25 @@ public class EspecialidadeControlador {
 
     @Transactional
     @PostMapping
-    public ResponseEntity<EspecialidadeResumo> criar(
+    public ResponseEntity<?> criar(
             @Valid @RequestBody EspecialidadeFormulario form,
             UriComponentsBuilder uriBuilder) {
-        
-        Especialidade nova = servico.criar(form.nome(), form.descricao());
-        EspecialidadeResumo resumo = new EspecialidadeResumo(nova);
-        
-        URI uri = uriBuilder.path("/api/referencia/especialidades/{id}")
-                .buildAndExpand(resumo.id()).toUri();
-        
-        return ResponseEntity.created(uri).body(resumo);
+        try {
+            Especialidade nova = servico.criar(form.nome(), form.descricao());
+            EspecialidadeResumo resumo = new EspecialidadeResumo(nova);
+
+            URI uri = uriBuilder.path("/api/referencia/especialidades/{id}")
+                    .buildAndExpand(resumo.id()).toUri();
+
+            return ResponseEntity.created(uri).body(resumo);
+        } catch (RegraNegocioException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage(), "errors", getErrorsSafe(e)));
+        }
     }
 
     @Transactional
     @PatchMapping("/{id}")
-    public ResponseEntity<EspecialidadeResumo> atualizar(
+    public ResponseEntity<?> atualizar(
             @PathVariable Integer id,
             @Valid @RequestBody AtualizarEspecialidadeFormulario form) {
         try {
@@ -67,13 +71,13 @@ public class EspecialidadeControlador {
             Especialidade atualizada = servico.alterar(atual.getNome(), form.getNovoNome(), form.getNovaDescricao());
             return ResponseEntity.ok(new EspecialidadeResumo(atualizada));
         } catch (RegraNegocioException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage(), "errors", getErrorsSafe(e)));
         }
     }
 
     @Transactional
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Integer id) {
+    public ResponseEntity<?> excluir(@PathVariable Integer id) {
         var atualOpt = servico.buscarPorId(id);
         if (atualOpt.isEmpty()) return ResponseEntity.notFound().build();
         Especialidade atual = atualOpt.get();
@@ -81,7 +85,22 @@ public class EspecialidadeControlador {
             servico.excluir(atual.getNome());
             return ResponseEntity.noContent().build();
         } catch (RegraNegocioException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage(), "errors", getErrorsSafe(e)));
         }
+    }
+
+    private Map<String, String> getErrorsSafe(RegraNegocioException e) {
+        try {
+            var m = e.getClass().getMethod("getErrors");
+            Object o = m.invoke(e);
+            if (o instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, String> map = (Map<String, String>) o;
+                return map;
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+        return Map.of();
     }
 }

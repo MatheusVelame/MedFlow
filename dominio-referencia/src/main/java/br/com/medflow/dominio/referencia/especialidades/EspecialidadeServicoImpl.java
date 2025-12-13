@@ -17,8 +17,13 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
         this.medicoRepositorio = medicoRepositorio;
     }
 
+    private String normalize(String s) {
+        return s == null ? null : s.trim();
+    }
+
     @Override
     public Especialidade cadastrar(String nome, String descricao) {
+        nome = normalize(nome);
         if (especialidadeRepositorio.existePorNome(nome)) {
             throw new RegraNegocioException("Já existe uma especialidade com este nome", Map.of("nome", "Já existe uma especialidade com este nome"));
         }
@@ -35,6 +40,9 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
 
     @Override
     public Especialidade alterar(String nomeOriginal, String novoNome, String novaDescricao) {
+        nomeOriginal = normalize(nomeOriginal);
+        novoNome = normalize(novoNome);
+
         Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nomeOriginal)
                 .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada."));
 
@@ -47,16 +55,8 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
                 throw new RegraNegocioException("Já existe outra especialidade com este nome", Map.of("nome", "Já existe outra especialidade com este nome"));
             }
 
-            // Exclui a antiga e recria para simular a alteração de chave (se necessário no seu modelo)
-            // Ou apenas atualiza a existente se o repositório suportar update
-            Especialidade entidadeAntiga = new Especialidade(
-                nomeOriginal, 
-                especialidade.getDescricao(), 
-                especialidade.getStatus(), 
-                especialidade.isPossuiVinculoHistorico()
-            );
-            especialidadeRepositorio.remover(entidadeAntiga);
-
+            // Em vez de remover e recriar (o que pode causar violação de FK/PK), apenas atualizamos o próprio aggregate e salvamos.
+            // Isso preserva o id e evita problemas com referências por FK.
             especialidade.alterarNome(novoNome);
         }
 
@@ -80,6 +80,7 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
 
     @Override
     public void excluir(String nome) {
+        nome = normalize(nome);
         Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nome)
                 .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada para exclusão."));
 
@@ -102,6 +103,7 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
 
     @Override
     public void atribuirMedico(String nomeMedico, String nomeEspecialidade) {
+        nomeEspecialidade = normalize(nomeEspecialidade);
         Especialidade especialidade = especialidadeRepositorio.buscarPorNome(nomeEspecialidade)
                 .orElseThrow(() -> new RegraNegocioException("Especialidade não encontrada para atribuição."));
 
