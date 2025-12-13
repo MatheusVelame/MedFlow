@@ -21,7 +21,8 @@ const MOCK_USUARIO_ID = 100;
 
 // Mapeamento de cores para os Status
 const statusColors: Record<StatusConsulta, string> = {
-    EM_ANDAMENTO: "bg-blue-500 hover:bg-blue-600",
+    AGENDADA: "bg-blue-500 hover:bg-blue-600",
+    EM_ANDAMENTO: "bg-blue-300 hover:bg-blue-600",
     REALIZADA: "bg-green-500 hover:bg-green-600",
     CANCELADA: "bg-red-500 hover:bg-red-600",
 };
@@ -94,7 +95,7 @@ export const ConsultasLista: React.FC<{ refreshToggle: number }> = ({ refreshTog
     // ... handleStatusChange (mantido inalterado)
 
     const handleStatusChange = async (consultaId: number, novoStatus: string) => {
-        if (!['EM_ANDAMENTO', 'REALIZADA', 'CANCELADA'].includes(novoStatus as StatusConsulta)) {
+        if (!['AGENDADA', 'EM_ANDAMENTO', 'REALIZADA', 'CANCELADA'].includes(novoStatus as StatusConsulta)) {
             toast.error("Status inválido.");
             return;
         }
@@ -205,6 +206,7 @@ export const ConsultasLista: React.FC<{ refreshToggle: number }> = ({ refreshTog
                                                 <SelectValue placeholder="Mudar Status" />
                                             </SelectTrigger>
                                             <SelectContent>
+                                                <SelectItem value="AGENDADA">Agendada</SelectItem>
                                                 <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
                                                 <SelectItem value="REALIZADA">Finalizar</SelectItem>
                                                 <SelectItem value="CANCELADA">Cancelar</SelectItem>
