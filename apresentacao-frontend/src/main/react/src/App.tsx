@@ -7,7 +7,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MedicalLayout } from "./components/MedicalLayout";
 import Dashboard from "./pages/Dashboard";
-import Agendamentos from "./pages/Agendamentos";
 import Pacientes from "./pages/Pacientes";
 import Triagem from "./pages/Triagem";
 import Prontuarios from "./pages/Prontuarios";
@@ -45,7 +44,6 @@ const App = () => (
                 <MedicalLayout>
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/agendamentos" element={<Agendamentos />} />
                     <Route path="/pacientes" element={<Pacientes />} />
                     <Route path="/triagem" element={
                       <ProtectedRoute allowedRoles={['gestor', 'atendente', 'medico']}>
