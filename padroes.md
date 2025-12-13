@@ -272,35 +272,54 @@ Riscos e edge-cases (pontos de atenção)
 
 ## 4. Strategy
 
-**Descrição:** O padrão Strategy define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis. Strategy permite que o algoritmo varie independentemente dos clientes que o utilizam.
+**Descrição:** O padrão Strategy define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis. Strategy permite que o algoritmo varie independentemente dos clientes que o utilizam, seguindo o princípio Open/Closed do SOLID: aberto para extensão, fechado para modificação.
 
 **Classes Criadas/Modificadas:**
 
 ### Módulo de Folha de Pagamento:
 - `dominio-financeiro/src/main/java/br/com/medflow/dominio/financeiro/folhapagamento/CalculoFolhaStrategy.java`
   - Interface que define o contrato para diferentes estratégias de cálculo de folha de pagamento
-  
-- `dominio-financeiro/src/main/java/br/com/medflow/dominio/financeiro/folhapagamento/CalculoPagamentoStrategy.java`
-  - Estratégia concreta para cálculo de folhas de PAGAMENTO (aplica descontos de INSS e IRRF)
+  - Método: BigDecimal calcularValorLiquido(FolhaPagamento folhaPagamento)
+
+- `dominio-financeiro/src/main/java/br/com/medflow/dominio/financeiro/folhapagamento/CalculoCLTStrategy.java`
+  - Estratégia para cálculo de folhas de funcionários CLT
+  - Aplica descontos de INSS (11%) e IRRF (15%) progressivamente
+    
+- `dominio-financeiro/src/main/java/br/com/medflow/dominio/financeiro/folhapagamento/CalculoSemDescontoStrategy.java`
+  - Estratégia para cálculo de folhas de PJ e Estagiários
+  - Não aplica descontos (valor líquido = salário base + benefícios)
   
 - `dominio-financeiro/src/main/java/br/com/medflow/dominio/financeiro/folhapagamento/CalculoAjusteStrategy.java`
-  - Estratégia concreta para cálculo de folhas de AJUSTE (não aplica descontos)
-  
+  - Estratégia para cálculo de folhas de AJUSTE (complementos financeiros)
+  - Não aplica descontos, independente do tipo de vínculo
+
 - `dominio-financeiro/src/main/java/br/com/medflow/dominio/financeiro/folhapagamento/CalculoFolhaStrategyFactory.java`
-  - Factory responsável por criar a estratégia apropriada baseada no tipo de registro
+  - Factory responsável por criar a estratégia apropriada em tempo de execução
+  - Decisão baseada em: TipoRegistro (PAGAMENTO ou AJUSTE) e TipoVinculo (CLT, PJ, ESTAGIARIO)
   
-- `dominio-financeiro/src/main/java/br/com/medflow/dominio/financeiro/folhapagamento/FolhaPagamento.java`
-  - Classe que utiliza a estratégia para calcular o valor líquido
+- `infraestrutura/src/main/java/br/com/medflow/infraestrutura/persistencia/jpa/financeiro/folhapagamento/FolhaPagamentoRepositorioAplicacaoImpl.java`
+  - Utiliza a Factory para obter a estratégia correta e calcular o valor líquido para exibição nos DTOs
 
 ### Módulo de Médicos:
 - `aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoConversaoStrategy.java`
-  - Interface que define o contrato para estratégias de conversão de Médico em diferentes DTOs
+  - Interface que define o contrato para estratégias de conversão de Medico (domínio) em DTOs de aplicação
+  - Métodos: converterParaResumo() e converterParaDetalhes()
   
 - `aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoConversaoComConsultasStrategy.java`
-  - Estratégia concreta que converte Médico incluindo informações de consultas
+  - Estratégia completa que busca dados externos:
+    - Consultas agendadas (ConsultaDataSource)
+    - Horários de disponibilidade (DisponibilidadeDataSource)
+    - Nome da especialidade (EspecialidadeDataSource)
+  - Usada para visualizações detalhadas de médicos
   
+- `aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoConversaoSimplesStrategy.java`
+  - Estratégia simplificada sem busca de dados externos
+  - Não executa queries adicionais (otimizada para performance)
+  - Usada para listagens rápidas e testes unitários
+ 
 - `aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoServicoAplicacao.java`
-  - Serviço que utiliza as estratégias de conversão
+  - Serviço de aplicação que utiliza a estratégia injetada (via Spring @Autowired)
+  - A estratégia é configurável: pode ser trocada entre ComConsultas e Simples conforme a necessidade
 
 **Como está sendo usado:**
 O padrão Strategy é usado para encapsular diferentes algoritmos de cálculo (folha de pagamento) e diferentes formas de conversão de dados (médicos), permitindo que o algoritmo seja selecionado em tempo de execução sem modificar o código cliente.
