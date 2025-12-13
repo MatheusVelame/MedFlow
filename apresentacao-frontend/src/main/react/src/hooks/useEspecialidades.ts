@@ -48,3 +48,12 @@ export function useExcluirEspecialidade() {
     onSuccess: () => qc.invalidateQueries(["especialidades"]),
   });
 }
+
+export function useHistoricoEspecialidade(id?: number) {
+  return useQuery({
+    queryKey: ["especialidade", id, "historico"],
+    queryFn: () => especialidadesApi.historico(id as number),
+    enabled: !!id,
+    refetchOnWindowFocus: false,
+  });
+}

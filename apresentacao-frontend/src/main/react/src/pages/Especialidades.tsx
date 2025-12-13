@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Plus, Edit, Trash2, Stethoscope } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Plus, Edit, Trash2, Stethoscope, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EspecialidadeForm } from "@/components/EspecialidadeForm";
 import { toast } from "@/hooks/use-toast";
-import { useEspecialidades, useCriarEspecialidade, useAtualizarEspecialidade, useExcluirEspecialidade } from "@/hooks/useEspecialidades";
+import { useEspecialidades, useCriarEspecialidade, useAtualizarEspecialidade, useExcluirEspecialidade, useHistoricoEspecialidade } from "@/hooks/useEspecialidades";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Especialidade {
@@ -37,6 +37,15 @@ export default function Especialidades() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEspecialidade, setEditingEspecialidade] = useState<Especialidade | null>(null);
   const [especialidadeToDelete, setEspecialidadeToDelete] = useState<number | null>(null);
+  const [historicoOpenFor, setHistoricoOpenFor] = useState<number | null>(null);
+
+  const { data: historicoItems, refetch: refetchHistorico } = useHistoricoEspecialidade(historicoOpenFor ?? undefined);
+
+  useEffect(() => {
+    if (historicoOpenFor != null) {
+      refetchHistorico();
+    }
+  }, [historicoOpenFor, refetchHistorico]);
 
   // UI state for filtering, sorting and pagination
   const [statusFilter, setStatusFilter] = useState<"ATIVA" | "INATIVA" | "TODAS">("ATIVA"); // default: only active
@@ -214,6 +223,16 @@ export default function Especialidades() {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
+                {isGestor && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    title="Histórico"
+                    onClick={() => setHistoricoOpenFor(especialidade.id)}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -256,6 +275,31 @@ export default function Especialidades() {
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={historicoOpenFor !== null} onOpenChange={(open) => { if (!open) setHistoricoOpenFor(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Histórico da Especialidade</AlertDialogTitle>
+            <AlertDialogDescription>Registros de alterações e operações sobre esta especialidade.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6 pb-4">
+            {historicoItems == null ? (
+              <div className="py-6">Carregando...</div>
+            ) : historicoItems.length === 0 ? (
+              <div className="py-6">Nenhum histórico encontrado para esta especialidade.</div>
+            ) : (
+              <ul className="space-y-2">
+                {historicoItems.map((h: any, idx: number) => (
+                  <li key={idx} className="p-2 rounded bg-muted/5">
+                    <div className="text-xs text-muted-foreground">{new Date(h.dataHora).toLocaleString()} — <span className="font-medium">{h.tipo || h.acao || h.campo}</span></div>
+                    <div className="mt-1">{h.campo ? `${h.campo}: ${h.valorAnterior} -> ${h.novoValor}` : h.descricao || JSON.stringify(h)}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </div>
