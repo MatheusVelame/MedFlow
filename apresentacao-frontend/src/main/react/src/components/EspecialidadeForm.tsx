@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 // Ajustado: o backend aceita apenas nome/descricao na criação/atualização
 // Agora o schema faz trim no nome e valida em tempo real (regex para letras e espaços)
@@ -76,8 +77,10 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
       form.reset();
       onOpenChange(false);
     } catch (e: any) {
-      const payloadErr = e?.response?.data;
-      if (payloadErr?.errors && typeof payloadErr.errors === "object") {
+      const payloadErr = e?.response?.data ?? e?.response?.data?.errors ?? null;
+
+      // Caso backend retorne objeto de erros por campo: { errors: { campo: mensagem } }
+      if (payloadErr && typeof payloadErr === "object" && payloadErr.errors && typeof payloadErr.errors === "object") {
         Object.entries(payloadErr.errors).forEach(([field, message]) => {
           try {
             form.setError(field as any, { type: "server", message: String(message) });
@@ -85,7 +88,25 @@ export function EspecialidadeForm({ open, onOpenChange, onSave, initialData }: E
         });
         return;
       }
-      // fallback: don't swallow error — caller may handle toast
+
+      // Se backend retornar uma string com a mensagem (RegraNegocioException -> body:String)
+      const serverMessage = typeof payloadErr === "string" ? payloadErr : e?.response?.data ?? e?.message;
+      if (serverMessage && typeof serverMessage === "string") {
+        // heurística: se a mensagem indicar duplicidade/nome já existe, lançamos erro no campo 'nome'
+        const lower = serverMessage.toLowerCase();
+        const isNomeError = /nome|especialidade|já existe|já existente|duplicad|existente|exists|duplicate/i.test(lower);
+        if (isNomeError) {
+          try {
+            form.setError("nome", { type: "server", message: serverMessage });
+          } catch {}
+        } else {
+          // fallback: mostrar toast genérico
+          toast({ title: "Erro", description: serverMessage });
+        }
+        return;
+      }
+
+      // fallback: se payload não reconhecido, rethrow para que o caller possa tratar
       throw e;
     }
   };

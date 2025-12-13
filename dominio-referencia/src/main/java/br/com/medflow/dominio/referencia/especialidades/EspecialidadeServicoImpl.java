@@ -1,6 +1,7 @@
 package br.com.medflow.dominio.referencia.especialidades;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -19,7 +20,7 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
     @Override
     public Especialidade cadastrar(String nome, String descricao) {
         if (especialidadeRepositorio.existePorNome(nome)) {
-            throw new RegraNegocioException("Já existe uma especialidade com este nome");
+            throw new RegraNegocioException("Já existe uma especialidade com este nome", Map.of("nome", "Já existe uma especialidade com este nome"));
         }
 
         Especialidade novaEspecialidade = new Especialidade(nome, descricao);
@@ -43,7 +44,7 @@ public class EspecialidadeServicoImpl implements IEspecialidadeServico {
 
         if (!nomeOriginal.equals(novoNome)) {
             if (especialidadeRepositorio.existePorNome(novoNome)) {
-                throw new RegraNegocioException("Já existe outra especialidade com este nome");
+                throw new RegraNegocioException("Já existe outra especialidade com este nome", Map.of("nome", "Já existe outra especialidade com este nome"));
             }
 
             // Exclui a antiga e recria para simular a alteração de chave (se necessário no seu modelo)
