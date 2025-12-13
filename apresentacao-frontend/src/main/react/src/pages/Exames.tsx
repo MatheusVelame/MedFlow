@@ -248,6 +248,7 @@ export default function Exames() {
       case "pendente": return <Clock className="w-4 h-4" />;
       case "aguardando": return <AlertCircle className="w-4 h-4" />;
       case "cancelado": return <XCircle className="w-4 h-4" />;
+      case "agendado": return <Clock className="w-4 h-4" />;
       default: return <TestTube className="w-4 h-4" />;
     }
   };
@@ -257,7 +258,8 @@ export default function Exames() {
       resultado: { variant: "default", label: "Resultado Disponível", className: "bg-success/10 text-success border-success/20" },
       pendente: { variant: "outline", label: "Pendente", className: "bg-warning/10 text-warning border-warning/20" },
       aguardando: { variant: "secondary", label: "Aguardando Autorização", className: "bg-muted text-muted-foreground" },
-      cancelado: { variant: "destructive", label: "Cancelado", className: "bg-destructive/10 text-destructive border-destructive/20" }
+      cancelado: { variant: "destructive", label: "Cancelado", className: "bg-destructive/10 text-destructive border-destructive/20" },
+      agendado: { variant: "outline", label: "Agendado", className: "bg-blue-50 text-blue-600 border-blue-100" }
     };
     
     const config = variants[status] || variants.pendente;
@@ -274,6 +276,7 @@ export default function Exames() {
     if (!s) return '';
     const v = String(s).toLowerCase();
     if (v.includes('pend')) return 'pendente';
+    if (v.includes('agend')) return 'agendado';
     if (v.includes('result') || v.includes('resultado')) return 'resultado';
     if (v.includes('cancel')) return 'cancelado';
     if (v.includes('aguard')) return 'aguardando';

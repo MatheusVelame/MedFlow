@@ -98,6 +98,7 @@ export function ExameFormWrapper({ onSave, initialData }: ExameFormWrapperProps)
           <Select 
             onValueChange={(v: any) => setValue('pacienteId', Number(v))} 
             defaultValue={initialData?.pacienteId ? String(initialData.pacienteId) : undefined}
+            disabled={!!initialData?.pacienteId}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o paciente" />
@@ -108,6 +109,9 @@ export function ExameFormWrapper({ onSave, initialData }: ExameFormWrapperProps)
               ))}
             </SelectContent>
           </Select>
+          {initialData?.pacienteId && (
+            <p className="text-sm text-muted-foreground mt-1">Paciente não pode ser alterado após a criação do agendamento.</p>
+          )}
           {errors.pacienteId && <p className="text-sm text-destructive mt-1">{errors.pacienteId.message}</p>}
         </div>
 

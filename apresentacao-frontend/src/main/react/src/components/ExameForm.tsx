@@ -147,7 +147,12 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="paciente">Paciente *</Label>
-              <Select onValueChange={(v: any) => setValue('pacienteId', Number(v))} defaultValue={initialData?.pacienteId ? String(initialData.pacienteId) : undefined}>
+              {/* Em modo de edição não permitimos alterar o paciente vinculado */}
+              <Select
+                onValueChange={(v: any) => setValue('pacienteId', Number(v))}
+                defaultValue={initialData?.pacienteId ? String(initialData.pacienteId) : undefined}
+                disabled={!!initialData?.pacienteId}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -157,6 +162,9 @@ export function ExameForm({ open, onOpenChange, onSave, initialData }: ExameForm
                   ))}
                 </SelectContent>
               </Select>
+              {initialData?.pacienteId && (
+                <p className="text-sm text-muted-foreground mt-1">Paciente não pode ser alterado após a criação do agendamento.</p>
+              )}
               {errors.pacienteId && <p className="text-sm text-destructive">{errors.pacienteId.message}</p>}
             </div>
 
