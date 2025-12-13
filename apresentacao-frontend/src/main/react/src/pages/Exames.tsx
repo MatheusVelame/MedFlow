@@ -71,6 +71,8 @@ export default function Exames() {
   const { data: examesResultado = [] } = useExamesList('REALIZADO');
   // Para pendentes (status PENDENTE)
   const { data: examesPendentes = [] } = useExamesList('PENDENTE');
+  // HISTÓRICO GERAL: incluir também EXCLUIDOS e CANCELADOS
+  const { data: examesHistorico = [] } = useExamesList(['AGENDADO','PENDENTE','REALIZADO','CANCELADO']);
   // Fonte de exames depende do filtro atual para manter consistência entre operações (cancelar / excluir)
   let sourceExames: any[] = [];
   switch (filterStatus) {
@@ -78,6 +80,7 @@ export default function Exames() {
     case 'cancelados': sourceExames = examesCancelados; break;
     case 'resultado': sourceExames = examesResultado; break;
     case 'resultado pendente': sourceExames = examesPendentes; break;
+    case 'historico': sourceExames = examesHistorico; break;
     case 'todos':
     default:
       sourceExames = Array.from(new Map([...examesAgendados, ...examesPendentes, ...examesResultado].map((e:any) => [e.id, e])).values());
@@ -98,6 +101,10 @@ export default function Exames() {
   const [exameToCancel, setExameToCancel] = useState<number | null>(null);
   // motivo obrigatório para cancelamento
   const [cancelReason, setCancelReason] = useState<string>("");
+
+  // Novo: per-exam histórico dialog state
+  const [historicoOpenFor, setHistoricoOpenFor] = useState<number | null>(null);
+  const [historicoItems, setHistoricoItems] = useState<any[] | null>(null);
 
   // ========================================================================
   // HANDLERS
@@ -230,7 +237,12 @@ export default function Exames() {
       return atualizarExame.mutateAsync({ id: editingExame.id, payload: payloadUpdate })
         .then((res) => { setEditingExame(null); return res; });
     } else {
-      return agendar.mutateAsync(payloadCreate);
+      return agendar.mutateAsync(payloadCreate)
+        .catch((e: any) => {
+          // Já temos o erro amigável mapeado no apiClient, então mostrar toast com e.message
+          toast({ title: 'Erro ao agendar', description: e?.message ?? 'Erro desconhecido', variant: 'destructive' });
+          throw e;
+        });
     }
   };
 
@@ -258,6 +270,19 @@ export default function Exames() {
       toast({ title: 'Erro', description: e?.message ?? 'Erro ao cancelar exame' });
     }
   };
+
+  // Novo: carregar histórico por exame quando solicitado
+  useEffect(() => {
+    let mounted = true;
+    if (historicoOpenFor != null) {
+      examesApi.obter(historicoOpenFor)
+        .then((resp: any) => { if (mounted) setHistoricoItems(resp.historico || []); })
+        .catch(() => { if (mounted) setHistoricoItems([]); });
+    } else {
+      setHistoricoItems(null);
+    }
+    return () => { mounted = false; };
+  }, [historicoOpenFor]);
 
   // ========================================================================
   // HELPERS VISUAIS
@@ -356,6 +381,7 @@ export default function Exames() {
         // Unifica pendentes e pendentes de resultado: qualquer PENDENTE
         matchesStatus = exame.statusNormalized === 'pendente'; break;
       case 'resultado': matchesStatus = exame.statusNormalized === 'resultado' || exame.statusNormalized === 'realizado'; break;
+      case 'historico': matchesStatus = true; break;
       default: matchesStatus = true;
     }
 
@@ -424,7 +450,8 @@ export default function Exames() {
                   <Button variant={filterStatus === 'cancelados' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('cancelados')}>Cancelados</Button>
                   <Button variant={filterStatus === 'resultado pendente' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado pendente')}>Resultado Pendente</Button>
                   <Button variant={filterStatus === 'resultado' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('resultado')}>Resultado</Button>
-				  <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
+			  <Button variant={filterStatus === 'todos' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('todos')}>Todos</Button>
+                  <Button variant={filterStatus === 'historico' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('historico')}>Histórico</Button>
                 </div>
               </div>
             </CardHeader>
@@ -464,6 +491,10 @@ export default function Exames() {
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => handleUploadResult(exame.id)}>
                             <Upload className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setHistoricoOpenFor(exame.id)}>
+                            <List className="h-4 w-4" />
+                            Histórico
                           </Button>
                         </div>
                       </CardContent>
@@ -640,6 +671,34 @@ export default function Exames() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Histórico modal (por exame) */}
+      <AlertDialog open={historicoOpenFor !== null} onOpenChange={(open) => { if (!open) setHistoricoOpenFor(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Histórico do Exame</AlertDialogTitle>
+            <AlertDialogDescription>Registros de alterações e ações realizadas neste exame.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6 pb-4">
+            {historicoItems === null ? (
+              <div className="py-6">Carregando...</div>
+            ) : historicoItems.length === 0 ? (
+              <div className="py-6">Nenhum histórico encontrado para este exame.</div>
+            ) : (
+              <ul className="space-y-2">
+                {historicoItems.map((h, idx) => (
+                  <li key={idx} className="p-2 rounded bg-muted/5">
+                    <div className="text-xs text-muted-foreground">{new Date(h.dataHora).toLocaleString()} — <span className="font-medium">{h.acao}</span></div>
+                    <div className="mt-1">{h.descricao}</div>
+                    {h.responsavelId && <div className="text-xs text-muted-foreground mt-1">Responsável: {h.responsavelId}</div>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
