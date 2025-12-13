@@ -72,7 +72,7 @@ public class ExameServicoImpl implements IExameServico {
     }
 
     @Override
-    public Exame atualizarAgendamento(ExameId exameId, Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel) {
+    public Exame atualizarAgendamento(ExameId exameId, Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel, String observacoes) {
         
         Exame exame = repositorio.obterPorId(exameId)
             .orElseThrow(() -> new ExcecaoDominio("Agendamento de exame não encontrado"));
@@ -92,7 +92,7 @@ public class ExameServicoImpl implements IExameServico {
             throw new ExcecaoDominio("A alteração não pode gerar conflito de horário para o médico.");
         }
 
-        exame.atualizar(novoMedicoId, novoTipoExame, novaDataHora, responsavel);
+        exame.atualizar(novoMedicoId, novoTipoExame, novaDataHora, responsavel, observacoes);
         
         return repositorio.salvar(exame);
     }

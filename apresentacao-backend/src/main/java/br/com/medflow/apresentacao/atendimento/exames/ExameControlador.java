@@ -19,6 +19,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
 import br.com.medflow.dominio.atendimento.exames.Exame;
 import br.com.medflow.dominio.atendimento.exames.ExameId;
 import br.com.medflow.dominio.atendimento.exames.IExameServico;
@@ -27,6 +33,7 @@ import br.com.medflow.dominio.atendimento.exames.UsuarioResponsavelId;
 
 @RestController
 @RequestMapping("/exames")
+@Tag(name = "Exames", description = "Operações para gerenciamento de agendamentos de exames")
 public class ExameControlador {
 
     private final IExameServico exameServico;
@@ -42,6 +49,13 @@ public class ExameControlador {
         List<Exame> todos = exameRepositorio.listarTodos();
         List<ExameResponse> resp = todos.stream().map(ExameResponse::de).collect(Collectors.toList());
         return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ExameDetalheResponse> buscar(@PathVariable Long id) {
+        Exame exame = exameRepositorio.obterPorId(new ExameId(id))
+            .orElseThrow(() -> new br.com.medflow.dominio.atendimento.exames.ExcecaoDominio("Agendamento de exame não encontrado"));
+        return ResponseEntity.ok(ExameDetalheResponse.de(exame));
     }
 
     @PostMapping
@@ -61,6 +75,8 @@ public class ExameControlador {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Atualizar agendamento de exame", description = "Permite alterar data/hora, médico (somente se ativo) e tipo de exame. Registra histórico de alterações.")
+    @ApiResponse(responseCode = "200", description = "Agendamento atualizado com sucesso", content = @Content(schema = @Schema(implementation = ExameResponse.class)))
     public ResponseEntity<ExameResponse> atualizar(@PathVariable Long id,
                                                    @Valid @RequestBody AtualizacaoExameRequest request) {
         
@@ -69,7 +85,8 @@ public class ExameControlador {
             request.medicoId(),
             request.tipoExame(),
             request.dataHora(),
-            new UsuarioResponsavelId(request.responsavelId())
+            new UsuarioResponsavelId(request.responsavelId()),
+            request.observacoes()
         );
 
         return ResponseEntity.ok(ExameResponse.de(exameAtualizado));

@@ -1,0 +1,7 @@
+HTTP/1.1 400 
+Content-Type: application/json
+Transfer-Encoding: chunked
+Date: Sat, 13 Dec 2025 14:28:12 GMT
+Connection: close
+
+{"error":"Paciente já possui um exame agendado neste horário.","type":"business_error"}

@@ -81,11 +81,13 @@ export interface AgendamentoExameRequest {
   responsavelId: number;
 }
 
+// Adiciona campo opcional `observacoes` ao tipo de request de atualização para que o frontend possa enviar notas/observações
 export interface AtualizacaoExameRequest {
   medicoId: number;
   tipoExame: string;
   dataHora: string;
   responsavelId: number;
+  observacoes?: string;
 }
 
 export interface CancelamentoExameRequest {

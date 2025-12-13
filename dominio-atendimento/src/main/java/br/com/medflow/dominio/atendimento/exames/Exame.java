@@ -66,7 +66,8 @@ public class Exame {
         this.motivoCancelamento = motivoCancelamento;
     }
 
-    public void atualizar(Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel) {
+    // Atualiza assinatura para aceitar observacoes e gravar no histórico
+    public void atualizar(Long novoMedicoId, String novoTipoExame, LocalDateTime novaDataHora, UsuarioResponsavelId responsavel, String observacoes) {
         LocalDateTime dataHoraAntiga = this.dataHora;
         Long medicoIdAntigo = this.medicoId;
         String tipoExameAntigo = this.tipoExame;
@@ -91,6 +92,10 @@ public class Exame {
             }
             if (tipoExameAlterado) {
                 descricao.append(String.format("Tipo de Exame de %s para %s; ", tipoExameAntigo, novoTipoExame));
+            }
+
+            if (observacoes != null && !observacoes.trim().isEmpty()) {
+                descricao.append(" Observações: ").append(observacoes.trim());
             }
             
             this.registrarHistorico(AcaoHistorico.ATUALIZACAO, descricao.toString().trim(), responsavel);
