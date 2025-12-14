@@ -7,7 +7,7 @@ import br.com.medflow.aplicacao.atendimento.consultas.ConsultaRepositorioAplicac
 import br.com.medflow.aplicacao.prontuario.ProntuarioRepositorioAplicacao;
 import br.com.medflow.dominio.administracao.funcionarios.*;
 import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
-import br.com.medflow.dominio.referencia.especialidades.Especialidade;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -33,6 +33,9 @@ public class MedicoServicoAplicacao {
     private final ProntuarioRepositorioAplicacao prontuarioRepositorio;
     private final ExameRepositorio exameRepositorio;
 
+    // 🆕 Gestor de disponibilidades (interface da camada de aplicação)
+    private final DisponibilidadeGestor disponibilidadeGestor;
+
     @Autowired
     public MedicoServicoAplicacao(
             @Qualifier("medicoRepositorioAplicacaoImpl") MedicoRepositorioAplicacao medicoRepositorioLeitura,
@@ -40,7 +43,8 @@ public class MedicoServicoAplicacao {
             MedicoConversaoStrategy strategy,
             ConsultaRepositorioAplicacao consultaRepositorio,
             ProntuarioRepositorioAplicacao prontuarioRepositorio,
-            ExameRepositorio exameRepositorio) {
+            ExameRepositorio exameRepositorio,
+            DisponibilidadeGestor disponibilidadeGestor) {
 
         notNull(medicoRepositorioLeitura, "O repositório de leitura não pode ser nulo");
         notNull(medicoRepositorioEscrita, "O repositório de escrita não pode ser nulo");
@@ -48,6 +52,7 @@ public class MedicoServicoAplicacao {
         notNull(consultaRepositorio, "O repositório de consultas não pode ser nulo");
         notNull(prontuarioRepositorio, "O repositório de prontuários não pode ser nulo");
         notNull(exameRepositorio, "O repositório de exames não pode ser nulo");
+        notNull(disponibilidadeGestor, "O gestor de disponibilidades não pode ser nulo");
 
         this.medicoRepositorioLeitura = medicoRepositorioLeitura;
         this.medicoRepositorioEscrita = medicoRepositorioEscrita;
@@ -55,6 +60,7 @@ public class MedicoServicoAplicacao {
         this.consultaRepositorio = consultaRepositorio;
         this.prontuarioRepositorio = prontuarioRepositorio;
         this.exameRepositorio = exameRepositorio;
+        this.disponibilidadeGestor = disponibilidadeGestor;
     }
 
     // ========== QUERIES (LEITURA) ==========
@@ -108,7 +114,7 @@ public class MedicoServicoAplicacao {
 
     /**
      * Cadastra novo médico.
-     * VERSÃO SIMPLIFICADA: Salva diretamente no JPA.
+     * VERSÃO COM SUPORTE A DISPONIBILIDADES.
      */
     @Transactional
     public MedicoDetalhes cadastrar(MedicoCadastroRequest request) {
@@ -147,12 +153,27 @@ public class MedicoServicoAplicacao {
                 especialidadeId,
                 responsavelId
         );
+
         // 3. Salva o médico no repositório de escrita
         medicoRepositorioEscrita.salvar(novoMedico);
 
-        System.out.println("Médico salvo no banco com sucesso."); // Confirmação
+        System.out.println("Médico salvo no banco com sucesso.");
 
-        // 4. Busca o médico recém-salvo (agora com o ID gerado) e retorna o DTO
+        // 🆕 4. Salvar disponibilidades se fornecidas
+        if (request.getDisponibilidades() != null && !request.getDisponibilidades().isEmpty()) {
+            // Busca o médico recém-salvo para pegar o ID gerado
+            Medico medicoSalvo = medicoRepositorioLeitura.obterPorCrm(crm)
+                    .orElseThrow(() -> new RuntimeException("Erro ao buscar médico recém-cadastrado"));
+
+            // Converte para o formato da interface
+            List<DisponibilidadeGestor.DisponibilidadeRequest> disponibilidades =
+                    converterDisponibilidades(request.getDisponibilidades());
+
+            disponibilidadeGestor.salvarDisponibilidades(medicoSalvo.getId(), disponibilidades);
+            System.out.println("Disponibilidades salvas com sucesso.");
+        }
+
+        // 5. Busca o médico completo (com disponibilidades) e retorna o DTO
         return medicoRepositorioLeitura.obterPorCrm(crm)
                 .map(strategy::converterParaDetalhes)
                 .orElse(null);
@@ -208,6 +229,15 @@ public class MedicoServicoAplicacao {
 
         // Salva
         medicoRepositorioEscrita.salvar(medicoAtualizado);
+
+        // 🆕 Atualiza disponibilidades se fornecidas
+        if (request.getDisponibilidades() != null) {
+            // Converte para o formato da interface
+            List<DisponibilidadeGestor.DisponibilidadeRequest> disponibilidades =
+                    converterDisponibilidadesAtualizacao(request.getDisponibilidades());
+
+            disponibilidadeGestor.atualizarDisponibilidades(medicoId, disponibilidades);
+        }
 
         // Retorna atualizado
         return medicoRepositorioLeitura.obterPorId(medicoId)
@@ -284,5 +314,37 @@ public class MedicoServicoAplicacao {
         }
 
         return true;
+    }
+
+    // ========== MÉTODOS AUXILIARES PRIVADOS ==========
+
+    /**
+     * Converte disponibilidades do request de cadastro para o formato da interface.
+     */
+    private List<DisponibilidadeGestor.DisponibilidadeRequest> converterDisponibilidades(
+            List<MedicoCadastroRequest.DisponibilidadeRequest> disponibilidades) {
+
+        return disponibilidades.stream()
+                .map(d -> new DisponibilidadeGestor.DisponibilidadeRequest(
+                        d.getDiaSemana(),
+                        d.getHoraInicio(),
+                        d.getHoraFim()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Converte disponibilidades do request de atualização para o formato da interface.
+     */
+    private List<DisponibilidadeGestor.DisponibilidadeRequest> converterDisponibilidadesAtualizacao(
+            List<MedicoAtualizacaoRequest.DisponibilidadeRequest> disponibilidades) {
+
+        return disponibilidades.stream()
+                .map(d -> new DisponibilidadeGestor.DisponibilidadeRequest(
+                        d.getDiaSemana(),
+                        d.getHoraInicio(),
+                        d.getHoraFim()
+                ))
+                .collect(Collectors.toList());
     }
 }
