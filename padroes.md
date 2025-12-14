@@ -232,7 +232,7 @@ Riscos e edge-cases (pontos de atenção)
 
 ---
 
-## 4. Strategy
+## 4. Strategy (Lisa Matubara)
 
 **Descrição:** O padrão Strategy define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis. Strategy permite que o algoritmo varie independentemente dos clientes que o utilizam, seguindo o princípio Open/Closed do SOLID: aberto para extensão, fechado para modificação.
 
@@ -288,7 +288,7 @@ O padrão Strategy é usado para encapsular diferentes algoritmos de cálculo (f
 
 ---
 
-## 5. Template Method
+## 5. Template Method (Luziane Santos)
 
 **Descrição:** O padrão Template Method define o esqueleto de um algoritmo em uma operação, delegando alguns passos para subclasses. Em outras palavras, este padrão permite que subclasses redefinam certos passos de um algoritmo sem alterar sua estrutura geral, promovendo reuso de código e garantindo consistência na execução de operações similares.
 
