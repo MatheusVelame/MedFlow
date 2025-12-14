@@ -1,19 +1,18 @@
 // src/api/useMedicosApi.ts
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
 
-// =====================================================================
-// TIPAGENS (ALINHADAS COM O QUE APARECE NO SWAGGER)
-// =====================================================================
+// ============================
+// Tipagens (backend / swagger)
+// ============================
 
 export type StatusMedico = "ATIVO" | "INATIVO";
 
 export interface Disponibilidade {
-diaSemana: string;
-horaInicio: string;
-horaFim: string;
+diaSemana: string; // pode vir "SEGUNDA" etc
+horaInicio: string; // "08:00"
+horaFim: string; // "12:00"
 }
 
 export interface HistoricoEntradaMedico {
@@ -24,7 +23,7 @@ dataHora: string; // ISO
 }
 
 export interface MedicoResumo {
-id: number;
+id: string; // ✅ no backend o id vem como String no DTO
 nome: string;
 funcao: string;
 contato: string;
@@ -32,19 +31,28 @@ status: StatusMedico;
 crm: string;
 especialidade: string;
 consultasHoje: number;
-proximaConsulta: string;
+proximaConsulta: string | null;
 }
 
 export interface MedicoDetalhes {
-id: number;
+id: string;
 nome: string;
 funcao: string;
 contato: string;
 status: StatusMedico;
-historico: HistoricoEntradaMedico[];
 crm: string;
 especialidade: string;
-horariosDisponiveis?: Disponibilidade[];
+
+historico: HistoricoEntradaMedico[];
+horariosDisponiveis: Disponibilidade[];
+
+// ✅ “exists” no banco (não só hoje)
+temConsultas: boolean;
+temExames: boolean;
+temProntuarios: boolean;
+
+// (o backend também manda dataNascimento em alguns fluxos)
+dataNascimento?: string | null;
 }
 
 // Payloads
@@ -54,12 +62,14 @@ contato: string;
 crmNumero: string;
 crmUf: string;
 especialidadeId: number;
+dataNascimento?: string;
 disponibilidades?: Disponibilidade[];
 }
 
 export interface AtualizarMedicoPayload {
 nome?: string;
 contato?: string;
+dataNascimento?: string;
 disponibilidades?: Disponibilidade[];
 }
 
@@ -69,79 +79,65 @@ mensagem: string;
 }
 
 interface MutateVariables<T> {
-id: number;
+id: string;
 payload: T;
 }
 
-// =====================================================================
-// CONFIGURAÇÃO API
-// =====================================================================
-
+// ============================
+// API base
+// ============================
 const API_BASE_URL = "/api/medicos";
 
-// =====================================================================
-// FUNÇÕES DE API
-// =====================================================================
+// ============================
+// Calls
+// ============================
 
 const fetchMedicos = async (): Promise<MedicoResumo[]> => {
 const { data } = await axios.get(API_BASE_URL);
 return data;
 };
 
-const fetchMedicoById = async (id: number): Promise<MedicoDetalhes> => {
+const fetchMedicoById = async (id: string): Promise<MedicoDetalhes> => {
 const { data } = await axios.get(`${API_BASE_URL}/${id}`);
 return data;
 };
 
-const fetchMedicosByStatus = async (
-status: StatusMedico
-): Promise<MedicoResumo[]> => {
+const fetchMedicosByStatus = async (status: StatusMedico): Promise<MedicoResumo[]> => {
 const { data } = await axios.get(`${API_BASE_URL}/status/${status}`);
 return data;
 };
 
-const fetchMedicosByEspecialidade = async (
-especialidadeId: number
-): Promise<MedicoResumo[]> => {
-const { data } = await axios.get(
-`${API_BASE_URL}/especialidade/${especialidadeId}`
-);
+const fetchMedicosByEspecialidade = async (especialidadeId: number): Promise<MedicoResumo[]> => {
+const { data } = await axios.get(`${API_BASE_URL}/especialidade/${especialidadeId}`);
 return data;
 };
 
 const fetchMedicoByCrm = async (crm: string): Promise<MedicoDetalhes> => {
-const { data } = await axios.get(
-`${API_BASE_URL}/crm/${encodeURIComponent(crm)}`
-  );
-  return data;
+const { data } = await axios.get(`${API_BASE_URL}/crm/${encodeURIComponent(crm)}`);
+return data;
 };
 
 const buscarMedicos = async (termo: string): Promise<MedicoResumo[]> => {
-  const { data } = await axios.get(`${API_BASE_URL}/buscar`, {
-    params: { termo },
-  });
-  return data;
+const { data } = await axios.get(`${API_BASE_URL}/buscar`, { params: { termo } });
+return data;
 };
 
 const createMedico = async (payload: CadastrarMedicoPayload) => {
-  await axios.post(API_BASE_URL, payload);
+await axios.post(API_BASE_URL, payload);
 };
 
-const updateMedico = async ({
-  id,
-  payload,
-}: MutateVariables<AtualizarMedicoPayload>) => {
+const updateMedico = async ({ id, payload }: MutateVariables<AtualizarMedicoPayload>) => {
   await axios.put(`${API_BASE_URL}/${id}`, payload);
 };
 
-const deleteMedico = async (id: number): Promise<DeleteMedicoResponse> => {
+const deleteMedico = async (id: string): Promise<DeleteMedicoResponse> => {
   const { data } = await axios.delete(`${API_BASE_URL}/${id}`);
   return data;
 };
 
-// =====================================================================
-// HOOKS (REACT QUERY)
-// =====================================================================
+// ============================
+// Hooks
+// ============================
 
 export function useListarMedicos() {
   return useQuery<MedicoResumo[]>({
@@ -152,9 +148,9 @@ export function useListarMedicos() {
   });
 }
 
-export function useObterMedico(id: number | null) {
+export function useObterMedico(id: string | null) {
   return useQuery<MedicoDetalhes>({
-    queryKey: ["medicos", id],
+    queryKey: ["medicos", "detalhes", id],
     queryFn: () => fetchMedicoById(id!),
     enabled: !!id,
     refetchOnWindowFocus: false,
@@ -170,9 +166,7 @@ export function useListarMedicosPorStatus(status: StatusMedico | null) {
   });
 }
 
-export function useListarMedicosPorEspecialidade(
-  especialidadeId: number | null
-) {
+export function useListarMedicosPorEspecialidade(especialidadeId: number | null) {
   return useQuery<MedicoResumo[]>({
     queryKey: ["medicos", "especialidade", especialidadeId],
     queryFn: () => fetchMedicosByEspecialidade(especialidadeId!),
@@ -200,9 +194,9 @@ export function useBuscarMedicos(termo: string) {
   });
 }
 
-// =====================================================================
-// MUTATIONS
-// =====================================================================
+// ============================
+// Mutations
+// ============================
 
 export function useCadastrarMedico() {
   const queryClient = useQueryClient();
@@ -213,9 +207,7 @@ export function useCadastrarMedico() {
       toast.success("Médico cadastrado com sucesso!");
     },
     onError: (error: any) => {
-      const mensagemErro =
-        error.response?.data?.message || "Erro ao cadastrar médico.";
-      toast.error(mensagemErro);
+      toast.error(error?.response?.data?.message || "Erro ao cadastrar médico.");
     },
   });
 }
@@ -229,25 +221,21 @@ export function useAtualizarMedico() {
       toast.success("Médico atualizado com sucesso!");
     },
     onError: (error: any) => {
-      const mensagemErro =
-        error.response?.data?.message || "Erro ao atualizar médico.";
-      toast.error(mensagemErro);
+      toast.error(error?.response?.data?.message || "Erro ao atualizar médico.");
     },
   });
 }
 
 export function useExcluirMedico() {
   const queryClient = useQueryClient();
-  return useMutation<DeleteMedicoResponse, Error, number>({
+  return useMutation<DeleteMedicoResponse, Error, string>({
     mutationFn: deleteMedico,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["medicos"] });
       toast.success(data?.mensagem || "Médico excluído com sucesso!");
     },
     onError: (error: any) => {
-      const mensagemErro =
-        error.response?.data?.message || "Erro ao excluir médico.";
-      toast.error(mensagemErro);
+      toast.error(error?.response?.data?.message || "Erro ao excluir médico.");
     },
   });
 }
