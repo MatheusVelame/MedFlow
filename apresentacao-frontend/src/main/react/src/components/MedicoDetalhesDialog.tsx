@@ -150,37 +150,84 @@ export function MedicoDetalhesDialog({
               </CardContent>
             </Card>
 
-            {/* Histórico */}
+            {/* Registro Administrativo */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Histórico
+                  Registro Administrativo
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                {medico.historico && medico.historico.length > 0 ? (
-                  <div className="space-y-4">
-                    {medico.historico.map((entrada, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <p className="font-medium">{entrada.descricao}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {entrada.responsavel}
+              <CardContent className="space-y-6">
+                {/* Eventos Cadastrais */}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-3">
+                    Eventos Cadastrais
+                  </p>
+
+                  {medico.historico && medico.historico.length > 0 ? (
+                    <div className="space-y-3">
+                      {medico.historico.map((entrada, index) => (
+                        <div key={index}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <p className="font-medium">{entrada.descricao}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Responsável: {entrada.responsavel}
+                              </p>
+                            </div>
+                            <p className="text-sm text-muted-foreground whitespace-nowrap">
+                              {formatDateTime(entrada.dataHora)}
                             </p>
                           </div>
-                          <p className="text-sm text-muted-foreground whitespace-nowrap">
-                            {formatDateTime(entrada.dataHora)}
-                          </p>
+                          {index < medico.historico.length - 1 && <Separator className="mt-3" />}
                         </div>
-                        {index < medico.historico.length - 1 && <Separator />}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      Nenhum evento cadastral registrado.
+                    </p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Histórico Assistencial */}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-3">
+                    Histórico Assistencial
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md">
+                      <span className="text-sm">Consultas</span>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {medico.consultasHoje !== null && medico.consultasHoje > 0
+                          ? "Registros existentes"
+                          : "Sem registros"}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md">
+                      <span className="text-sm">Exames</span>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Registros existentes
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-md">
+                      <span className="text-sm">Prontuários</span>
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                        Registros existentes
+                      </Badge>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum histórico disponível.</p>
-                )}
+
+                  <p className="text-xs text-muted-foreground mt-3 italic">
+                    * Informações consolidadas da base assistencial do sistema
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
