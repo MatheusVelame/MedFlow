@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Calendar,
   Users,
@@ -6,14 +5,13 @@ import {
   TestTube,
   CalendarCheck,
   DollarSign,
-  // Package, // REMOVIDO
   Home,
   Stethoscope,
-  // ClipboardList, // REMOVIDO
   Activity,
   CreditCard,
   Pill,
-  Microscope
+  Microscope,
+  UserRound,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -25,7 +23,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
@@ -38,44 +35,44 @@ interface NavItem {
 }
 
 const navigationItems: NavItem[] = [
-  { title: "Dashboard", url: "/", icon: Home, roles: ['gestor', 'atendente', 'medico'] },
-  { title: "Agendamentos", url: "/agendamentos", icon: Calendar, roles: ['gestor', 'atendente', 'medico'] },
-  { title: "Consultas", url: "/consultas", icon: CalendarCheck, roles: ['gestor', 'atendente', 'medico'] },
-  { title: "Pacientes", url: "/pacientes", icon: Users, roles: ['gestor', 'atendente', 'medico'] },
-  // { title: "Triagem", url: "/triagem", icon: Activity, roles: ['gestor', 'atendente', 'medico'] }, // REMOVIDO
-  { title: "Prontuários", url: "/prontuarios", icon: FileText, roles: ['gestor', 'medico'] },
-  { title: "Exames", url: "/exames", icon: TestTube, roles: ['gestor', 'medico'] },
+  { title: "Dashboard", url: "/", icon: Home, roles: ["gestor", "atendente", "medico"] },
+  { title: "Agendamentos", url: "/agendamentos", icon: Calendar, roles: ["gestor", "atendente", "medico"] },
+  { title: "Consultas", url: "/consultas", icon: CalendarCheck, roles: ["gestor", "atendente", "medico"] },
+  { title: "Pacientes", url: "/pacientes", icon: Users, roles: ["gestor", "atendente", "medico"] },
+  { title: "Prontuários", url: "/prontuarios", icon: FileText, roles: ["gestor", "medico"] },
+  { title: "Exames", url: "/exames", icon: TestTube, roles: ["gestor", "medico"] },
 ];
 
 const managementItems: NavItem[] = [
-  { title: "Financeiro", url: "/financeiro", icon: DollarSign, roles: ['gestor', 'atendente'] },
-  { title: "Faturamentos", url: "/faturamentos", icon: FileText, roles: ['gestor', 'atendente'] },
-  { title: "Convênios", url: "/convenios", icon: CreditCard, roles: ['gestor', 'atendente'] },
-  // { title: "Estoque", url: "/estoque", icon: Package, roles: ['gestor'] }, // REMOVIDO
-  { title: "Medicamentos", url: "/medicamentos", icon: Pill, roles: ['gestor'] },
-    { title: "Medicamentos", url: "/medicamentos-medico", icon: Pill, roles: ['medico'] },
-  { title: "Profissionais", url: "/profissionais", icon: Stethoscope, roles: ['gestor'] },
-  { title: "Especialidades", url: "/especialidades", icon: Activity, roles: ['gestor'] },
-  { title: "Tipos de Exame", url: "/tipos-exames", icon: Microscope, roles: ['gestor'] },
-  // { title: "Relatórios", url: "/relatorios", icon: ClipboardList, roles: ['gestor'] }, // REMOVIDO
+  { title: "Financeiro", url: "/financeiro", icon: DollarSign, roles: ["gestor", "atendente"] },
+  { title: "Faturamentos", url: "/faturamentos", icon: FileText, roles: ["gestor", "atendente"] },
+  { title: "Convênios", url: "/convenios", icon: CreditCard, roles: ["gestor", "atendente"] },
+  { title: "Medicamentos", url: "/medicamentos", icon: Pill, roles: ["gestor"] },
+  { title: "Medicamentos", url: "/medicamentos-medico", icon: Pill, roles: ["medico"] },
+
+  // ✅ NOVO ITEM
+  { title: "Médicos", url: "/medicos", icon: UserRound, roles: ["gestor"] },
+
+  { title: "Profissionais", url: "/profissionais", icon: Stethoscope, roles: ["gestor"] },
+  { title: "Especialidades", url: "/especialidades", icon: Activity, roles: ["gestor"] },
+  { title: "Tipos de Exame", url: "/tipos-exames", icon: Microscope, roles: ["gestor"] },
 ];
 
 export function MedicalSidebar() {
   const { state } = useSidebar();
-  const { user, hasRole } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
 
-  const isActive = (path: string) => currentPath === path;
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
-    isActive 
-      ? "bg-sidebar-accent text-sidebar-primary font-medium" 
+    isActive
+      ? "bg-sidebar-accent text-sidebar-primary font-medium"
       : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground";
 
   const filterItemsByRole = (items: NavItem[]) => {
     if (!user) return [];
-    return items.filter(item => item.roles.includes(user.role));
+    return items.filter((item) => item.roles.includes(user.role));
   };
 
   const visibleNavItems = filterItemsByRole(navigationItems);
@@ -84,7 +81,7 @@ export function MedicalSidebar() {
   return (
     <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
       <SidebarContent>
-        {/* Logo/Header */}
+        {/* Logo */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -99,7 +96,7 @@ export function MedicalSidebar() {
           </div>
         </div>
 
-        {/* Main Navigation */}
+        {/* Atendimento */}
         <SidebarGroup>
           <SidebarGroupLabel>Atendimento</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -118,7 +115,7 @@ export function MedicalSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Management */}
+        {/* Gestão */}
         {visibleManagementItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Gestão</SidebarGroupLabel>
@@ -138,7 +135,6 @@ export function MedicalSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-
       </SidebarContent>
     </Sidebar>
   );

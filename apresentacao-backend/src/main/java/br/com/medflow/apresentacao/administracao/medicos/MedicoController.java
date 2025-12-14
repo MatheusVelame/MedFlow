@@ -138,7 +138,7 @@ public class MedicoController {
             @RequestBody MedicoCadastroRequest request) {
 
         try {
-            MedicoDetalhes medico = medicoServico.cadastrar(request);
+            MedicoDetalhes medico = medicoServico.cadastrar(request); // Lança IllegalArgumentException se CRM duplicado
 
             if (medico == null) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -146,8 +146,6 @@ public class MedicoController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(medico);
 
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

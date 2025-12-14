@@ -21,8 +21,10 @@ public class Funcionario {
     private static final String REGEX_NOME = "^[a-zA-ZáàâãéèêíïóôõöúüçÇÁÀÂÃÉÈÊÍÏÓÔÕÖÚÜ\\s]+$";
 
     private static final String REGEX_CONTATO =
-            "^\\d{10,11}$" +
+            // Padrão 1: Telefone (10 ou 11 dígitos, permitindo: (DD) 9XXXX-XXXX, DD 9XXXX-XXXX, etc.)
+            "^(?:\\(?\\d{2}\\)?\\s?)?\\d{4,5}-?\\d{4}$" +
                     "|" +
+                    // Padrão 2: E-mail (existente)
                     "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
 
 

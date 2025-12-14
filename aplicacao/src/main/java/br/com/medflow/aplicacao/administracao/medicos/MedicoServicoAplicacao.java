@@ -7,7 +7,7 @@ import br.com.medflow.aplicacao.atendimento.consultas.ConsultaRepositorioAplicac
 import br.com.medflow.aplicacao.prontuario.ProntuarioRepositorioAplicacao;
 import br.com.medflow.dominio.administracao.funcionarios.*;
 import br.com.medflow.dominio.atendimento.exames.ExameRepositorio;
-import br.com.medflow.dominio.referencia.especialidades.Especialidade;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -33,6 +33,9 @@ public class MedicoServicoAplicacao {
     private final ProntuarioRepositorioAplicacao prontuarioRepositorio;
     private final ExameRepositorio exameRepositorio;
 
+    // Gestor de disponibilidades
+    private final DisponibilidadeGestor disponibilidadeGestor;
+
     @Autowired
     public MedicoServicoAplicacao(
             @Qualifier("medicoRepositorioAplicacaoImpl") MedicoRepositorioAplicacao medicoRepositorioLeitura,
@@ -40,7 +43,8 @@ public class MedicoServicoAplicacao {
             MedicoConversaoStrategy strategy,
             ConsultaRepositorioAplicacao consultaRepositorio,
             ProntuarioRepositorioAplicacao prontuarioRepositorio,
-            ExameRepositorio exameRepositorio) {
+            ExameRepositorio exameRepositorio,
+            DisponibilidadeGestor disponibilidadeGestor) {
 
         notNull(medicoRepositorioLeitura, "O repositório de leitura não pode ser nulo");
         notNull(medicoRepositorioEscrita, "O repositório de escrita não pode ser nulo");
@@ -48,6 +52,7 @@ public class MedicoServicoAplicacao {
         notNull(consultaRepositorio, "O repositório de consultas não pode ser nulo");
         notNull(prontuarioRepositorio, "O repositório de prontuários não pode ser nulo");
         notNull(exameRepositorio, "O repositório de exames não pode ser nulo");
+        notNull(disponibilidadeGestor, "O gestor de disponibilidades não pode ser nulo");
 
         this.medicoRepositorioLeitura = medicoRepositorioLeitura;
         this.medicoRepositorioEscrita = medicoRepositorioEscrita;
@@ -55,6 +60,7 @@ public class MedicoServicoAplicacao {
         this.consultaRepositorio = consultaRepositorio;
         this.prontuarioRepositorio = prontuarioRepositorio;
         this.exameRepositorio = exameRepositorio;
+        this.disponibilidadeGestor = disponibilidadeGestor;
     }
 
     // ========== QUERIES (LEITURA) ==========
@@ -70,14 +76,45 @@ public class MedicoServicoAplicacao {
         notNull(id, "O ID não pode ser nulo");
         FuncionarioId medicoId = new FuncionarioId(id.toString());
         Medico medico = medicoRepositorioLeitura.obterPorId(medicoId).orElse(null);
-        return medico != null ? strategy.converterParaDetalhes(medico) : null;
+
+        if (medico == null) {
+            return null;
+        }
+
+        // 🆕 Converte para detalhes E adiciona informações de vínculos
+        MedicoDetalhes detalhes = strategy.converterParaDetalhes(medico);
+        VinculosClinicosInfo vinculos = verificarVinculosClinicosDoMedico(id);
+
+        // Cria novo MedicoDetalhes com vínculos
+        return new MedicoDetalhes(
+                detalhes.getId(),
+                detalhes.getNome(),
+                detalhes.getFuncao(),
+                detalhes.getContato(),
+                detalhes.getStatus(),
+                detalhes.getHistorico(),
+                detalhes.getCrm(),
+                detalhes.getEspecialidade(),
+                detalhes.getDataNascimento(),
+                detalhes.getHorariosDisponiveis(),
+                vinculos.temConsultas,    // 🆕
+                vinculos.temProntuarios,  // 🆕
+                vinculos.temExames        // 🆕
+        );
     }
 
     public MedicoDetalhes obterPorCrm(String crmCompleto) {
         notEmpty(crmCompleto, "O CRM não pode ser vazio");
         CRM crm = new CRM(crmCompleto);
         Medico medico = medicoRepositorioLeitura.obterPorCrm(crm).orElse(null);
-        return medico != null ? strategy.converterParaDetalhes(medico) : null;
+
+        if (medico == null) {
+            return null;
+        }
+
+        // Obtém o ID e busca detalhes completos (com vínculos)
+        Integer id = Integer.parseInt(medico.getId().getId());
+        return obterPorId(id);
     }
 
     public List<MedicoResumo> listarPorStatus(StatusFuncionario status) {
@@ -106,10 +143,6 @@ public class MedicoServicoAplicacao {
 
     // ========== COMMANDS (ESCRITA) ==========
 
-    /**
-     * Cadastra novo médico.
-     * VERSÃO SIMPLIFICADA: Salva diretamente no JPA.
-     */
     @Transactional
     public MedicoDetalhes cadastrar(MedicoCadastroRequest request) {
         notNull(request, "O request não pode ser nulo");
@@ -123,51 +156,50 @@ public class MedicoServicoAplicacao {
         System.out.println("Nome: " + request.getNome());
         System.out.println("CRM: " + request.getCrmNumero() + "-" + request.getCrmUf());
 
-        // Monta CRM completo
         String crmCompleto = request.getCrmNumero() + "-" + request.getCrmUf();
         CRM crm = new CRM(crmCompleto);
 
-        // Verifica se CRM já existe
         if (medicoRepositorioLeitura.obterPorCrm(crm).isPresent()) {
             throw new IllegalArgumentException("CRM já cadastrado: " + crmCompleto);
         }
 
-        // 1. CONVERSÃO: Converte o Integer para o Value Object Medico.EspecialidadeId
         Medico.EspecialidadeId especialidadeId = new Medico.EspecialidadeId(request.getEspecialidadeId());
+        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(1);
 
-        UsuarioResponsavelId responsavelId = new UsuarioResponsavelId(1); // ID de exemplo do responsável
-
-        // 2. Cria a entidade de domínio Medico (o histórico de criação é gerado pelo construtor/Funcionario)
         Medico novoMedico = new Medico(
-                null, // FuncionarioId id (Nulo para que o JPA gere)
+                null,
                 request.getNome(),
-                "Médico", // Função padrão
+                "Médico",
                 request.getContato(),
                 crm,
                 especialidadeId,
                 responsavelId
         );
-        // 3. Salva o médico no repositório de escrita
+
         medicoRepositorioEscrita.salvar(novoMedico);
+        System.out.println("Médico salvo no banco com sucesso.");
 
-        System.out.println("Médico salvo no banco com sucesso."); // Confirmação
+        if (request.getDisponibilidades() != null && !request.getDisponibilidades().isEmpty()) {
+            Medico medicoSalvo = medicoRepositorioLeitura.obterPorCrm(crm)
+                    .orElseThrow(() -> new RuntimeException("Erro ao buscar médico recém-cadastrado"));
 
-        // 4. Busca o médico recém-salvo (agora com o ID gerado) e retorna o DTO
+            List<DisponibilidadeGestor.DisponibilidadeRequest> disponibilidades =
+                    converterDisponibilidades(request.getDisponibilidades());
+
+            disponibilidadeGestor.salvarDisponibilidades(medicoSalvo.getId(), disponibilidades);
+            System.out.println("Disponibilidades salvas com sucesso.");
+        }
+
         return medicoRepositorioLeitura.obterPorCrm(crm)
-                .map(strategy::converterParaDetalhes)
+                .map(m -> obterPorId(Integer.parseInt(m.getId().getId())))
                 .orElse(null);
     }
 
-    /**
-     * Atualiza médico existente.
-     * Usa AcaoHistorico.ATUALIZACAO do domínio.
-     */
     @Transactional
     public MedicoDetalhes atualizar(Integer id, MedicoAtualizacaoRequest request) {
         notNull(id, "O ID não pode ser nulo");
         notNull(request, "O request não pode ser nulo");
 
-        // Busca médico existente
         FuncionarioId medicoId = new FuncionarioId(id.toString());
         Medico medicoExistente = medicoRepositorioLeitura.obterPorId(medicoId)
                 .orElse(null);
@@ -176,7 +208,6 @@ public class MedicoServicoAplicacao {
             return null;
         }
 
-        // Determina valores atualizados
         String novoNome = (request.getNome() != null && !request.getNome().isEmpty())
                 ? request.getNome()
                 : medicoExistente.getNome();
@@ -185,7 +216,6 @@ public class MedicoServicoAplicacao {
                 ? request.getContato()
                 : medicoExistente.getContato();
 
-        // Adiciona entrada de atualização no histórico
         List<Funcionario.HistoricoEntrada> historicoAtualizado = new ArrayList<>(medicoExistente.getHistorico());
         historicoAtualizado.add(new Funcionario.HistoricoEntrada(
                 AcaoHistorico.ATUALIZACAO,
@@ -194,7 +224,6 @@ public class MedicoServicoAplicacao {
                 LocalDateTime.now()
         ));
 
-        // Recria médico com dados atualizados
         Medico medicoAtualizado = new Medico(
                 medicoExistente.getId(),
                 novoNome,
@@ -206,27 +235,24 @@ public class MedicoServicoAplicacao {
                 medicoExistente.getEspecialidade()
         );
 
-        // Salva
         medicoRepositorioEscrita.salvar(medicoAtualizado);
 
-        // Retorna atualizado
+        if (request.getDisponibilidades() != null) {
+            List<DisponibilidadeGestor.DisponibilidadeRequest> disponibilidades =
+                    converterDisponibilidadesAtualizacao(request.getDisponibilidades());
+
+            disponibilidadeGestor.atualizarDisponibilidades(medicoId, disponibilidades);
+        }
+
         return medicoRepositorioLeitura.obterPorId(medicoId)
-                .map(strategy::converterParaDetalhes)
+                .map(m -> obterPorId(Integer.parseInt(m.getId().getId())))
                 .orElse(null);
     }
 
-    /**
-     * Remove médico do sistema.
-     * LÓGICA ROBUSTA:
-     * 1. Verifica vínculos externos (Consultas, Exames, Prontuários).
-     * 2. Se houver vínculo ou histórico relevante -> Inativa (Soft Delete).
-     * 3. Se não houver vínculo e for um registro limpo -> Exclui permanentemente (Hard Delete).
-     */
     @Transactional
     public boolean remover(Integer id) {
         notNull(id, "O ID não pode ser nulo");
 
-        // 1. Busca médico
         FuncionarioId medicoId = new FuncionarioId(id.toString());
         Medico medicoExistente = medicoRepositorioLeitura.obterPorId(medicoId)
                 .orElse(null);
@@ -235,27 +261,23 @@ public class MedicoServicoAplicacao {
             return false;
         }
 
-        // 2. VERIFICAÇÃO DE VÍNCULOS
-        boolean temConsultas = consultaRepositorio.existePorMedicoId(id);
-        boolean temProntuarios = prontuarioRepositorio.existePorMedicoId(id);
-        boolean temExames = exameRepositorio.existePorMedicoId(id);
+        // 🆕 USA O MESMO MÉTODO DE VERIFICAÇÃO
+        VinculosClinicosInfo vinculos = verificarVinculosClinicosDoMedico(id);
 
-        // Verifica se houve alterações cadastrais anteriores (histórico > 1 indica que não é apenas a criação)
         boolean temHistoricoInterno = medicoExistente.getHistorico().size() > 1;
-
-        boolean possuiVinculosRelevantes = temConsultas || temProntuarios || temExames || temHistoricoInterno;
+        boolean possuiVinculosRelevantes = vinculos.temConsultas || vinculos.temProntuarios ||
+                vinculos.temExames || temHistoricoInterno;
 
         if (possuiVinculosRelevantes) {
-            // --- SOFT DELETE (Inativação) ---
+            // SOFT DELETE
             System.out.println("Médico possui vínculos. Realizando Inativação.");
 
             List<Funcionario.HistoricoEntrada> historicoAtualizado = new ArrayList<>(medicoExistente.getHistorico());
 
-            // Monta string descrevendo o motivo
             String motivo = "Médico inativado. Vínculos detectados: " +
-                    (temConsultas ? "[Consultas] " : "") +
-                    (temProntuarios ? "[Prontuários] " : "") +
-                    (temExames ? "[Exames] " : "") +
+                    (vinculos.temConsultas ? "[Consultas] " : "") +
+                    (vinculos.temProntuarios ? "[Prontuários] " : "") +
+                    (vinculos.temExames ? "[Exames] " : "") +
                     (temHistoricoInterno ? "[Histórico Cadastral]" : "");
 
             historicoAtualizado.add(new Funcionario.HistoricoEntrada(
@@ -278,11 +300,58 @@ public class MedicoServicoAplicacao {
 
             medicoRepositorioEscrita.salvar(medicoInativo);
         } else {
-            // --- HARD DELETE (Exclusão Física) ---
+            // HARD DELETE
             System.out.println("Médico sem vínculos. Realizando Exclusão Física.");
             medicoRepositorioEscrita.remover(medicoExistente.getId());
         }
 
         return true;
+    }
+
+    // ========== MÉTODOS AUXILIARES PRIVADOS ==========
+
+    /**
+     * 🆕 MÉTODO REUTILIZÁVEL: Verifica vínculos clínicos do médico.
+     * Usado tanto para detalhes quanto para decisão de exclusão.
+     */
+    private VinculosClinicosInfo verificarVinculosClinicosDoMedico(Integer medicoId) {
+        boolean temConsultas = consultaRepositorio.existePorMedicoId(medicoId);
+        boolean temProntuarios = prontuarioRepositorio.existePorMedicoId(medicoId);
+        boolean temExames = exameRepositorio.existePorMedicoId(medicoId);
+
+        return new VinculosClinicosInfo(temConsultas, temProntuarios, temExames);
+    }
+
+    /**
+     * Record para encapsular informações de vínculos clínicos.
+     */
+    private record VinculosClinicosInfo(
+            boolean temConsultas,
+            boolean temProntuarios,
+            boolean temExames
+    ) {}
+
+    private List<DisponibilidadeGestor.DisponibilidadeRequest> converterDisponibilidades(
+            List<MedicoCadastroRequest.DisponibilidadeRequest> disponibilidades) {
+
+        return disponibilidades.stream()
+                .map(d -> new DisponibilidadeGestor.DisponibilidadeRequest(
+                        d.getDiaSemana(),
+                        d.getHoraInicio(),
+                        d.getHoraFim()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    private List<DisponibilidadeGestor.DisponibilidadeRequest> converterDisponibilidadesAtualizacao(
+            List<MedicoAtualizacaoRequest.DisponibilidadeRequest> disponibilidades) {
+
+        return disponibilidades.stream()
+                .map(d -> new DisponibilidadeGestor.DisponibilidadeRequest(
+                        d.getDiaSemana(),
+                        d.getHoraInicio(),
+                        d.getHoraFim()
+                ))
+                .collect(Collectors.toList());
     }
 }

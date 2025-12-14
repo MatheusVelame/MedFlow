@@ -15,6 +15,7 @@ import Financeiro from "./pages/Financeiro";
 import Faturamentos from "./pages/Faturamentos";
 // import Estoque from "./pages/Estoque"; // REMOVIDO
 import Profissionais from "./pages/Profissionais";
+import Medicos from "./pages/Medicos";
 // import Relatorios from "./pages/Relatorios"; // REMOVIDO
 import Especialidades from "./pages/Especialidades";
 import Convenios from "./pages/Convenios";
@@ -130,6 +131,13 @@ const App = () => (
 					    <TiposExames />
 					  </ProtectedRoute>
 					} />
+					<Route
+					  path="/medicos"
+					  element={
+					    <ProtectedRoute allowedRoles={['gestor']}>
+					      <Medicos />
+					    </ProtectedRoute>
+					  }/>
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </MedicalLayout>

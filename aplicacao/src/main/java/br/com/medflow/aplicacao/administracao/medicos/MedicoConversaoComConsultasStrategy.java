@@ -83,7 +83,10 @@ public class MedicoConversaoComConsultasStrategy implements MedicoConversaoStrat
                 medico.getCrm().toString(),
                 nomeEspecialidade,
                 null, // dataNascimento
-                horariosDisponiveis
+                horariosDisponiveis,
+                null, // 🆕 temConsultas - preenchido no MedicoServicoAplicacao
+                null, // 🆕 temProntuarios - preenchido no MedicoServicoAplicacao
+                null  // 🆕 temExames - preenchido no MedicoServicoAplicacao
         );
     }
 
