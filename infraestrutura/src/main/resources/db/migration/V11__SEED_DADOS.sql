@@ -27,7 +27,7 @@ INSERT INTO funcionarios (nome, funcao, contato, status) VALUES
 ('Dr. Roberto Lima', 'Médico Ortopedista', '11965432109', 'ATIVO'),
 ('Enf. Juliana Santos', 'Enfermeira', '11954321098', 'ATIVO'),
 ('Dra. Mariana Oliveira', 'Médica Dermatologista', '11943210987', 'ATIVO'),
-('Dr. Pedro Augusto', 'Residente de Cirurgia', '11932109876', 'ATIVO');
+('Pedro Augusto', 'Estagiario', '11932109876', 'ATIVO');
 
 -- ===== MÉDICOS =====
 INSERT INTO medicos (funcionario_id, crm_numero, crm_uf, especialidade_id, data_nascimento) VALUES

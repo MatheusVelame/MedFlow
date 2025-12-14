@@ -72,7 +72,8 @@ export default function Medicos() {
   const [medicoToDelete, setMedicoToDelete] = useState<MedicoResumo | null>(
     null
   );
-  const [medicoToView, setMedicoToView] = useState<number | null>(null);
+  // 🆕 MUDANÇA: Agora guarda o objeto médico completo
+  const [medicoToView, setMedicoToView] = useState<MedicoResumo | null>(null);
 
   // Queries / Mutations
   const { data: medicos = [], isLoading, error, refetch } = useListarMedicos();
@@ -96,7 +97,6 @@ export default function Medicos() {
         const payload: AtualizarMedicoPayload = {
           nome: data.nome,
           contato: data.contato,
-          // dataNascimento: data.dataNascimento || undefined, // <-- REMOVER ESTA LINHA
           disponibilidades: data.disponibilidades ?? [],
         };
 
@@ -118,7 +118,6 @@ export default function Medicos() {
             crmNumero: String(data.crmNumero ?? "").trim(),
             crmUf: String(data.crmUf ?? "").trim(),
             especialidadeId: Number(data.especialidadeId),
-            // dataNascimento: data.dataNascimento || undefined, // <-- REMOVER ESTA LINHA
             disponibilidades: data.disponibilidades ?? [],
           };
 
@@ -442,7 +441,7 @@ export default function Medicos() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => setMedicoToView(medico.id)}
+                      onClick={() => setMedicoToView(medico)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Ver
@@ -490,11 +489,11 @@ export default function Medicos() {
         onSave={handleSave}
       />
 
-      {/* Dialog de Detalhes */}
+      {/* Dialog de Detalhes - 🆕 CORRIGIDO */}
       <MedicoDetalhesDialog
+        medico={medicoToView}
         open={medicoToView !== null}
         onOpenChange={(open) => !open && setMedicoToView(null)}
-        medicoId={medicoToView}
       />
 
       {/* Dialog de Exclusão */}

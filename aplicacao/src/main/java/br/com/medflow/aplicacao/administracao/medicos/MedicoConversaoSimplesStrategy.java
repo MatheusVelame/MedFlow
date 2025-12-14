@@ -53,7 +53,10 @@ public class MedicoConversaoSimplesStrategy implements MedicoConversaoStrategy {
                 medico.getCrm().toString(),
                 obterNomeEspecialidadeSimples(medico.getEspecialidade().getId()),
                 null, // dataNascimento
-                Collections.emptyList() // horariosDisponiveis
+                Collections.emptyList(), // horariosDisponiveis
+                null, // 🆕 temConsultas
+                null, // 🆕 temProntuarios
+                null  // 🆕 temExames
         );
     }
 
