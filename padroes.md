@@ -104,7 +104,7 @@ O padrão Observer é usado para implementar um sistema de eventos de domínio (
 
 ---
 
-## 3. Proxy - Thaís Aguiar
+## 3. Proxy (Thaís Aguiar)
 
 **FUNCIONALIDADES — Exames e Especialidades**
 *Domínios - Referência e Atendimento*

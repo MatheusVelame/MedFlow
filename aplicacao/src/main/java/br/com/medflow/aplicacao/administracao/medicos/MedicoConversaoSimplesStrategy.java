@@ -1,5 +1,3 @@
-// Localização: aplicacao/src/main/java/br/com/medflow/aplicacao/administracao/medicos/MedicoConversaoSimplesStrategy.java
-
 package br.com.medflow.aplicacao.administracao.medicos;
 
 import br.com.medflow.dominio.administracao.funcionarios.Medico;
@@ -61,8 +59,7 @@ public class MedicoConversaoSimplesStrategy implements MedicoConversaoStrategy {
     }
 
     /**
-     * Mapeamento simplificado de especialidades.
-     * Na implementação real, isso viria de um repositório.
+     * Mapeamento simplificado de especialidades para testes unitários rápidos
      */
     private String obterNomeEspecialidadeSimples(int especialidadeId) {
         return switch (especialidadeId) {
